@@ -60,6 +60,12 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     argv[i++] = "-o";
     argv[i++] = ePath;
     argv[i++] = NULL;
+    {
+        printf("launching ");
+        for(i=0; argv[i]!=NULL; ++i)
+            printf("%s ", argv[i]);
+        printf("\n");
+    }
     if(0 != launch("clang", argv, &rc_child, stdout_buf, sizeof(stdout_buf),
         stderr_buf, sizeof(stderr_buf)))
     {
@@ -72,6 +78,45 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     outBuf->append(stdout_buf);
     outBuf->append("STDERR>\n");
     outBuf->append(stderr_buf);
+
+    /* disassemble shit */
+    i=0;
+    argv[i++] = "otool";
+    argv[i++] = "-t";
+    argv[i++] = ePath;
+    argv[i++] = "-V";
+    argv[i++] = "-X";
+    argv[i++] = NULL;
+
+    memset(stdout_buf, '\0', sizeof(stdout_buf));
+    memset(stderr_buf, '\0', sizeof(stderr_buf));
+
+    {
+        printf("launching ");
+        for(i=0; argv[i]!=NULL; ++i)
+            printf("%s ", argv[i]);
+        printf("\n");
+    }
+    if(0 != launch("otool", argv, &rc_child, stdout_buf, sizeof(stdout_buf),
+        stderr_buf, sizeof(stderr_buf)))
+    {
+        printf("ERROR: launch()");
+        goto cleanup;
+    }
+
+    /* get rid of indent */
+    for(i=0; stdout_buf[i]!='\0'; ++i) {
+        if(0 == strncmp(stdout_buf+i, "\x0A\t", 2)) {
+            memcpy(stdout_buf+i, "\x0a ", 2);
+            i += 1;
+        }
+        else if(0 == strncmp(stdout_buf+i, "\x0d\x0a\t", 3)) {
+            memcpy(stdout_buf+i, "\x0d\x0a ", 3);
+            i += 2;
+        }
+    }
+
+    gui->asmBuf->text(stdout_buf);
 
     rc = 0;
     cleanup:

@@ -17,6 +17,10 @@ Fl_Double_Window* Gui::make_window() {
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor* srcCode
     { Fl_Text_Display* o = asmCode = new Fl_Text_Display(404, 4, 246, 596);
+      asmCode->labelfont(4);
+      asmCode->labelsize(10);
+      asmCode->textfont(4);
+      asmCode->textsize(10);
       asmBuf = new Fl_Text_Buffer();
       o->buffer(asmBuf);
     } // Fl_Text_Display* asmCode
