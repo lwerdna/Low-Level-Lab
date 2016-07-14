@@ -1,3 +1,4 @@
+#include <time.h>
 #include <stdio.h>
 
 #include <FL/Fl.H>
@@ -11,28 +12,55 @@ extern "C" {
 #include <autils/subprocess.h>
 }
 
+int length_last_compile = 0;
+time_t time_last_compile = 0;
+
 void
-onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
-    const char * deletedText, void *cbArg)
+compile(Gui *gui)
 {
     int rc = -1, rc_child, i;
     char cPath[128], ePath[128];
     char stdout_buf[2048];
     char stderr_buf[2048];
     char *argv[6];
-
     char *cSource = NULL;
+    time_t time_now;
+    int length_now;
+    FILE *fp;
+    char ca_clang[] = "clang";
+    char ca_otool[] = "otool";
+    char ca_dash_t[] = "-t";
+    char ca_dash_V[] = "-V";
+    char ca_dash_X[] = "-X";
+    char ca_dash_o[] = "-o";
 
-    Gui *gui = (Gui *)cbArg;
     Fl_Text_Buffer *srcBuf = gui->srcBuf;
     Fl_Text_Buffer *asmBuf = gui->asmBuf;
     Fl_Text_Buffer *outBuf = gui->outBuf;
 
-    //printf("buffer is %d bytes\n", buf->length());
-    cSource = srcBuf->text();
-    //printf("got source:\n%s\n", cSource);
+    /* skip if we compiled within the last second */
+    time(&time_now);
+    if(difftime(time_now, time_last_compile) < 1) {
+        goto cleanup;
+    }
+    else {
+        /* skip if the text is unchanged */
+        length_now = srcBuf->length();
+        //if(length_last_compile == length_now) {
+        //    if(hash(buf) == hash_last) {
+        //        goto cleanup;
+        //    }
+        //}
+        if(0) {
+            while(0);
+        }
+        else {
+            time_last_compile = time_now;
+            length_last_compile = length_now;
+        }
+    }
 
-    FILE *fp;
+    cSource = srcBuf->text();
 
     if(gen_tmp_file("clabXXXXXX", ePath, &fp)) {
         printf("ERROR: get_tmp_file()\n");
@@ -54,10 +82,10 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 
     /* compile shit */
     i=0;
-    argv[i++] = "clang";
+    argv[i++] = ca_clang;
     //argv[i++] = "-v";
     argv[i++] = cPath;
-    argv[i++] = "-o";
+    argv[i++] = ca_dash_o;
     argv[i++] = ePath;
     argv[i++] = NULL;
     {
@@ -66,7 +94,7 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
             printf("%s ", argv[i]);
         printf("\n");
     }
-    if(0 != launch("clang", argv, &rc_child, stdout_buf, sizeof(stdout_buf),
+    if(0 != launch(ca_clang, argv, &rc_child, stdout_buf, sizeof(stdout_buf),
         stderr_buf, sizeof(stderr_buf)))
     {
         printf("ERROR: launch()");
@@ -81,11 +109,11 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 
     /* disassemble shit */
     i=0;
-    argv[i++] = "otool";
-    argv[i++] = "-t";
+    argv[i++] = ca_otool;
+    argv[i++] = ca_dash_t;
     argv[i++] = ePath;
-    argv[i++] = "-V";
-    argv[i++] = "-X";
+    argv[i++] = ca_dash_V;
+    argv[i++] = ca_dash_X;
     argv[i++] = NULL;
 
     memset(stdout_buf, '\0', sizeof(stdout_buf));
@@ -97,7 +125,7 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
             printf("%s ", argv[i]);
         printf("\n");
     }
-    if(0 != launch("otool", argv, &rc_child, stdout_buf, sizeof(stdout_buf),
+    if(0 != launch(ca_otool, argv, &rc_child, stdout_buf, sizeof(stdout_buf),
         stderr_buf, sizeof(stderr_buf)))
     {
         printf("ERROR: launch()");
@@ -126,3 +154,20 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     return;
 }
 
+void
+onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
+    const char * deletedText, void *cbArg)
+{
+}
+
+void
+onGuiFinished(Gui *gui)
+{
+    printf("onGuiFinished\n");
+}
+
+void
+onIdle(void *data)
+{
+    compile((Gui *)data);
+}

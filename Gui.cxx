@@ -39,6 +39,8 @@ Fl_Double_Window* Gui::make_window() {
 int main(int argc, char **argv) {
   Gui gui;
   Fl_Double_Window *w = gui.make_window();
+  onGuiFinished(&gui);
+  Fl::add_idle(onIdle, &gui);
   w->end();
   w->show();
   return Fl::run();
