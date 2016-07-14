@@ -3,24 +3,39 @@
 #include "Gui.h"
 #include "logic.h"
 
-Fl_Double_Window* UserInterface::make_window() {
+Fl_Double_Window* Gui::make_window() {
   Fl_Double_Window* w;
   { Fl_Double_Window* o = new Fl_Double_Window(1032, 748, "Compiler Lab");
     w = o;
     o->user_data((void*)(this));
-    { Fl_Text_Editor* o = sourceCode = new Fl_Text_Editor(4, 4, 400, 740);
-      sourceCode->textfont(4);
-      sourceCode->align(Fl_Align(FL_ALIGN_TOP_LEFT|FL_ALIGN_INSIDE));
-      Fl_Text_Buffer *buf = new Fl_Text_Buffer();
-      o->buffer(buf);
-      buf->text("#include <stdio.h>\n\nint main(int ac, char **av)\n{\n    printf(\"Hello, world!\\n\");\n    return 0;\n}");
-      buf->add_modify_callback(onSourceModified, buf);
-    } // Fl_Text_Editor* sourceCode
-    { asmCode = new Fl_Text_Editor(408, 4, 200, 740);
-      asmCode->textfont(4);
-      asmCode->textsize(8);
-    } // Fl_Text_Editor* asmCode
+    { Fl_Text_Editor* o = srcCode = new Fl_Text_Editor(4, 4, 396, 596);
+      srcCode->textfont(4);
+      srcCode->align(Fl_Align(FL_ALIGN_TOP_LEFT|FL_ALIGN_INSIDE));
+      srcBuf = new Fl_Text_Buffer();
+      o->buffer(srcBuf);
+      srcBuf->text("#include <stdio.h>\n\nint main(int ac, char **av)\n{\n\tprintf(\"Hello, world!\\n\");\n\treturn 0;\n}");
+      srcBuf->add_modify_callback(onSourceModified, this);
+    } // Fl_Text_Editor* srcCode
+    { Fl_Text_Display* o = asmCode = new Fl_Text_Display(404, 4, 246, 596);
+      asmBuf = new Fl_Text_Buffer();
+      o->buffer(asmBuf);
+    } // Fl_Text_Display* asmCode
+    { Fl_Text_Display* o = outLog = new Fl_Text_Display(4, 604, 1022, 140);
+      outBuf = new Fl_Text_Buffer();
+      o->buffer(outBuf);
+    } // Fl_Text_Display* outLog
     o->end();
   } // Fl_Double_Window* o
+  srcCode->linenumber_width(16);
+  printf("hello\n");
+  printf("there\n");
   return w;
+}
+
+int main(int argc, char **argv) {
+  Gui gui;
+  Fl_Double_Window *w = gui.make_window();
+  w->end();
+  w->show();
+  return Fl::run();
 }

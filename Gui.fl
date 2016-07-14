@@ -5,24 +5,48 @@ code_name {.cxx}
 decl {\#include "logic.h"} {private global
 } 
 
-class UserInterface {open
+class Gui {open
 } {
   Function {make_window()} {open
   } {
     Fl_Window {} {
       label {Compiler Lab} open
-      xywh {604 323 1032 748} type Double hide
+      xywh {544 350 1032 748} type Double hide
     } {
-      Fl_Text_Editor sourceCode {selected
-        xywh {4 4 400 740} align 21 textfont 4
-        code0 {Fl_Text_Buffer *buf = new Fl_Text_Buffer();}
-        code1 {o->buffer(buf);}
-        code2 {buf->text("\#include <stdio.h>\\n\\nint main(int ac, char **av)\\n{\\n    printf(\\"Hello, world!\\\\n\\");\\n    return 0;\\n}");}
-        code3 {buf->add_modify_callback(onSourceModified, buf);}
+      Fl_Text_Editor srcCode {
+        xywh {4 4 396 596} align 21 textfont 4
+        code0 {srcBuf = new Fl_Text_Buffer();}
+        code1 {o->buffer(srcBuf);}
+        code2 {srcBuf->text("\#include <stdio.h>\\n\\nint main(int ac, char **av)\\n{\\n\\tprintf(\\"Hello, world!\\\\n\\");\\n\\treturn 0;\\n}");}
+        code3 {srcBuf->add_modify_callback(onSourceModified, this);}
       }
-      Fl_Text_Editor asmCode {
-        xywh {408 4 200 740} textfont 4 textsize 8
+      Fl_Text_Display asmCode {
+        xywh {404 4 246 596}
+        code0 {asmBuf = new Fl_Text_Buffer();}
+        code1 {o->buffer(asmBuf);}
+      }
+      Fl_Text_Display outLog {
+        xywh {4 604 1022 140}
+        code0 {outBuf = new Fl_Text_Buffer();}
+        code1 {o->buffer(outBuf);}
       }
     }
+    code {srcCode->linenumber_width(16);
+printf("hello\\n");
+printf("there\\n");} {}
   }
+  decl {Fl_Text_Buffer *srcBuf;} {public local
+  }
+  decl {Fl_Text_Buffer *asmBuf;} {public local
+  }
+  decl {Fl_Text_Buffer *outBuf;} {public local
+  }
+} 
+
+Function {} {open
+} {
+  code {Gui gui;
+Fl_Double_Window *w = gui.make_window();
+w->end();
+w->show();} {}
 } 

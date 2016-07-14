@@ -5,11 +5,16 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Text_Editor.H>
+#include <FL/Fl_Text_Display.H>
 
-class UserInterface {
+class Gui {
 public:
   Fl_Double_Window* make_window();
-  Fl_Text_Editor *sourceCode;
-  Fl_Text_Editor *asmCode;
+  Fl_Text_Editor *srcCode;
+  Fl_Text_Display *asmCode;
+  Fl_Text_Display *outLog;
+  Fl_Text_Buffer *srcBuf; 
+  Fl_Text_Buffer *asmBuf; 
+  Fl_Text_Buffer *outBuf; 
 };
 #endif

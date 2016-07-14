@@ -6,8 +6,8 @@ LDSTATIC = $(shell fltk-config --use-gl --use-images --ldstaticflags ) -lautils
 LINK     = $(CXX)
 
 TARGET = clab
-OBJS = main.o Gui.o logic.o
-SRCS = main.cxx Gui.cxx logic.cxx
+OBJS = Gui.o logic.o
+SRCS = Gui.cxx logic.cxx
 
 .SUFFIXES: .o .cxx
 %.o: %.cxx
@@ -17,7 +17,7 @@ all: $(TARGET)
 	$(LINK) -o $(TARGET) $(OBJS) $(LDSTATIC)
 
 $(TARGET): $(OBJS)
-Application.o: main.cxx Gui.cxx logic.cxx
+Application.o: Gui.cxx logic.cxx
 
 clean: $(TARGET) $(OBJS)
 	rm -f *.o 2> /dev/null

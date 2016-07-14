@@ -2,9 +2,9 @@
 
 int main(int ac, char **av)
 {
-    UserInterface ui;
+    Gui gui;
 
-    Fl_Double_Window *w = ui.make_window();
+    Fl_Double_Window *w = gui.make_window();
     w->end();
     w->show();
 
