@@ -11,10 +11,10 @@ class Gui {open
   } {
     Fl_Window {} {
       label {Compiler Lab} open
-      xywh {544 350 1032 748} type Double hide
+      xywh {429 298 1032 748} type Double visible
     } {
       Fl_Text_Editor srcCode {
-        xywh {4 4 396 596} align 21 textfont 4 textsize 12
+        xywh {4 4 396 596} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
         code2 {srcBuf->text("\#include <stdio.h>\\n\\nint main(int ac, char **av)\\n{\\n\\tprintf(\\"Hello, world!\\\\n\\");\\n\\treturn 0;\\n}");}
@@ -26,20 +26,78 @@ class Gui {open
         code1 {o->buffer(asmBuf);}
       }
       Fl_Text_Display outLog {
-        xywh {4 604 1022 140} box THIN_DOWN_FRAME color 0 textfont 13 textsize 12 textcolor 7
+        xywh {4 604 1022 140} box THIN_DOWN_FRAME color 0 textfont 4 textsize 12 textcolor 7
         code0 {outBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(outBuf);}
       }
+      Fl_Tabs {} {open
+        xywh {657 4 369 374}
+      } {
+        Fl_Group clangGroup {
+          label clang open
+          xywh {660 34 366 344}
+        } {
+          Fl_Input_Choice optimization {
+            label {optimization:}
+            callback onClangSettingsChange open
+            xywh {750 74 107 24}
+          } {}
+          Fl_Input_Choice compilerPath {
+            label compiler
+            callback onClangSettingsChange open
+            xywh {749 44 263 24}
+          } {}
+          Fl_Check_Button verbose {
+            label verbose
+            callback onClangSettingsChange
+            xywh {667 100 28 28} down_box DOWN_BOX
+          }
+          Fl_Input_Choice debugFlags {
+            label {debug:}
+            callback onClangSettingsChange open
+            xywh {905 74 107 24}
+          } {}
+        }
+        Fl_Group {} {
+          label gcc open
+          xywh {660 33 352 338} hide
+        } {}
+        Fl_Group {} {
+          label {visual studio} open
+          xywh {660 33 352 338} hide
+        } {}
+      }
+      Fl_Check_Button outputWrap {
+        label wrap
+        callback onOutputWrap
+        xywh {655 572 28 28} down_box DOWN_BOX
+      }
+      Fl_Text_Display clangCommandLine {
+        label {compiler command line:}
+        xywh {655 500 371 73} align 5 textsize 12
+      }
+      Fl_Text_Editor customFlags {
+        label {custom flags:}
+        callback onCustomFlags
+        xywh {655 447 371 37} align 5 textsize 12
+        code0 {customFlagsBuf = new Fl_Text_Buffer();}
+        code1 {o->buffer(customFlagsBuf);}
+      }
+      Fl_Check_Button outputScroll {
+        label scroll
+        callback onOutputScroll
+        xywh {708 572 28 28} down_box DOWN_BOX
+      }
     }
-    code {srcCode->linenumber_width(16);
-printf("hello\\n");
-printf("there\\n");} {}
+    code {srcCode->linenumber_width(16);} {}
   }
   decl {Fl_Text_Buffer *srcBuf;} {public local
   }
   decl {Fl_Text_Buffer *asmBuf;} {public local
   }
   decl {Fl_Text_Buffer *outBuf;} {public local
+  }
+  decl {Fl_Text_Buffer *customFlagsBuf;} {selected public local
   }
 } 
 
@@ -54,6 +112,5 @@ w->show();
 int rc = Fl::run();
 onExit();
 return rc;
-/* fluid will insert Fl::run() here... */} {selected
-  }
+/* fluid will insert Fl::run() here... */} {}
 } 

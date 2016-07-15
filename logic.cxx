@@ -167,6 +167,30 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     compile_requested = true;
 }
 
+void 
+onClangSettingsChange(Fl_Widget *, void *)
+{
+    return;
+}
+
+void 
+onCustomFlags(Fl_Widget *, void *)
+{
+    return;
+}
+
+void 
+onOutputWrap(Fl_Widget *, void *)
+{
+    return;
+}
+
+void
+onOutputScroll(Fl_Widget *, void *)
+{
+    return;
+}
+
 void
 onGuiFinished(Gui *gui)
 {
@@ -187,6 +211,8 @@ onGuiFinished(Gui *gui)
     strcat(cPath, ".c");
     printf("ePath: %s\n", ePath);
     printf("cPath: %s\n", cPath);
+
+    compile_requested = true;
 
     rc = 0;
     cleanup:

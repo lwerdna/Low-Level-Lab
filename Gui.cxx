@@ -10,7 +10,6 @@ Fl_Double_Window* Gui::make_window() {
     o->user_data((void*)(this));
     { Fl_Text_Editor* o = srcCode = new Fl_Text_Editor(4, 4, 396, 596);
       srcCode->textfont(4);
-      srcCode->textsize(12);
       srcCode->align(Fl_Align(FL_ALIGN_TOP_LEFT|FL_ALIGN_INSIDE));
       srcBuf = new Fl_Text_Buffer();
       o->buffer(srcBuf);
@@ -28,17 +27,61 @@ Fl_Double_Window* Gui::make_window() {
     { Fl_Text_Display* o = outLog = new Fl_Text_Display(4, 604, 1022, 140);
       outLog->box(FL_THIN_DOWN_FRAME);
       outLog->color(FL_FOREGROUND_COLOR);
-      outLog->textfont(13);
+      outLog->textfont(4);
       outLog->textsize(12);
       outLog->textcolor(FL_BACKGROUND2_COLOR);
       outBuf = new Fl_Text_Buffer();
       o->buffer(outBuf);
     } // Fl_Text_Display* outLog
+    { Fl_Tabs* o = new Fl_Tabs(657, 4, 369, 374);
+      { clangGroup = new Fl_Group(660, 34, 366, 344, "clang");
+        { optimization = new Fl_Input_Choice(750, 74, 107, 24, "optimization:");
+          optimization->callback((Fl_Callback*)onClangSettingsChange);
+        } // Fl_Input_Choice* optimization
+        { compilerPath = new Fl_Input_Choice(749, 44, 263, 24, "compiler");
+          compilerPath->callback((Fl_Callback*)onClangSettingsChange);
+        } // Fl_Input_Choice* compilerPath
+        { verbose = new Fl_Check_Button(667, 100, 28, 28, "verbose");
+          verbose->down_box(FL_DOWN_BOX);
+          verbose->callback((Fl_Callback*)onClangSettingsChange);
+        } // Fl_Check_Button* verbose
+        { debugFlags = new Fl_Input_Choice(905, 74, 107, 24, "debug:");
+          debugFlags->callback((Fl_Callback*)onClangSettingsChange);
+        } // Fl_Input_Choice* debugFlags
+        clangGroup->end();
+      } // Fl_Group* clangGroup
+      { Fl_Group* o = new Fl_Group(660, 33, 352, 338, "gcc");
+        o->hide();
+        o->end();
+      } // Fl_Group* o
+      { Fl_Group* o = new Fl_Group(660, 33, 352, 338, "visual studio");
+        o->hide();
+        o->end();
+      } // Fl_Group* o
+      o->end();
+    } // Fl_Tabs* o
+    { outputWrap = new Fl_Check_Button(655, 572, 28, 28, "wrap");
+      outputWrap->down_box(FL_DOWN_BOX);
+      outputWrap->callback((Fl_Callback*)onOutputWrap);
+    } // Fl_Check_Button* outputWrap
+    { clangCommandLine = new Fl_Text_Display(655, 500, 371, 73, "compiler command line:");
+      clangCommandLine->textsize(12);
+      clangCommandLine->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    } // Fl_Text_Display* clangCommandLine
+    { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(655, 447, 371, 37, "custom flags:");
+      customFlags->textsize(12);
+      customFlags->callback((Fl_Callback*)onCustomFlags);
+      customFlags->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+      customFlagsBuf = new Fl_Text_Buffer();
+      o->buffer(customFlagsBuf);
+    } // Fl_Text_Editor* customFlags
+    { outputScroll = new Fl_Check_Button(708, 572, 28, 28, "scroll");
+      outputScroll->down_box(FL_DOWN_BOX);
+      outputScroll->callback((Fl_Callback*)onOutputScroll);
+    } // Fl_Check_Button* outputScroll
     o->end();
   } // Fl_Double_Window* o
   srcCode->linenumber_width(16);
-  printf("hello\n");
-  printf("there\n");
   return w;
 }
 

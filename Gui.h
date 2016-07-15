@@ -6,6 +6,15 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Text_Editor.H>
 #include <FL/Fl_Text_Display.H>
+#include <FL/Fl_Tabs.H>
+#include <FL/Fl_Group.H>
+#include <FL/Fl_Input_Choice.H>
+extern void onClangSettingsChange(Fl_Input_Choice*, void*);
+#include <FL/Fl_Check_Button.H>
+extern void onClangSettingsChange(Fl_Check_Button*, void*);
+extern void onOutputWrap(Fl_Check_Button*, void*);
+extern void onCustomFlags(Fl_Text_Editor*, void*);
+extern void onOutputScroll(Fl_Check_Button*, void*);
 
 class Gui {
 public:
@@ -13,8 +22,18 @@ public:
   Fl_Text_Editor *srcCode;
   Fl_Text_Display *asmCode;
   Fl_Text_Display *outLog;
+  Fl_Group *clangGroup;
+  Fl_Input_Choice *optimization;
+  Fl_Input_Choice *compilerPath;
+  Fl_Check_Button *verbose;
+  Fl_Input_Choice *debugFlags;
+  Fl_Check_Button *outputWrap;
+  Fl_Text_Display *clangCommandLine;
+  Fl_Text_Editor *customFlags;
+  Fl_Check_Button *outputScroll;
   Fl_Text_Buffer *srcBuf; 
   Fl_Text_Buffer *asmBuf; 
   Fl_Text_Buffer *outBuf; 
+  Fl_Text_Buffer *customFlagsBuf; 
 };
 #endif
