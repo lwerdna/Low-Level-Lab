@@ -49,5 +49,9 @@ int main(int argc, char **argv) {
   Fl::add_idle(onIdle, &gui);
   w->end();
   w->show();
+  int rc = Fl::run();
+  onExit();
+  return rc;
+  /* fluid will insert Fl::run() here... */
   return Fl::run();
 }

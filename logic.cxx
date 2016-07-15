@@ -14,16 +14,19 @@ extern "C" {
 #include <autils/subprocess.h>
 }
 
+/* recompile state vars */
 bool compile_requested = false;
 int length_last_compile = 0;
 time_t time_last_compile = 0;
 uint32_t crc_last_compile = 0;
 
+/* temp files used for source, exec */
+char cPath[128], ePath[128];
+
 void
 compile(Gui *gui)
 {
     int rc = -1, rc_child, i;
-    char cPath[128], ePath[128];
     char stdout_buf[2048];
     char stderr_buf[2048];
     char *argv[6];
@@ -74,17 +77,6 @@ compile(Gui *gui)
     length_last_compile = length_now;
 
     /* compile follows thru... */
-
-    if(gen_tmp_file("clabXXXXXX", ePath, &fp)) {
-        printf("ERROR: get_tmp_file()\n");
-        goto cleanup;
-    }
-    fclose(fp);
-
-    strcpy(cPath, ePath);
-    strcat(cPath, ".c");
-    printf("ePath: %s\n", ePath);
-    printf("cPath: %s\n", cPath);
 
     fp = fopen(cPath, "w");
     fwrite(cSource, 1, srcBuf->length(), fp);
@@ -161,8 +153,6 @@ compile(Gui *gui)
 
     rc = 0;
     cleanup:
-    if(cPath[0]) remove(cPath);
-    if(ePath[0]) remove(ePath);
     if(cSource) {
         free(cSource);
         cSource = NULL;
@@ -180,11 +170,39 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 void
 onGuiFinished(Gui *gui)
 {
+    int rc = -1;
+
     printf("onGuiFinished\n");
+
+    FILE *fp;
+
+    /* generate the temp file paths */
+    if(gen_tmp_file("clabXXXXXX", ePath, &fp)) {
+        printf("ERROR: get_tmp_file()\n");
+        goto cleanup;
+    }
+    fclose(fp);
+
+    strcpy(cPath, ePath);
+    strcat(cPath, ".c");
+    printf("ePath: %s\n", ePath);
+    printf("cPath: %s\n", cPath);
+
+    rc = 0;
+    cleanup:
+    return;
 }
 
 void
 onIdle(void *data)
 {
     compile((Gui *)data);
+}
+
+void
+onExit(void)
+{
+    printf("onExit()\n");
+    if(cPath[0]) remove(cPath);
+    if(ePath[0]) remove(ePath);
 }

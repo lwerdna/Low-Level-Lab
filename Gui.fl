@@ -13,7 +13,7 @@ class Gui {open
       label {Compiler Lab} open
       xywh {544 350 1032 748} type Double hide
     } {
-      Fl_Text_Editor srcCode {selected
+      Fl_Text_Editor srcCode {
         xywh {4 4 396 596} align 21 textfont 4 textsize 12
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
@@ -50,5 +50,10 @@ Fl_Double_Window *w = gui.make_window();
 onGuiFinished(&gui);
 Fl::add_idle(onIdle, &gui);
 w->end();
-w->show();} {}
+w->show();
+int rc = Fl::run();
+onExit();
+return rc;
+/* fluid will insert Fl::run() here... */} {selected
+  }
 } 
