@@ -7,13 +7,17 @@
 
 #include "Gui.h"
 
+
 extern "C" {
+#include <autils/crc.h>
 #include <autils/filesys.h>
 #include <autils/subprocess.h>
 }
 
+bool compile_requested = false;
 int length_last_compile = 0;
 time_t time_last_compile = 0;
+uint32_t crc_last_compile = 0;
 
 void
 compile(Gui *gui)
@@ -24,8 +28,6 @@ compile(Gui *gui)
     char stderr_buf[2048];
     char *argv[6];
     char *cSource = NULL;
-    time_t time_now;
-    int length_now;
     FILE *fp;
     char ca_clang[] = "clang";
     char ca_otool[] = "otool";
@@ -34,33 +36,44 @@ compile(Gui *gui)
     char ca_dash_X[] = "-X";
     char ca_dash_o[] = "-o";
 
+    /* compile timing vars */
+    time_t time_now;
+    int length_now;
+    uint32_t crc_now;
+
     Fl_Text_Buffer *srcBuf = gui->srcBuf;
     Fl_Text_Buffer *asmBuf = gui->asmBuf;
     Fl_Text_Buffer *outBuf = gui->outBuf;
 
+    cSource = srcBuf->text();
+
+    if(!compile_requested) {
+        goto cleanup;
+    }
     /* skip if we compiled within the last second */
     time(&time_now);
     if(difftime(time_now, time_last_compile) < 1) {
+        /* just too soon, remain requested */
         goto cleanup;
     }
     else {
         /* skip if the text is unchanged */
         length_now = srcBuf->length();
-        //if(length_last_compile == length_now) {
-        //    if(hash(buf) == hash_last) {
-        //        goto cleanup;
-        //    }
-        //}
-        if(0) {
-            while(0);
-        }
-        else {
-            time_last_compile = time_now;
-            length_last_compile = length_now;
+        if(length_last_compile == length_now) {
+            crc_now = crc32(0, cSource, srcBuf->length());
+            if(crc_now == crc_last_compile) {
+                compile_requested = false;
+                goto cleanup;
+            }
         }
     }
 
-    cSource = srcBuf->text();
+    compile_requested = false;
+    crc_last_compile = crc_now;
+    time_last_compile = time_now;
+    length_last_compile = length_now;
+
+    /* compile follows thru... */
 
     if(gen_tmp_file("clabXXXXXX", ePath, &fp)) {
         printf("ERROR: get_tmp_file()\n");
@@ -148,9 +161,12 @@ compile(Gui *gui)
 
     rc = 0;
     cleanup:
-    /* delete shit */
     if(cPath[0]) remove(cPath);
     if(ePath[0]) remove(ePath);
+    if(cSource) {
+        free(cSource);
+        cSource = NULL;
+    }
     return;
 }
 
@@ -158,6 +174,7 @@ void
 onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     const char * deletedText, void *cbArg)
 {
+    compile_requested = true;
 }
 
 void

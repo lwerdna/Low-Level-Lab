@@ -10,6 +10,7 @@ Fl_Double_Window* Gui::make_window() {
     o->user_data((void*)(this));
     { Fl_Text_Editor* o = srcCode = new Fl_Text_Editor(4, 4, 396, 596);
       srcCode->textfont(4);
+      srcCode->textsize(12);
       srcCode->align(Fl_Align(FL_ALIGN_TOP_LEFT|FL_ALIGN_INSIDE));
       srcBuf = new Fl_Text_Buffer();
       o->buffer(srcBuf);
@@ -20,11 +21,16 @@ Fl_Double_Window* Gui::make_window() {
       asmCode->labelfont(4);
       asmCode->labelsize(10);
       asmCode->textfont(4);
-      asmCode->textsize(10);
+      asmCode->textsize(12);
       asmBuf = new Fl_Text_Buffer();
       o->buffer(asmBuf);
     } // Fl_Text_Display* asmCode
     { Fl_Text_Display* o = outLog = new Fl_Text_Display(4, 604, 1022, 140);
+      outLog->box(FL_THIN_DOWN_FRAME);
+      outLog->color(FL_FOREGROUND_COLOR);
+      outLog->textfont(13);
+      outLog->textsize(12);
+      outLog->textcolor(FL_BACKGROUND2_COLOR);
       outBuf = new Fl_Text_Buffer();
       o->buffer(outBuf);
     } // Fl_Text_Display* outLog

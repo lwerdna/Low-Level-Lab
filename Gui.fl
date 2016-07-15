@@ -13,20 +13,20 @@ class Gui {open
       label {Compiler Lab} open
       xywh {544 350 1032 748} type Double hide
     } {
-      Fl_Text_Editor srcCode {
-        xywh {4 4 396 596} align 21 textfont 4
+      Fl_Text_Editor srcCode {selected
+        xywh {4 4 396 596} align 21 textfont 4 textsize 12
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
         code2 {srcBuf->text("\#include <stdio.h>\\n\\nint main(int ac, char **av)\\n{\\n\\tprintf(\\"Hello, world!\\\\n\\");\\n\\treturn 0;\\n}");}
         code3 {srcBuf->add_modify_callback(onSourceModified, this);}
       }
       Fl_Text_Display asmCode {
-        xywh {404 4 246 596} labelfont 4 labelsize 10 textfont 4 textsize 10
+        xywh {404 4 246 596} labelfont 4 labelsize 10 textfont 4 textsize 12
         code0 {asmBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(asmBuf);}
       }
       Fl_Text_Display outLog {
-        xywh {4 604 1022 140}
+        xywh {4 604 1022 140} box THIN_DOWN_FRAME color 0 textfont 13 textsize 12 textcolor 7
         code0 {outBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(outBuf);}
       }
@@ -50,6 +50,5 @@ Fl_Double_Window *w = gui.make_window();
 onGuiFinished(&gui);
 Fl::add_idle(onIdle, &gui);
 w->end();
-w->show();} {selected
-  }
+w->show();} {}
 } 
