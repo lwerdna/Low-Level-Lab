@@ -1,19 +1,13 @@
 // notes:
 // typedef void(Fl_Callback)(Fl_Widget *, void *)
 
-void compile(Gui *gui);
-
-void onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
-    const char * deletedText, void *cbArg);
-
+/* GUI lifecycle */
 void onGuiFinished(Gui *gui);
-
 void onIdle(void *data);
 void onExit(void);
 
-void onClangSettingsChange(Fl_Widget *, void *);
+/* GUI triggers for recompile */
+void recompile(void);
+void onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
+    const char * deletedText, void *cbArg);
 
-void onCustomFlags(Fl_Widget *, void *);
-
-void onOutputWrap(Fl_Widget *, void *);
-void onOutputScroll(Fl_Widget *, void *);

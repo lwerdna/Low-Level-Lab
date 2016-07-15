@@ -11,9 +11,9 @@ class Gui {open
   } {
     Fl_Window {} {
       label {Compiler Lab} open
-      xywh {429 298 1032 748} type Double visible
+      xywh {585 252 1032 748} type Double visible
     } {
-      Fl_Text_Editor srcCode {
+      Fl_Text_Editor srcCode {selected
         xywh {4 4 396 596} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
@@ -39,22 +39,22 @@ class Gui {open
         } {
           Fl_Input_Choice optimization {
             label {optimization:}
-            callback onClangSettingsChange open
+            callback {recompile();} open
             xywh {750 74 107 24}
           } {}
           Fl_Input_Choice compilerPath {
             label compiler
-            callback onClangSettingsChange open
+            callback {recompile();} open
             xywh {749 44 263 24}
           } {}
           Fl_Check_Button verbose {
             label verbose
-            callback onClangSettingsChange
+            callback {recompile();}
             xywh {667 100 28 28} down_box DOWN_BOX
           }
           Fl_Input_Choice debugFlags {
             label {debug:}
-            callback onClangSettingsChange open
+            callback {recompile();} open
             xywh {905 74 107 24}
           } {}
         }
@@ -67,26 +67,41 @@ class Gui {open
           xywh {660 33 352 338} hide
         } {}
       }
-      Fl_Check_Button outputWrap {
-        label wrap
-        callback onOutputWrap
-        xywh {655 572 28 28} down_box DOWN_BOX
-      }
       Fl_Text_Display clangCommandLine {
         label {compiler command line:}
-        xywh {655 500 371 73} align 5 textsize 12
+        xywh {655 449 371 73} align 5 textsize 12
       }
       Fl_Text_Editor customFlags {
         label {custom flags:}
-        callback onCustomFlags
-        xywh {655 447 371 37} align 5 textsize 12
+        callback {recompile();}
+        xywh {655 396 371 37} align 5 textsize 12
         code0 {customFlagsBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(customFlagsBuf);}
       }
-      Fl_Check_Button outputScroll {
-        label scroll
-        callback onOutputScroll
-        xywh {708 572 28 28} down_box DOWN_BOX
+      Fl_Group {} {
+        label {output settings:} open
+        xywh {754 572 194 28} color 0 align 4
+      } {
+        Fl_Check_Button btnWrap {
+          label wrap
+          callback {recompile();}
+          xywh {754 572 28 28} down_box DOWN_BOX
+        }
+        Fl_Check_Button btnScroll {
+          label scroll
+          callback {recompile()}
+          xywh {806 572 72 28} down_box DOWN_BOX
+        }
+        Fl_Check_Button btnStdout {
+          label stdout
+          callback {recompile();}
+          xywh {860 572 28 28} down_box DOWN_BOX
+        }
+        Fl_Check_Button btnStderr {
+          label stderr
+          callback {recompile();}
+          xywh {920 572 28 28} down_box DOWN_BOX
+        }
       }
     }
     code {srcCode->linenumber_width(16);} {}
@@ -97,7 +112,7 @@ class Gui {open
   }
   decl {Fl_Text_Buffer *outBuf;} {public local
   }
-  decl {Fl_Text_Buffer *customFlagsBuf;} {selected public local
+  decl {Fl_Text_Buffer *customFlagsBuf;} {public local
   }
 } 
 

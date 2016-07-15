@@ -14,7 +14,10 @@ extern "C" {
 #include <autils/subprocess.h>
 }
 
+Gui *gui = NULL;
+
 /* recompile state vars */
+bool compile_forced = false;
 bool compile_requested = false;
 int length_last_compile = 0;
 time_t time_last_compile = 0;
@@ -23,8 +26,22 @@ uint32_t crc_last_compile = 0;
 /* temp files used for source, exec */
 char cPath[128], ePath[128];
 
+/*****************************************************************************/
+/* UTILITIES */
+/*****************************************************************************/
+void outLogScrollToEnd(void)
+{
+    int n_chars = gui->outBuf->length();
+    int n_lines = gui->outLog->count_lines(0, n_chars-1, true);
+    gui->outLog->scroll(n_lines-1, 0);
+}
+
+/*****************************************************************************/
+/* MAIN ROUTINE */
+/*****************************************************************************/
+
 void
-compile(Gui *gui)
+compile()
 {
     int rc = -1, rc_child, i;
     char stdout_buf[2048];
@@ -50,27 +67,29 @@ compile(Gui *gui)
 
     cSource = srcBuf->text();
 
-    if(!compile_requested) {
-        goto cleanup;
-    }
-    /* skip if we compiled within the last second */
-    time(&time_now);
-    if(difftime(time_now, time_last_compile) < 1) {
-        /* just too soon, remain requested */
-        goto cleanup;
-    }
-    else {
-        /* skip if the text is unchanged */
-        length_now = srcBuf->length();
-        if(length_last_compile == length_now) {
-            crc_now = crc32(0, cSource, srcBuf->length());
-            if(crc_now == crc_last_compile) {
-                compile_requested = false;
-                goto cleanup;
+    if(!compile_forced && !compile_requested) goto cleanup;
+    
+    if(!compile_forced && compile_requested) {
+        /* skip if we compiled within the last second */
+        time(&time_now);
+        if(difftime(time_now, time_last_compile) < 1) {
+            /* just too soon, remain requested */
+            goto cleanup;
+        }
+        else {
+            /* skip if the text is unchanged */
+            length_now = srcBuf->length();
+            if(length_last_compile == length_now) {
+                crc_now = crc32(0, cSource, srcBuf->length());
+                if(crc_now == crc_last_compile) {
+                    compile_requested = false;
+                    goto cleanup;
+                }
             }
         }
     }
 
+    compile_forced = false;
     compile_requested = false;
     crc_last_compile = crc_now;
     time_last_compile = time_now;
@@ -106,11 +125,13 @@ compile(Gui *gui)
         goto cleanup;
     }
 
-    gui->outLog->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
-    outBuf->text("STDOUT>\n");
-    outBuf->append(stdout_buf);
-    outBuf->append("STDERR>\n");
-    outBuf->append(stderr_buf);
+    /* stdout, stdout to the outLog */
+    outBuf->text("");
+    if(gui->btnStdout->value()) outBuf->append(stdout_buf);
+    if(gui->btnStderr->value()) outBuf->append(stderr_buf);
+
+    /* default is NOT to auto scroll */
+    if(gui->btnScroll->value()) outLogScrollToEnd();
 
     /* disassemble shit */
     i=0;
@@ -160,6 +181,20 @@ compile(Gui *gui)
     return;
 }
 
+/*****************************************************************************/
+/* GUI CALLBACK STUFF */
+/*****************************************************************************/
+
+/* recompile request from GUI with 0 args */
+void
+recompile(void)
+{
+    printf("recompile request\n");
+    compile_forced = true;
+}
+
+/* callback when the source code is changed
+    (normal callback won't trigger during text change) */
 void
 onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     const char * deletedText, void *cbArg)
@@ -167,36 +202,14 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     compile_requested = true;
 }
 
-void 
-onClangSettingsChange(Fl_Widget *, void *)
-{
-    return;
-}
-
-void 
-onCustomFlags(Fl_Widget *, void *)
-{
-    return;
-}
-
-void 
-onOutputWrap(Fl_Widget *, void *)
-{
-    return;
-}
-
 void
-onOutputScroll(Fl_Widget *, void *)
-{
-    return;
-}
-
-void
-onGuiFinished(Gui *gui)
+onGuiFinished(Gui *gui_)
 {
     int rc = -1;
 
     printf("onGuiFinished\n");
+
+    gui = gui_;
 
     FILE *fp;
 
@@ -212,7 +225,12 @@ onGuiFinished(Gui *gui)
     printf("ePath: %s\n", ePath);
     printf("cPath: %s\n", cPath);
 
-    compile_requested = true;
+    /* default GUI states */
+    gui->btnWrap->set();
+    gui->btnStdout->set();
+    gui->btnStderr->set();
+
+    compile_forced = true;
 
     rc = 0;
     cleanup:
@@ -222,7 +240,7 @@ onGuiFinished(Gui *gui)
 void
 onIdle(void *data)
 {
-    compile((Gui *)data);
+    compile();
 }
 
 void

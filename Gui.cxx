@@ -3,6 +3,69 @@
 #include "Gui.h"
 #include "logic.h"
 
+void Gui::cb_optimization_i(Fl_Input_Choice*, void*) {
+  recompile();
+}
+void Gui::cb_optimization(Fl_Input_Choice* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_optimization_i(o,v);
+}
+
+void Gui::cb_compilerPath_i(Fl_Input_Choice*, void*) {
+  recompile();
+}
+void Gui::cb_compilerPath(Fl_Input_Choice* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_compilerPath_i(o,v);
+}
+
+void Gui::cb_verbose_i(Fl_Check_Button*, void*) {
+  recompile();
+}
+void Gui::cb_verbose(Fl_Check_Button* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_verbose_i(o,v);
+}
+
+void Gui::cb_debugFlags_i(Fl_Input_Choice*, void*) {
+  recompile();
+}
+void Gui::cb_debugFlags(Fl_Input_Choice* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_debugFlags_i(o,v);
+}
+
+void Gui::cb_customFlags_i(Fl_Text_Editor*, void*) {
+  recompile();
+}
+void Gui::cb_customFlags(Fl_Text_Editor* o, void* v) {
+  ((Gui*)(o->parent()->user_data()))->cb_customFlags_i(o,v);
+}
+
+void Gui::cb_btnWrap_i(Fl_Check_Button*, void*) {
+  recompile();
+}
+void Gui::cb_btnWrap(Fl_Check_Button* o, void* v) {
+  ((Gui*)(o->parent()->parent()->user_data()))->cb_btnWrap_i(o,v);
+}
+
+void Gui::cb_btnScroll_i(Fl_Check_Button*, void*) {
+  recompile();
+}
+void Gui::cb_btnScroll(Fl_Check_Button* o, void* v) {
+  ((Gui*)(o->parent()->parent()->user_data()))->cb_btnScroll_i(o,v);
+}
+
+void Gui::cb_btnStdout_i(Fl_Check_Button*, void*) {
+  recompile();
+}
+void Gui::cb_btnStdout(Fl_Check_Button* o, void* v) {
+  ((Gui*)(o->parent()->parent()->user_data()))->cb_btnStdout_i(o,v);
+}
+
+void Gui::cb_btnStderr_i(Fl_Check_Button*, void*) {
+  recompile();
+}
+void Gui::cb_btnStderr(Fl_Check_Button* o, void* v) {
+  ((Gui*)(o->parent()->parent()->user_data()))->cb_btnStderr_i(o,v);
+}
+
 Fl_Double_Window* Gui::make_window() {
   Fl_Double_Window* w;
   { Fl_Double_Window* o = new Fl_Double_Window(1032, 748, "Compiler Lab");
@@ -36,17 +99,17 @@ Fl_Double_Window* Gui::make_window() {
     { Fl_Tabs* o = new Fl_Tabs(657, 4, 369, 374);
       { clangGroup = new Fl_Group(660, 34, 366, 344, "clang");
         { optimization = new Fl_Input_Choice(750, 74, 107, 24, "optimization:");
-          optimization->callback((Fl_Callback*)onClangSettingsChange);
+          optimization->callback((Fl_Callback*)cb_optimization);
         } // Fl_Input_Choice* optimization
         { compilerPath = new Fl_Input_Choice(749, 44, 263, 24, "compiler");
-          compilerPath->callback((Fl_Callback*)onClangSettingsChange);
+          compilerPath->callback((Fl_Callback*)cb_compilerPath);
         } // Fl_Input_Choice* compilerPath
         { verbose = new Fl_Check_Button(667, 100, 28, 28, "verbose");
           verbose->down_box(FL_DOWN_BOX);
-          verbose->callback((Fl_Callback*)onClangSettingsChange);
+          verbose->callback((Fl_Callback*)cb_verbose);
         } // Fl_Check_Button* verbose
         { debugFlags = new Fl_Input_Choice(905, 74, 107, 24, "debug:");
-          debugFlags->callback((Fl_Callback*)onClangSettingsChange);
+          debugFlags->callback((Fl_Callback*)cb_debugFlags);
         } // Fl_Input_Choice* debugFlags
         clangGroup->end();
       } // Fl_Group* clangGroup
@@ -60,25 +123,38 @@ Fl_Double_Window* Gui::make_window() {
       } // Fl_Group* o
       o->end();
     } // Fl_Tabs* o
-    { outputWrap = new Fl_Check_Button(655, 572, 28, 28, "wrap");
-      outputWrap->down_box(FL_DOWN_BOX);
-      outputWrap->callback((Fl_Callback*)onOutputWrap);
-    } // Fl_Check_Button* outputWrap
-    { clangCommandLine = new Fl_Text_Display(655, 500, 371, 73, "compiler command line:");
+    { clangCommandLine = new Fl_Text_Display(655, 449, 371, 73, "compiler command line:");
       clangCommandLine->textsize(12);
       clangCommandLine->align(Fl_Align(FL_ALIGN_TOP_LEFT));
     } // Fl_Text_Display* clangCommandLine
-    { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(655, 447, 371, 37, "custom flags:");
+    { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(655, 396, 371, 37, "custom flags:");
       customFlags->textsize(12);
-      customFlags->callback((Fl_Callback*)onCustomFlags);
+      customFlags->callback((Fl_Callback*)cb_customFlags);
       customFlags->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       customFlagsBuf = new Fl_Text_Buffer();
       o->buffer(customFlagsBuf);
     } // Fl_Text_Editor* customFlags
-    { outputScroll = new Fl_Check_Button(708, 572, 28, 28, "scroll");
-      outputScroll->down_box(FL_DOWN_BOX);
-      outputScroll->callback((Fl_Callback*)onOutputScroll);
-    } // Fl_Check_Button* outputScroll
+    { Fl_Group* o = new Fl_Group(754, 572, 194, 28, "output settings:");
+      o->color(FL_FOREGROUND_COLOR);
+      o->align(Fl_Align(FL_ALIGN_LEFT));
+      { btnWrap = new Fl_Check_Button(754, 572, 28, 28, "wrap");
+        btnWrap->down_box(FL_DOWN_BOX);
+        btnWrap->callback((Fl_Callback*)cb_btnWrap);
+      } // Fl_Check_Button* btnWrap
+      { btnScroll = new Fl_Check_Button(806, 572, 72, 28, "scroll");
+        btnScroll->down_box(FL_DOWN_BOX);
+        btnScroll->callback((Fl_Callback*)cb_btnScroll);
+      } // Fl_Check_Button* btnScroll
+      { btnStdout = new Fl_Check_Button(860, 572, 28, 28, "stdout");
+        btnStdout->down_box(FL_DOWN_BOX);
+        btnStdout->callback((Fl_Callback*)cb_btnStdout);
+      } // Fl_Check_Button* btnStdout
+      { btnStderr = new Fl_Check_Button(920, 572, 28, 28, "stderr");
+        btnStderr->down_box(FL_DOWN_BOX);
+        btnStderr->callback((Fl_Callback*)cb_btnStderr);
+      } // Fl_Check_Button* btnStderr
+      o->end();
+    } // Fl_Group* o
     o->end();
   } // Fl_Double_Window* o
   srcCode->linenumber_width(16);

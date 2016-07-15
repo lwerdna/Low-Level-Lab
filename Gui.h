@@ -9,12 +9,7 @@
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Input_Choice.H>
-extern void onClangSettingsChange(Fl_Input_Choice*, void*);
 #include <FL/Fl_Check_Button.H>
-extern void onClangSettingsChange(Fl_Check_Button*, void*);
-extern void onOutputWrap(Fl_Check_Button*, void*);
-extern void onCustomFlags(Fl_Text_Editor*, void*);
-extern void onOutputScroll(Fl_Check_Button*, void*);
 
 class Gui {
 public:
@@ -24,13 +19,51 @@ public:
   Fl_Text_Display *outLog;
   Fl_Group *clangGroup;
   Fl_Input_Choice *optimization;
+private:
+  inline void cb_optimization_i(Fl_Input_Choice*, void*);
+  static void cb_optimization(Fl_Input_Choice*, void*);
+public:
   Fl_Input_Choice *compilerPath;
+private:
+  inline void cb_compilerPath_i(Fl_Input_Choice*, void*);
+  static void cb_compilerPath(Fl_Input_Choice*, void*);
+public:
   Fl_Check_Button *verbose;
+private:
+  inline void cb_verbose_i(Fl_Check_Button*, void*);
+  static void cb_verbose(Fl_Check_Button*, void*);
+public:
   Fl_Input_Choice *debugFlags;
-  Fl_Check_Button *outputWrap;
+private:
+  inline void cb_debugFlags_i(Fl_Input_Choice*, void*);
+  static void cb_debugFlags(Fl_Input_Choice*, void*);
+public:
   Fl_Text_Display *clangCommandLine;
   Fl_Text_Editor *customFlags;
-  Fl_Check_Button *outputScroll;
+private:
+  inline void cb_customFlags_i(Fl_Text_Editor*, void*);
+  static void cb_customFlags(Fl_Text_Editor*, void*);
+public:
+  Fl_Check_Button *btnWrap;
+private:
+  inline void cb_btnWrap_i(Fl_Check_Button*, void*);
+  static void cb_btnWrap(Fl_Check_Button*, void*);
+public:
+  Fl_Check_Button *btnScroll;
+private:
+  inline void cb_btnScroll_i(Fl_Check_Button*, void*);
+  static void cb_btnScroll(Fl_Check_Button*, void*);
+public:
+  Fl_Check_Button *btnStdout;
+private:
+  inline void cb_btnStdout_i(Fl_Check_Button*, void*);
+  static void cb_btnStdout(Fl_Check_Button*, void*);
+public:
+  Fl_Check_Button *btnStderr;
+private:
+  inline void cb_btnStderr_i(Fl_Check_Button*, void*);
+  static void cb_btnStderr(Fl_Check_Button*, void*);
+public:
   Fl_Text_Buffer *srcBuf; 
   Fl_Text_Buffer *asmBuf; 
   Fl_Text_Buffer *outBuf; 
