@@ -44,6 +44,7 @@ void
 compile()
 {
     int rc = -1, rc_child, i;
+    int n_args;
     char stdout_buf[2048];
     char stderr_buf[2048];
     char *argv[6];
@@ -53,6 +54,7 @@ compile()
     char ca_otool[] = "otool";
     char ca_dash_t[] = "-t";
     char ca_dash_V[] = "-V";
+    char ca_dash_v[] = "-v";
     char ca_dash_X[] = "-X";
     char ca_dash_o[] = "-o";
 
@@ -104,20 +106,23 @@ compile()
     memset(stdout_buf, '\0', sizeof(stdout_buf));
     memset(stderr_buf, '\0', sizeof(stderr_buf));
 
-    /* compile shit */
+    /* form compiler command line, invoke compiler */
     i=0;
     argv[i++] = ca_clang;
     //argv[i++] = "-v";
     argv[i++] = cPath;
     argv[i++] = ca_dash_o;
     argv[i++] = ePath;
+    if(gui->btnVerbose->value()) argv[i++] = ca_dash_v;
     argv[i++] = NULL;
-    {
-        printf("launching ");
-        for(i=0; argv[i]!=NULL; ++i)
-            printf("%s ", argv[i]);
-        printf("\n");
+    n_args = i;
+
+    gui->clBuf->text("");
+    for(i=0; i<n_args; ++i) {
+        gui->clBuf->append(argv[i]);
+        gui->clBuf->append(" ");
     }
+
     if(0 != launch(ca_clang, argv, &rc_child, stdout_buf, sizeof(stdout_buf),
         stderr_buf, sizeof(stderr_buf)))
     {
@@ -129,6 +134,7 @@ compile()
     outBuf->text("");
     if(gui->btnStdout->value()) outBuf->append(stdout_buf);
     if(gui->btnStderr->value()) outBuf->append(stderr_buf);
+    if(outBuf->length() == 0) outBuf->text("(no output)");
 
     /* default is NOT to auto scroll */
     if(gui->btnScroll->value()) outLogScrollToEnd();

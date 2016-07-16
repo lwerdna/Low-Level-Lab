@@ -17,18 +17,18 @@ void Gui::cb_compilerPath(Fl_Input_Choice* o, void* v) {
   ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_compilerPath_i(o,v);
 }
 
-void Gui::cb_verbose_i(Fl_Check_Button*, void*) {
+void Gui::cb_btnVerbose_i(Fl_Check_Button*, void*) {
   recompile();
 }
-void Gui::cb_verbose(Fl_Check_Button* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_verbose_i(o,v);
+void Gui::cb_btnVerbose(Fl_Check_Button* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnVerbose_i(o,v);
 }
 
-void Gui::cb_debugFlags_i(Fl_Input_Choice*, void*) {
+void Gui::cb_btnDebug_i(Fl_Input_Choice*, void*) {
   recompile();
 }
-void Gui::cb_debugFlags(Fl_Input_Choice* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_debugFlags_i(o,v);
+void Gui::cb_btnDebug(Fl_Input_Choice* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnDebug_i(o,v);
 }
 
 void Gui::cb_customFlags_i(Fl_Text_Editor*, void*) {
@@ -104,13 +104,13 @@ Fl_Double_Window* Gui::make_window() {
         { compilerPath = new Fl_Input_Choice(749, 44, 263, 24, "compiler");
           compilerPath->callback((Fl_Callback*)cb_compilerPath);
         } // Fl_Input_Choice* compilerPath
-        { verbose = new Fl_Check_Button(667, 100, 28, 28, "verbose");
-          verbose->down_box(FL_DOWN_BOX);
-          verbose->callback((Fl_Callback*)cb_verbose);
-        } // Fl_Check_Button* verbose
-        { debugFlags = new Fl_Input_Choice(905, 74, 107, 24, "debug:");
-          debugFlags->callback((Fl_Callback*)cb_debugFlags);
-        } // Fl_Input_Choice* debugFlags
+        { btnVerbose = new Fl_Check_Button(667, 100, 28, 28, "verbose");
+          btnVerbose->down_box(FL_DOWN_BOX);
+          btnVerbose->callback((Fl_Callback*)cb_btnVerbose);
+        } // Fl_Check_Button* btnVerbose
+        { btnDebug = new Fl_Input_Choice(905, 74, 107, 24, "debug:");
+          btnDebug->callback((Fl_Callback*)cb_btnDebug);
+        } // Fl_Input_Choice* btnDebug
         clangGroup->end();
       } // Fl_Group* clangGroup
       { Fl_Group* o = new Fl_Group(660, 33, 352, 338, "gcc");
@@ -123,10 +123,15 @@ Fl_Double_Window* Gui::make_window() {
       } // Fl_Group* o
       o->end();
     } // Fl_Tabs* o
-    { clangCommandLine = new Fl_Text_Display(655, 449, 371, 73, "compiler command line:");
-      clangCommandLine->textsize(12);
-      clangCommandLine->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-    } // Fl_Text_Display* clangCommandLine
+    { Fl_Text_Display* o = compilerCommandLine = new Fl_Text_Display(655, 449, 371, 73, "compiler command line:");
+      compilerCommandLine->color(FL_FOREGROUND_COLOR);
+      compilerCommandLine->textfont(4);
+      compilerCommandLine->textsize(12);
+      compilerCommandLine->textcolor(FL_BACKGROUND2_COLOR);
+      compilerCommandLine->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+      clBuf = new Fl_Text_Buffer();
+      o->buffer(clBuf);
+    } // Fl_Text_Display* compilerCommandLine
     { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(655, 396, 371, 37, "custom flags:");
       customFlags->textsize(12);
       customFlags->callback((Fl_Callback*)cb_customFlags);

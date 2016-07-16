@@ -28,17 +28,17 @@ private:
   inline void cb_compilerPath_i(Fl_Input_Choice*, void*);
   static void cb_compilerPath(Fl_Input_Choice*, void*);
 public:
-  Fl_Check_Button *verbose;
+  Fl_Check_Button *btnVerbose;
 private:
-  inline void cb_verbose_i(Fl_Check_Button*, void*);
-  static void cb_verbose(Fl_Check_Button*, void*);
+  inline void cb_btnVerbose_i(Fl_Check_Button*, void*);
+  static void cb_btnVerbose(Fl_Check_Button*, void*);
 public:
-  Fl_Input_Choice *debugFlags;
+  Fl_Input_Choice *btnDebug;
 private:
-  inline void cb_debugFlags_i(Fl_Input_Choice*, void*);
-  static void cb_debugFlags(Fl_Input_Choice*, void*);
+  inline void cb_btnDebug_i(Fl_Input_Choice*, void*);
+  static void cb_btnDebug(Fl_Input_Choice*, void*);
 public:
-  Fl_Text_Display *clangCommandLine;
+  Fl_Text_Display *compilerCommandLine;
   Fl_Text_Editor *customFlags;
 private:
   inline void cb_customFlags_i(Fl_Text_Editor*, void*);
@@ -68,5 +68,6 @@ public:
   Fl_Text_Buffer *asmBuf; 
   Fl_Text_Buffer *outBuf; 
   Fl_Text_Buffer *customFlagsBuf; 
+  Fl_Text_Buffer *clBuf; 
 };
 #endif

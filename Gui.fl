@@ -11,9 +11,9 @@ class Gui {open
   } {
     Fl_Window {} {
       label {Compiler Lab} open
-      xywh {585 252 1032 748} type Double visible
+      xywh {735 81 1032 748} type Double hide
     } {
-      Fl_Text_Editor srcCode {selected
+      Fl_Text_Editor srcCode {
         xywh {4 4 396 596} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
@@ -47,12 +47,12 @@ class Gui {open
             callback {recompile();} open
             xywh {749 44 263 24}
           } {}
-          Fl_Check_Button verbose {
+          Fl_Check_Button btnVerbose {
             label verbose
             callback {recompile();}
             xywh {667 100 28 28} down_box DOWN_BOX
           }
-          Fl_Input_Choice debugFlags {
+          Fl_Input_Choice btnDebug {
             label {debug:}
             callback {recompile();} open
             xywh {905 74 107 24}
@@ -67,9 +67,11 @@ class Gui {open
           xywh {660 33 352 338} hide
         } {}
       }
-      Fl_Text_Display clangCommandLine {
+      Fl_Text_Display compilerCommandLine {
         label {compiler command line:}
-        xywh {655 449 371 73} align 5 textsize 12
+        xywh {655 449 371 73} color 0 align 5 textfont 4 textsize 12 textcolor 7
+        code0 {clBuf = new Fl_Text_Buffer();}
+        code1 {o->buffer(clBuf);}
       }
       Fl_Text_Editor customFlags {
         label {custom flags:}
@@ -104,7 +106,8 @@ class Gui {open
         }
       }
     }
-    code {srcCode->linenumber_width(16);} {}
+    code {srcCode->linenumber_width(16);} {selected
+    }
   }
   decl {Fl_Text_Buffer *srcBuf;} {public local
   }
@@ -113,6 +116,8 @@ class Gui {open
   decl {Fl_Text_Buffer *outBuf;} {public local
   }
   decl {Fl_Text_Buffer *customFlagsBuf;} {public local
+  }
+  decl {Fl_Text_Buffer *clBuf;} {public local
   }
 } 
 
