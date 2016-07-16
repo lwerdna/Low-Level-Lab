@@ -18,25 +18,25 @@ public:
   Fl_Text_Display *asmCode;
   Fl_Text_Display *outLog;
   Fl_Group *clangGroup;
-  Fl_Input_Choice *optimization;
+  Fl_Input_Choice *icOptimization;
 private:
-  inline void cb_optimization_i(Fl_Input_Choice*, void*);
-  static void cb_optimization(Fl_Input_Choice*, void*);
+  inline void cb_icOptimization_i(Fl_Input_Choice*, void*);
+  static void cb_icOptimization(Fl_Input_Choice*, void*);
 public:
-  Fl_Input_Choice *compilerPath;
+  Fl_Input_Choice *icCompiler;
 private:
-  inline void cb_compilerPath_i(Fl_Input_Choice*, void*);
-  static void cb_compilerPath(Fl_Input_Choice*, void*);
+  inline void cb_icCompiler_i(Fl_Input_Choice*, void*);
+  static void cb_icCompiler(Fl_Input_Choice*, void*);
 public:
   Fl_Check_Button *btnVerbose;
 private:
   inline void cb_btnVerbose_i(Fl_Check_Button*, void*);
   static void cb_btnVerbose(Fl_Check_Button*, void*);
 public:
-  Fl_Input_Choice *btnDebug;
+  Fl_Input_Choice *icDebug;
 private:
-  inline void cb_btnDebug_i(Fl_Input_Choice*, void*);
-  static void cb_btnDebug(Fl_Input_Choice*, void*);
+  inline void cb_icDebug_i(Fl_Input_Choice*, void*);
+  static void cb_icDebug(Fl_Input_Choice*, void*);
 public:
   Fl_Text_Display *compilerCommandLine;
   Fl_Text_Editor *customFlags;

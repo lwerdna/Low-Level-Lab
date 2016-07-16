@@ -11,7 +11,7 @@ class Gui {open
   } {
     Fl_Window {} {
       label {Compiler Lab} open
-      xywh {735 81 1032 748} type Double hide
+      xywh {735 81 1032 748} type Double visible
     } {
       Fl_Text_Editor srcCode {
         xywh {4 4 396 596} align 21 textfont 4
@@ -37,12 +37,12 @@ class Gui {open
           label clang open
           xywh {660 34 366 344}
         } {
-          Fl_Input_Choice optimization {
+          Fl_Input_Choice icOptimization {
             label {optimization:}
             callback {recompile();} open
             xywh {750 74 107 24}
           } {}
-          Fl_Input_Choice compilerPath {
+          Fl_Input_Choice icCompiler {
             label compiler
             callback {recompile();} open
             xywh {749 44 263 24}
@@ -52,7 +52,7 @@ class Gui {open
             callback {recompile();}
             xywh {667 100 28 28} down_box DOWN_BOX
           }
-          Fl_Input_Choice btnDebug {
+          Fl_Input_Choice icDebug {
             label {debug:}
             callback {recompile();} open
             xywh {905 74 107 24}
@@ -68,10 +68,11 @@ class Gui {open
         } {}
       }
       Fl_Text_Display compilerCommandLine {
-        label {compiler command line:}
+        label {compiler command line:} selected
         xywh {655 449 371 73} color 0 align 5 textfont 4 textsize 12 textcolor 7
         code0 {clBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(clBuf);}
+        code2 {o->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);}
       }
       Fl_Text_Editor customFlags {
         label {custom flags:}
@@ -106,8 +107,7 @@ class Gui {open
         }
       }
     }
-    code {srcCode->linenumber_width(16);} {selected
-    }
+    code {srcCode->linenumber_width(16);} {}
   }
   decl {Fl_Text_Buffer *srcBuf;} {public local
   }

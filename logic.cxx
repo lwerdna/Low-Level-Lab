@@ -114,6 +114,8 @@ compile()
     argv[i++] = ca_dash_o;
     argv[i++] = ePath;
     if(gui->btnVerbose->value()) argv[i++] = ca_dash_v;
+    argv[i++] = (char *)gui->icOptimization->input()->value();
+    argv[i++] = (char *)gui->icDebug->input()->value();
     argv[i++] = NULL;
     n_args = i;
 
@@ -138,6 +140,10 @@ compile()
 
     /* default is NOT to auto scroll */
     if(gui->btnScroll->value()) outLogScrollToEnd();
+    if(gui->btnWrap->value()) 
+        gui->outLog->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
+    else 
+        gui->outLog->wrap_mode(Fl_Text_Display::WRAP_NONE, 0);
 
     /* disassemble shit */
     i=0;
@@ -235,6 +241,26 @@ onGuiFinished(Gui *gui_)
     gui->btnWrap->set();
     gui->btnStdout->set();
     gui->btnStderr->set();
+
+    /* default input choices */
+    gui->icOptimization->add("-O0");
+    gui->icOptimization->add("-O1");
+    gui->icOptimization->add("-O2");
+    gui->icOptimization->add("-O3");
+    gui->icOptimization->add("-Ofast");
+    gui->icOptimization->add("-Os");
+    gui->icOptimization->add("-Oz");
+    gui->icOptimization->add("-O");
+    gui->icOptimization->add("-O4");
+    gui->icOptimization->add("");
+    gui->icOptimization->value(0);
+    gui->icCompiler->add("clang (in path)");
+    gui->icCompiler->value(0);
+    gui->icDebug->add("-g");
+    gui->icDebug->add("-fstandalone-debug");
+    gui->icDebug->add("-fno-standalone-debug");
+    gui->icDebug->add("");
+    gui->icDebug->value(0);
 
     compile_forced = true;
 

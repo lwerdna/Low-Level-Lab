@@ -3,18 +3,18 @@
 #include "Gui.h"
 #include "logic.h"
 
-void Gui::cb_optimization_i(Fl_Input_Choice*, void*) {
+void Gui::cb_icOptimization_i(Fl_Input_Choice*, void*) {
   recompile();
 }
-void Gui::cb_optimization(Fl_Input_Choice* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_optimization_i(o,v);
+void Gui::cb_icOptimization(Fl_Input_Choice* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_icOptimization_i(o,v);
 }
 
-void Gui::cb_compilerPath_i(Fl_Input_Choice*, void*) {
+void Gui::cb_icCompiler_i(Fl_Input_Choice*, void*) {
   recompile();
 }
-void Gui::cb_compilerPath(Fl_Input_Choice* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_compilerPath_i(o,v);
+void Gui::cb_icCompiler(Fl_Input_Choice* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_icCompiler_i(o,v);
 }
 
 void Gui::cb_btnVerbose_i(Fl_Check_Button*, void*) {
@@ -24,11 +24,11 @@ void Gui::cb_btnVerbose(Fl_Check_Button* o, void* v) {
   ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnVerbose_i(o,v);
 }
 
-void Gui::cb_btnDebug_i(Fl_Input_Choice*, void*) {
+void Gui::cb_icDebug_i(Fl_Input_Choice*, void*) {
   recompile();
 }
-void Gui::cb_btnDebug(Fl_Input_Choice* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnDebug_i(o,v);
+void Gui::cb_icDebug(Fl_Input_Choice* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_icDebug_i(o,v);
 }
 
 void Gui::cb_customFlags_i(Fl_Text_Editor*, void*) {
@@ -98,19 +98,19 @@ Fl_Double_Window* Gui::make_window() {
     } // Fl_Text_Display* outLog
     { Fl_Tabs* o = new Fl_Tabs(657, 4, 369, 374);
       { clangGroup = new Fl_Group(660, 34, 366, 344, "clang");
-        { optimization = new Fl_Input_Choice(750, 74, 107, 24, "optimization:");
-          optimization->callback((Fl_Callback*)cb_optimization);
-        } // Fl_Input_Choice* optimization
-        { compilerPath = new Fl_Input_Choice(749, 44, 263, 24, "compiler");
-          compilerPath->callback((Fl_Callback*)cb_compilerPath);
-        } // Fl_Input_Choice* compilerPath
+        { icOptimization = new Fl_Input_Choice(750, 74, 107, 24, "optimization:");
+          icOptimization->callback((Fl_Callback*)cb_icOptimization);
+        } // Fl_Input_Choice* icOptimization
+        { icCompiler = new Fl_Input_Choice(749, 44, 263, 24, "compiler");
+          icCompiler->callback((Fl_Callback*)cb_icCompiler);
+        } // Fl_Input_Choice* icCompiler
         { btnVerbose = new Fl_Check_Button(667, 100, 28, 28, "verbose");
           btnVerbose->down_box(FL_DOWN_BOX);
           btnVerbose->callback((Fl_Callback*)cb_btnVerbose);
         } // Fl_Check_Button* btnVerbose
-        { btnDebug = new Fl_Input_Choice(905, 74, 107, 24, "debug:");
-          btnDebug->callback((Fl_Callback*)cb_btnDebug);
-        } // Fl_Input_Choice* btnDebug
+        { icDebug = new Fl_Input_Choice(905, 74, 107, 24, "debug:");
+          icDebug->callback((Fl_Callback*)cb_icDebug);
+        } // Fl_Input_Choice* icDebug
         clangGroup->end();
       } // Fl_Group* clangGroup
       { Fl_Group* o = new Fl_Group(660, 33, 352, 338, "gcc");
@@ -131,6 +131,7 @@ Fl_Double_Window* Gui::make_window() {
       compilerCommandLine->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       clBuf = new Fl_Text_Buffer();
       o->buffer(clBuf);
+      o->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
     } // Fl_Text_Display* compilerCommandLine
     { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(655, 396, 371, 37, "custom flags:");
       customFlags->textsize(12);
