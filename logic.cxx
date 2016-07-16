@@ -43,6 +43,8 @@ void outLogScrollToEnd(void)
 void
 compile()
 {
+    //printf("%s()\n", __func__);
+
     int rc = -1, rc_child, i;
     int n_args;
     char stdout_buf[2048];
@@ -69,13 +71,19 @@ compile()
 
     cSource = srcBuf->text();
 
-    if(!compile_forced && !compile_requested) goto cleanup;
+    if(!compile_forced && !compile_requested) {
+        //printf("skipping compile, neither forced nor requested\n");
+        goto cleanup;
+    }
     
     if(!compile_forced && compile_requested) {
         /* skip if we compiled within the last second */
         time(&time_now);
-        if(difftime(time_now, time_last_compile) < 1) {
+        float delta = difftime(time_now, time_last_compile);
+        if(delta >= 0 && delta < 1) {
             /* just too soon, remain requested */
+            //printf("skipping compile, too soon (now,last,diff)=(%ld,%ld,%f)\n",
+            //    time_now, time_last_compile, difftime(time_now, time_last_compile));
             goto cleanup;
         }
         else {
@@ -84,6 +92,7 @@ compile()
             if(length_last_compile == length_now) {
                 crc_now = crc32(0, cSource, srcBuf->length());
                 if(crc_now == crc_last_compile) {
+                    //printf("skipping compile, buffer unchanged\n");
                     compile_requested = false;
                     goto cleanup;
                 }
@@ -211,15 +220,15 @@ void
 onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     const char * deletedText, void *cbArg)
 {
+    printf("%s()\n", __func__);
     compile_requested = true;
 }
 
 void
 onGuiFinished(Gui *gui_)
 {
+    printf("%s()\n", __func__);
     int rc = -1;
-
-    printf("onGuiFinished\n");
 
     gui = gui_;
 
