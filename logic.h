@@ -3,6 +3,8 @@
 
 /* GUI lifecycle */
 void onGuiFinished(Gui *gui);
+void onButtonC(void);
+void onButtonCPP(void);
 void onIdle(void *data);
 void onExit(void);
 

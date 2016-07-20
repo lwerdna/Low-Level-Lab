@@ -11,7 +11,7 @@ class Gui {open
   } {
     Fl_Window {} {
       label {Compiler Lab} open
-      xywh {735 81 1032 748} type Double visible
+      xywh {588 214 1032 748} type Double visible
     } {
       Fl_Text_Editor srcCode {
         xywh {4 4 396 596} align 21 textfont 4
@@ -31,11 +31,11 @@ class Gui {open
         code1 {o->buffer(outBuf);}
       }
       Fl_Tabs {} {open
-        xywh {657 4 369 374}
+        xywh {655 4 375 374}
       } {
         Fl_Group clangGroup {
           label clang open
-          xywh {660 34 366 344}
+          xywh {657 34 369 344}
         } {
           Fl_Input_Choice icOptimization {
             label {optimization:}
@@ -50,13 +50,23 @@ class Gui {open
           Fl_Check_Button btnVerbose {
             label verbose
             callback {recompile();}
-            xywh {667 100 28 28} down_box DOWN_BOX
+            xywh {940 100 28 28} down_box DOWN_BOX
           }
           Fl_Input_Choice icDebug {
             label {debug:}
             callback {recompile();} open
             xywh {905 74 107 24}
           } {}
+          Fl_Round_Button btnC {
+            label C
+            callback {onButtonC();}
+            xywh {667 100 28 28} down_box ROUND_DOWN_BOX
+          }
+          Fl_Round_Button btnCPP {
+            label {C++}
+            callback {onButtonCPP();} selected
+            xywh {705 100 28 28} down_box ROUND_DOWN_BOX
+          }
         }
         Fl_Group {} {
           label gcc open
@@ -68,8 +78,8 @@ class Gui {open
         } {}
       }
       Fl_Text_Display compilerCommandLine {
-        label {compiler command line:} selected
-        xywh {655 449 371 73} color 0 align 5 textfont 4 textsize 12 textcolor 7
+        label {compiler command line:}
+        xywh {655 450 375 124} color 0 align 5 textfont 4 textsize 12 textcolor 7
         code0 {clBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(clBuf);}
         code2 {o->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);}
@@ -77,7 +87,7 @@ class Gui {open
       Fl_Text_Editor customFlags {
         label {custom flags:}
         callback {recompile();}
-        xywh {655 396 371 37} align 5 textsize 12
+        xywh {655 395 375 40} align 5 textsize 12
         code0 {customFlagsBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(customFlagsBuf);}
       }

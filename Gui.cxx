@@ -31,6 +31,20 @@ void Gui::cb_icDebug(Fl_Input_Choice* o, void* v) {
   ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_icDebug_i(o,v);
 }
 
+void Gui::cb_btnC_i(Fl_Round_Button*, void*) {
+  onButtonC();
+}
+void Gui::cb_btnC(Fl_Round_Button* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnC_i(o,v);
+}
+
+void Gui::cb_btnCPP_i(Fl_Round_Button*, void*) {
+  onButtonCPP();
+}
+void Gui::cb_btnCPP(Fl_Round_Button* o, void* v) {
+  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnCPP_i(o,v);
+}
+
 void Gui::cb_customFlags_i(Fl_Text_Editor*, void*) {
   recompile();
 }
@@ -96,21 +110,29 @@ Fl_Double_Window* Gui::make_window() {
       outBuf = new Fl_Text_Buffer();
       o->buffer(outBuf);
     } // Fl_Text_Display* outLog
-    { Fl_Tabs* o = new Fl_Tabs(657, 4, 369, 374);
-      { clangGroup = new Fl_Group(660, 34, 366, 344, "clang");
+    { Fl_Tabs* o = new Fl_Tabs(655, 4, 375, 374);
+      { clangGroup = new Fl_Group(657, 34, 369, 344, "clang");
         { icOptimization = new Fl_Input_Choice(750, 74, 107, 24, "optimization:");
           icOptimization->callback((Fl_Callback*)cb_icOptimization);
         } // Fl_Input_Choice* icOptimization
         { icCompiler = new Fl_Input_Choice(749, 44, 263, 24, "compiler");
           icCompiler->callback((Fl_Callback*)cb_icCompiler);
         } // Fl_Input_Choice* icCompiler
-        { btnVerbose = new Fl_Check_Button(667, 100, 28, 28, "verbose");
+        { btnVerbose = new Fl_Check_Button(940, 100, 28, 28, "verbose");
           btnVerbose->down_box(FL_DOWN_BOX);
           btnVerbose->callback((Fl_Callback*)cb_btnVerbose);
         } // Fl_Check_Button* btnVerbose
         { icDebug = new Fl_Input_Choice(905, 74, 107, 24, "debug:");
           icDebug->callback((Fl_Callback*)cb_icDebug);
         } // Fl_Input_Choice* icDebug
+        { btnC = new Fl_Round_Button(667, 100, 28, 28, "C");
+          btnC->down_box(FL_ROUND_DOWN_BOX);
+          btnC->callback((Fl_Callback*)cb_btnC);
+        } // Fl_Round_Button* btnC
+        { btnCPP = new Fl_Round_Button(705, 100, 28, 28, "C++");
+          btnCPP->down_box(FL_ROUND_DOWN_BOX);
+          btnCPP->callback((Fl_Callback*)cb_btnCPP);
+        } // Fl_Round_Button* btnCPP
         clangGroup->end();
       } // Fl_Group* clangGroup
       { Fl_Group* o = new Fl_Group(660, 33, 352, 338, "gcc");
@@ -123,7 +145,7 @@ Fl_Double_Window* Gui::make_window() {
       } // Fl_Group* o
       o->end();
     } // Fl_Tabs* o
-    { Fl_Text_Display* o = compilerCommandLine = new Fl_Text_Display(655, 449, 371, 73, "compiler command line:");
+    { Fl_Text_Display* o = compilerCommandLine = new Fl_Text_Display(655, 450, 375, 124, "compiler command line:");
       compilerCommandLine->color(FL_FOREGROUND_COLOR);
       compilerCommandLine->textfont(4);
       compilerCommandLine->textsize(12);
@@ -133,7 +155,7 @@ Fl_Double_Window* Gui::make_window() {
       o->buffer(clBuf);
       o->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
     } // Fl_Text_Display* compilerCommandLine
-    { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(655, 396, 371, 37, "custom flags:");
+    { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(655, 395, 375, 40, "custom flags:");
       customFlags->textsize(12);
       customFlags->callback((Fl_Callback*)cb_customFlags);
       customFlags->align(Fl_Align(FL_ALIGN_TOP_LEFT));

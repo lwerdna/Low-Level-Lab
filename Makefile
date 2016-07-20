@@ -22,3 +22,6 @@ Application.o: Gui.cxx logic.cxx
 clean: $(TARGET) $(OBJS)
 	rm -f *.o 2> /dev/null
 	rm -f $(TARGET) 2> /dev/null
+
+install:
+	install ./clab /usr/local/bin

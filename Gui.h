@@ -10,6 +10,7 @@
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Input_Choice.H>
 #include <FL/Fl_Check_Button.H>
+#include <FL/Fl_Round_Button.H>
 
 class Gui {
 public:
@@ -37,6 +38,16 @@ public:
 private:
   inline void cb_icDebug_i(Fl_Input_Choice*, void*);
   static void cb_icDebug(Fl_Input_Choice*, void*);
+public:
+  Fl_Round_Button *btnC;
+private:
+  inline void cb_btnC_i(Fl_Round_Button*, void*);
+  static void cb_btnC(Fl_Round_Button*, void*);
+public:
+  Fl_Round_Button *btnCPP;
+private:
+  inline void cb_btnCPP_i(Fl_Round_Button*, void*);
+  static void cb_btnCPP(Fl_Round_Button*, void*);
 public:
   Fl_Text_Display *compilerCommandLine;
   Fl_Text_Editor *customFlags;
