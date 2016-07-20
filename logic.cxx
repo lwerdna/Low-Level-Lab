@@ -30,7 +30,6 @@ char cPath[128], cppPath[128], ePath[128];
 #define STREAM_BUF_SIZE (1024*1024)
 char *stdout_buf = NULL;
 char *stderr_buf = NULL;
-char stdout_buf2[1000000];
 
 /*****************************************************************************/
 /* UTILITIES */
@@ -162,8 +161,8 @@ compile()
 
     /* launch it */
     char *compilerExecName;
-    if(0 != launch(compilerPath, argv, &rc_child, stdout_buf, sizeof(stdout_buf),
-        stderr_buf, sizeof(stderr_buf)))
+    if(0 != launch(compilerPath, argv, &rc_child, stdout_buf, STREAM_BUF_SIZE,
+        stderr_buf, STREAM_BUF_SIZE))
     {
         printf("ERROR: launch()");
         goto cleanup;
@@ -181,8 +180,15 @@ compile()
         gui->outLog->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
     else 
         gui->outLog->wrap_mode(Fl_Text_Display::WRAP_NONE, 0);
+    
+    /* disassemble? */
+    asmBuf->text("");
 
-    /* disassemble shit */
+    if(strstr(stdout_buf, "error") || strstr(stderr_buf, "error")) {
+        printf("compile error detected, skipping disassembler\n");
+        goto cleanup;
+    }
+
     i=0;
     argv[i++] = ca_otool;
     argv[i++] = ca_dash_t;
