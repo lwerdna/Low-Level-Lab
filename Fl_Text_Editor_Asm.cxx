@@ -1,4 +1,6 @@
-/* FL_Text_Editor with C/C++ syntax highlighting (from fltk editor example) */
+/* FL_Text_Editor with assembly syntax highlighting */
+
+#include <string.h>
 
 #include <FL/Fl.H>
 #include <FL/x.H> // for fl_open_callback
@@ -14,7 +16,8 @@
 #include <FL/Fl_Text_Editor.H>
 #include <FL/filename.H>
 
-#include "Fl_Text_Editor_C.h"
+#include "Fl_Text_Editor_Asm.h"
+
 
 /*****************************************************************************/
 /* syntax stuff (can exist outside the class, takes only char *'s) */
@@ -26,32 +29,26 @@ Fl_Text_Editor::Style_Table_Entry
 styletable[] = {    // Style table
     { FL_BLACK,      FL_COURIER,           TS }, // A - Plain
     { FL_DARK_GREEN, FL_HELVETICA_ITALIC,  TS }, // B - Line comments
-    { FL_DARK_GREEN, FL_HELVETICA_ITALIC,  TS }, // C - Block comments
-    { FL_BLUE,       FL_COURIER,           TS }, // D - Strings
+    { FL_DARK_BLUE,  FL_COURIER,           TS }, // C - numbers
+    { FL_DARK_CYAN,  FL_COURIER_BOLD,      TS }, // D - Labels
     { FL_DARK_RED,   FL_COURIER,           TS }, // E - Directives
-    { FL_DARK_RED,   FL_COURIER_BOLD,      TS }, // F - Types
+    { FL_DARK_RED,   FL_COURIER,           TS }, // F - Registers
     { FL_BLUE,       FL_COURIER_BOLD,      TS }, // G - Keywords
-};
-
-// List of known C/C++ keywords...
-// (sorted for bsearch())
-const char *code_keywords[] = {
-    "and", "and_eq", "asm", "bitand", "bitor", "break", "case", "catch", "compl",
-    "continue", "default", "delete", "do", "else", "false", "for", "goto", "if",
-    "new", "not", "not_eq", "operator", "or", "or_eq", "return", "switch",
-    "template", "this", "throw", "true", "try", "while", "xor", "xor_eq"
 };
 
 // List of known C/C++ types...
 // (sorted for bsearch())
-const char *code_types[] = {
-    "auto", "bool", "char", "class", "const", "const_cast", "double",
-    "dynamic_cast", "enum", "explicit", "extern", "float", "friend", "inline",
-    "int", "long", "mutable", "namespace", "private", "protected", "public",
-    "register", "short", "signed", "sizeof", "static", "static_cast", "struct",
-    "template", "typedef", "typename", "union", "unsigned", "virtual", "void",
-    "volatile"
+
+const char *x86_regs[] = {
+    "%eax", "%ebp", "%ebx", "%ecx", "%edi", "%edx", "%esi",
+    "%rax", "%rbp", "%rbx", "%rcx", "%rdi", "%rdx", "%rip", "%rsi", "%rsp"
 };
+
+//const char *x86_mnemonics[] = {
+//
+//};
+
+#define ARRAY_LEN(X) (sizeof(X)/sizeof(*X))
 
 extern "C" { /* so bswap will take it */
 static
@@ -62,138 +59,77 @@ compare_keywords(const void *a, const void *b)
 }
 }
 
-// 'style_parse()' - Parse text and produce style data
+extern "C" { /* so bswap will take it */
+static
+int
+compare_x86_regs(const void *a_, const void *b_) 
+{
+    char *a = (char *)a_;
+    char *b = *(char **)b_;
+    //printf("comparing -%c%c%c%c- to -%c%c%c%c-\n",
+    //    a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]);
+
+    return strncmp((const char *)a, (const char *)b, 4);
+}
+}
+
+// 'style_parse()' - Parse text and produce style data.
 static
 void
-style_parse(const char *text, char *style, int length) {
-    char current;
-    int col;
-    int last;
-    char  buf[255], *bufptr;
-    const char *temp;
+style_parse(const char *text, char *style, int length) 
+{
+    for(int i=0; i<length; ) {
+        bool boring = true;
 
-    // Style letters:
-    //
-    // A - Plain
-    // B - Line comments
-    // C - Block comments
-    // D - Strings
-    // E - Directives
-    // F - Types
-    // G - Keywords
-
-    for (current = *style, col = 0, last = 0; length > 0; length --, text ++) {
-        if (current == 'B' || current == 'F' || current == 'G') current = 'A';
-        if (current == 'A') {
-            // Check for directives, comments, strings, and keywords...
-            if (col == 0 && *text == '#') {
-                current = 'E';
-            } 
-            else if (strncmp(text, "//", 2) == 0) {
-                current = 'B';
-                for (; length > 0 && *text != '\n'; length --, text ++) 
-                    *style++ = 'B';
-                if (length == 0) 
-                    break;
-            } 
-            else if (strncmp(text, "/*", 2) == 0) {
-                current = 'C';
-            } 
-            else if (strncmp(text, "\\\"", 2) == 0) {
-                // Quoted quote...
-                *style++ = current;
-                *style++ = current;
-                text ++;
-                length --;
-                col += 2;
-                continue;
-            } 
-            else if (*text == '\"') {
-                current = 'D';
-            } 
-            else if (!last && (islower((*text)&255) || *text == '_')) {
-                // Might be a keyword...
-                for (temp = text, bufptr = buf;
-                    (islower((*temp)&255) || *temp == '_') && bufptr < (buf + sizeof(buf) - 1);
-                    *bufptr++ = *temp++);
-
-                if (!islower((*temp)&255) && *temp != '_') {
-                    *bufptr = '\0';
-
-                    bufptr = buf;
-
-                    if (bsearch(&bufptr, code_types,
-                                sizeof(code_types) / sizeof(code_types[0]),
-                                sizeof(code_types[0]), compare_keywords)) {
-                        while (text < temp) {
-                            *style++ = 'F';
-                            text ++;
-                            length --;
-                            col ++;
-                        }
-
-                        text --;
-                        length ++;
-                        last = 1;
-                        continue;
-                    } else if (bsearch(&bufptr, code_keywords,
-                                sizeof(code_keywords) / sizeof(code_keywords[0]),
-                                sizeof(code_keywords[0]), compare_keywords)) {
-                        while (text < temp) {
-                            *style++ = 'G';
-                            text ++;
-                            length --;
-                            col ++;
-                        }
-
-                        text --;
-                        length ++;
-                        last = 1;
-                        continue;
-                    }
-                }
-            }
-        } 
-        else if (current == 'C' && strncmp(text, "*/", 2) == 0) {
-            // Close a C comment...
-            *style++ = current;
-            *style++ = current;
-            text ++;
-            length --;
-            current = 'A';
-            col += 2;
-            continue;
-        } 
-        else if (current == 'D') {
-            // Continuing in string...
-            if (strncmp(text, "\\\"", 2) == 0) {
-                // Quoted end quote...
-                *style++ = current;
-                *style++ = current;
-                text ++;
-                length --;
-                col += 2;
-                continue;
-            } else if (*text == '\"') {
-                // End quote...
-                *style++ = current;
-                col ++;
-                current = 'A';
-                continue;
+        /* pick out registers */
+        if(length-i >= 4 && text[0] != ' ') {
+            if(bsearch(text+i, &(x86_regs[0]), ARRAY_LEN(x86_regs), sizeof(char *), compare_x86_regs)) {
+                strncpy(style+i, "FFFF", 4);
+                i += 4;
+                boring = false;
             }
         }
 
-        // Copy style info...
-        if (current == 'A' && (*text == '{' || *text == '}')) *style++ = 'G';
-        else *style++ = current;
-        col++;
+        /* pick out numbers */
+        if(boring && length-i >= 3 && text[i]=='0' && text[i+1]=='x' && isxdigit(text[i+2])) {
+            int numLen = 3;
+            while(isxdigit(text[i+numLen++]));
+            numLen -= 1;
+            memset(style+i, 'C', numLen);
+            i += numLen;
+            boring = false;
+        }
 
-        last = isalnum((*text)&255) || *text == '_' || *text == '.';
 
-        if (*text == '\n') {
-            // Reset column and possibly reset the style
-            col = 0;
-            if (current == 'B' || current == 'E') current = 'A';
+        /* pick out line comments */
+        if(boring && text[i]=='#') {
+            int nlLen = strlen("\n");
+            /* end-to-line comment, seek to newline or end of buffer */
+            int commLen = 1;
+            for(int j=i+1; j<length; ++j)
+                if(0==strncmp(text+j, "\n", nlLen))
+                    break;
+                else
+                    commLen++;
+            memset(style+i, 'B', commLen);
+            i += commLen;
+            boring = false;
+        }
+
+        /* pick out labels */
+        if(boring && (length-i >= 3) && text[i] != ' ') {
+            char *b = strstr(text+i, "\n");
+            if(b && b!=(text+i) && b[-1] == ':') {
+                int labelLen = b - (text+i);
+                //printf("labelLen is %d\n", labelLen);
+                memset(style+i, 'D', labelLen);
+                i += labelLen;
+                boring = false;
+            }
+        }
+
+        if(boring) {
+            style[i++] = 'A';
         }
     }
 }
@@ -210,7 +146,7 @@ static
 void
 source_modified_cb(int a, int b, int c, int d, const char *e, void *cbArg)
 {
-    Fl_Text_Editor_C *widget = (Fl_Text_Editor_C *)cbArg;
+    Fl_Text_Editor_Asm *widget = (Fl_Text_Editor_Asm *)cbArg;
     widget->onSrcMod(a, b, c, d, e, cbArg);
 }
 
@@ -218,7 +154,7 @@ source_modified_cb(int a, int b, int c, int d, const char *e, void *cbArg)
 /* class stuff */
 /*****************************************************************************/
 
-Fl_Text_Editor_C::Fl_Text_Editor_C(int x, int y, int w, int h):
+Fl_Text_Editor_Asm::Fl_Text_Editor_Asm(int x, int y, int w, int h):
   Fl_Text_Editor(x, y, w, h) {
 
     m_styleBuf = new Fl_Text_Buffer();
@@ -226,7 +162,7 @@ Fl_Text_Editor_C::Fl_Text_Editor_C(int x, int y, int w, int h):
 
 /* we intercept any replacement of the buffer to allocate a parallel style
     buffer and add our style callback */
-void Fl_Text_Editor_C::buffer(Fl_Text_Buffer *buf)
+void Fl_Text_Editor_Asm::buffer(Fl_Text_Buffer *buf)
 {
     Fl_Text_Display::buffer(buf);
     styleRealloc();
@@ -234,7 +170,7 @@ void Fl_Text_Editor_C::buffer(Fl_Text_Buffer *buf)
     Fl_Text_Editor::highlight_data(m_styleBuf, styletable, 7, 'X', NULL, NULL);
 }
 
-void Fl_Text_Editor_C::buffer(Fl_Text_Buffer &buf)
+void Fl_Text_Editor_Asm::buffer(Fl_Text_Buffer &buf)
 {
     Fl_Text_Display::buffer(buf);
     styleRealloc();
@@ -247,7 +183,7 @@ void Fl_Text_Editor_C::buffer(Fl_Text_Buffer &buf)
 // typedef void (*Fl_Text_Modify_Cb)(int pos, int nInserted, int nDeleted, 
 //   int nRestyled, const char* deletedText, void* cbArg);
 //
-void Fl_Text_Editor_C::onSrcMod(int pos,        // Position of update
+void Fl_Text_Editor_Asm::onSrcMod(int pos,        // Position of update
         int nInserted,    // Number of inserted chars
         int nDeleted,    // Number of deleted chars
         int nRestyled,    // Number of restyled chars
@@ -333,7 +269,7 @@ void Fl_Text_Editor_C::onSrcMod(int pos,        // Position of update
     free(style);
 }
 
-void Fl_Text_Editor_C::styleRealloc() {
+void Fl_Text_Editor_Asm::styleRealloc() {
     Fl_Text_Buffer *ftb = Fl_Text_Display::buffer();
 
     if(!ftb) {

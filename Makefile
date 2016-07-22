@@ -6,8 +6,8 @@ LDSTATIC = $(shell fltk-config --use-gl --use-images --ldstaticflags ) -lautils
 LINK     = $(CXX)
 
 TARGET = clab
-OBJS = Gui.o logic.o Fl_Text_Editor_C.o
-SRCS = Gui.cxx logic.cxx Fl_Text_Editor_C.cxx
+OBJS = Gui.o logic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o
+SRCS = Gui.cxx logic.cxx Fl_Text_Editor_C.cxx Fl_Text_Editor_Asm.cxx
 
 .SUFFIXES: .o .cxx
 %.o: %.cxx
@@ -17,7 +17,7 @@ all: $(TARGET)
 	$(LINK) -o $(TARGET) $(OBJS) $(LDSTATIC)
 
 $(TARGET): $(OBJS)
-Application.o: Gui.cxx logic.cxx Fl_Text_Editor_C.cxx
+Application.o: Gui.cxx logic.cxx Fl_Text_Editor_C.cxx Fl_Text_Editor_Asm.cxx
 
 clean: $(TARGET) $(OBJS)
 	rm -f *.o 2> /dev/null

@@ -85,7 +85,7 @@ Fl_Double_Window* Gui::make_window() {
   { Fl_Double_Window* o = new Fl_Double_Window(1032, 748, "Compiler Lab");
     w = o;
     o->user_data((void*)(this));
-    { Fl_Text_Editor_C* o = srcCode = new Fl_Text_Editor_C(4, 134, 510, 505, "dummyLabel");
+    { Fl_Text_Editor_C* o = srcCode = new Fl_Text_Editor_C(4, 134, 510, 505);
       srcCode->box(FL_DOWN_FRAME);
       srcCode->color(FL_BACKGROUND2_COLOR);
       srcCode->selection_color(FL_SELECTION_COLOR);
@@ -100,14 +100,21 @@ Fl_Double_Window* Gui::make_window() {
       o->buffer(srcBuf);
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor_C* srcCode
-    { Fl_Text_Display* o = asmCode = new Fl_Text_Display(517, 134, 508, 505);
+    { Fl_Text_Editor_Asm* o = asmCode = new Fl_Text_Editor_Asm(517, 134, 508, 505);
+      asmCode->box(FL_DOWN_FRAME);
+      asmCode->color(FL_BACKGROUND2_COLOR);
+      asmCode->selection_color(FL_SELECTION_COLOR);
+      asmCode->labeltype(FL_NORMAL_LABEL);
       asmCode->labelfont(4);
       asmCode->labelsize(10);
+      asmCode->labelcolor(FL_FOREGROUND_COLOR);
       asmCode->textfont(4);
       asmCode->textsize(12);
+      asmCode->align(Fl_Align(FL_ALIGN_TOP));
+      asmCode->when(FL_WHEN_RELEASE);
       asmBuf = new Fl_Text_Buffer();
       o->buffer(asmBuf);
-    } // Fl_Text_Display* asmCode
+    } // Fl_Text_Editor_Asm* asmCode
     { Fl_Text_Display* o = outLog = new Fl_Text_Display(4, 644, 1022, 100);
       outLog->box(FL_THIN_DOWN_FRAME);
       outLog->color(FL_FOREGROUND_COLOR);
@@ -118,18 +125,18 @@ Fl_Double_Window* Gui::make_window() {
       o->buffer(outBuf);
     } // Fl_Text_Display* outLog
     { Fl_Tabs* o = new Fl_Tabs(4, 6, 644, 124);
-      { clangGroup = new Fl_Group(6, 36, 369, 94, "clang");
-        { icOptimization = new Fl_Input_Choice(99, 76, 107, 24, "optimization:");
+      { clangGroup = new Fl_Group(6, 25, 369, 105, "clang");
+        { icOptimization = new Fl_Input_Choice(90, 56, 107, 24, "optimization:");
           icOptimization->callback((Fl_Callback*)cb_icOptimization);
         } // Fl_Input_Choice* icOptimization
-        { icCompiler = new Fl_Input_Choice(98, 46, 263, 24, "compiler");
+        { icCompiler = new Fl_Input_Choice(90, 29, 263, 24, "compiler:");
           icCompiler->callback((Fl_Callback*)cb_icCompiler);
         } // Fl_Input_Choice* icCompiler
         { btnVerbose = new Fl_Check_Button(289, 102, 28, 28, "verbose");
           btnVerbose->down_box(FL_DOWN_BOX);
           btnVerbose->callback((Fl_Callback*)cb_btnVerbose);
         } // Fl_Check_Button* btnVerbose
-        { icDebug = new Fl_Input_Choice(254, 76, 107, 24, "debug:");
+        { icDebug = new Fl_Input_Choice(246, 56, 107, 24, "debug:");
           icDebug->callback((Fl_Callback*)cb_icDebug);
         } // Fl_Input_Choice* icDebug
         { btnC = new Fl_Round_Button(16, 102, 28, 28, "C");

@@ -4,6 +4,7 @@
 #define Gui_h
 #include <FL/Fl.H>
 #include "Fl_Text_Editor_C.h"
+#include "Fl_Text_Editor_Asm.h"
 
 class UserInterfaceBlah {
 };
@@ -20,7 +21,7 @@ class Gui {
 public:
   Fl_Double_Window* make_window();
   Fl_Text_Editor_C *srcCode;
-  Fl_Text_Display *asmCode;
+  Fl_Text_Editor_Asm *asmCode;
   Fl_Text_Display *outLog;
   Fl_Group *clangGroup;
   Fl_Input_Choice *icOptimization;
