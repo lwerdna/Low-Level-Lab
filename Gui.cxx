@@ -85,7 +85,7 @@ Fl_Double_Window* Gui::make_window() {
   { Fl_Double_Window* o = new Fl_Double_Window(1032, 748, "Compiler Lab");
     w = o;
     o->user_data((void*)(this));
-    { Fl_Text_Editor_C* o = srcCode = new Fl_Text_Editor_C(4, 4, 396, 596, "dummyLabel");
+    { Fl_Text_Editor_C* o = srcCode = new Fl_Text_Editor_C(4, 134, 510, 505, "dummyLabel");
       srcCode->box(FL_DOWN_FRAME);
       srcCode->color(FL_BACKGROUND2_COLOR);
       srcCode->selection_color(FL_SELECTION_COLOR);
@@ -100,7 +100,7 @@ Fl_Double_Window* Gui::make_window() {
       o->buffer(srcBuf);
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor_C* srcCode
-    { Fl_Text_Display* o = asmCode = new Fl_Text_Display(404, 4, 246, 596);
+    { Fl_Text_Display* o = asmCode = new Fl_Text_Display(517, 134, 508, 505);
       asmCode->labelfont(4);
       asmCode->labelsize(10);
       asmCode->textfont(4);
@@ -108,7 +108,7 @@ Fl_Double_Window* Gui::make_window() {
       asmBuf = new Fl_Text_Buffer();
       o->buffer(asmBuf);
     } // Fl_Text_Display* asmCode
-    { Fl_Text_Display* o = outLog = new Fl_Text_Display(4, 604, 1022, 140);
+    { Fl_Text_Display* o = outLog = new Fl_Text_Display(4, 644, 1022, 100);
       outLog->box(FL_THIN_DOWN_FRAME);
       outLog->color(FL_FOREGROUND_COLOR);
       outLog->textfont(4);
@@ -117,42 +117,42 @@ Fl_Double_Window* Gui::make_window() {
       outBuf = new Fl_Text_Buffer();
       o->buffer(outBuf);
     } // Fl_Text_Display* outLog
-    { Fl_Tabs* o = new Fl_Tabs(655, 4, 375, 374);
-      { clangGroup = new Fl_Group(657, 34, 369, 344, "clang");
-        clangGroup->hide();
-        { icOptimization = new Fl_Input_Choice(750, 74, 107, 24, "optimization:");
+    { Fl_Tabs* o = new Fl_Tabs(4, 6, 644, 124);
+      { clangGroup = new Fl_Group(6, 36, 369, 94, "clang");
+        { icOptimization = new Fl_Input_Choice(99, 76, 107, 24, "optimization:");
           icOptimization->callback((Fl_Callback*)cb_icOptimization);
         } // Fl_Input_Choice* icOptimization
-        { icCompiler = new Fl_Input_Choice(749, 44, 263, 24, "compiler");
+        { icCompiler = new Fl_Input_Choice(98, 46, 263, 24, "compiler");
           icCompiler->callback((Fl_Callback*)cb_icCompiler);
         } // Fl_Input_Choice* icCompiler
-        { btnVerbose = new Fl_Check_Button(940, 100, 28, 28, "verbose");
+        { btnVerbose = new Fl_Check_Button(289, 102, 28, 28, "verbose");
           btnVerbose->down_box(FL_DOWN_BOX);
           btnVerbose->callback((Fl_Callback*)cb_btnVerbose);
         } // Fl_Check_Button* btnVerbose
-        { icDebug = new Fl_Input_Choice(905, 74, 107, 24, "debug:");
+        { icDebug = new Fl_Input_Choice(254, 76, 107, 24, "debug:");
           icDebug->callback((Fl_Callback*)cb_icDebug);
         } // Fl_Input_Choice* icDebug
-        { btnC = new Fl_Round_Button(667, 100, 28, 28, "C");
+        { btnC = new Fl_Round_Button(16, 102, 28, 28, "C");
           btnC->down_box(FL_ROUND_DOWN_BOX);
           btnC->callback((Fl_Callback*)cb_btnC);
         } // Fl_Round_Button* btnC
-        { btnCPP = new Fl_Round_Button(705, 100, 28, 28, "C++");
+        { btnCPP = new Fl_Round_Button(54, 102, 28, 28, "C++");
           btnCPP->down_box(FL_ROUND_DOWN_BOX);
           btnCPP->callback((Fl_Callback*)cb_btnCPP);
         } // Fl_Round_Button* btnCPP
         clangGroup->end();
       } // Fl_Group* clangGroup
-      { Fl_Group* o = new Fl_Group(660, 33, 352, 338, "gcc");
+      { Fl_Group* o = new Fl_Group(9, 35, 464, 84, "gcc");
         o->hide();
         o->end();
       } // Fl_Group* o
-      { Fl_Group* o = new Fl_Group(660, 33, 352, 338, "visual studio");
+      { Fl_Group* o = new Fl_Group(9, 35, 236, 85, "visual studio");
+        o->hide();
         o->end();
       } // Fl_Group* o
       o->end();
     } // Fl_Tabs* o
-    { Fl_Text_Display* o = compilerCommandLine = new Fl_Text_Display(655, 450, 375, 124, "compiler command line:");
+    { Fl_Text_Display* o = compilerCommandLine = new Fl_Text_Display(652, 66, 375, 38, "compiler command line:");
       compilerCommandLine->color(FL_FOREGROUND_COLOR);
       compilerCommandLine->textfont(4);
       compilerCommandLine->textsize(12);
@@ -162,29 +162,29 @@ Fl_Double_Window* Gui::make_window() {
       o->buffer(clBuf);
       o->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);
     } // Fl_Text_Display* compilerCommandLine
-    { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(655, 395, 375, 40, "custom flags:");
+    { Fl_Text_Editor* o = customFlags = new Fl_Text_Editor(652, 18, 375, 26, "custom flags:");
       customFlags->textsize(12);
       customFlags->callback((Fl_Callback*)cb_customFlags);
       customFlags->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       customFlagsBuf = new Fl_Text_Buffer();
       o->buffer(customFlagsBuf);
     } // Fl_Text_Editor* customFlags
-    { Fl_Group* o = new Fl_Group(754, 572, 194, 28, "output settings:");
+    { Fl_Group* o = new Fl_Group(753, 105, 194, 28, "output settings:");
       o->color(FL_FOREGROUND_COLOR);
       o->align(Fl_Align(FL_ALIGN_LEFT));
-      { btnWrap = new Fl_Check_Button(754, 572, 28, 28, "wrap");
+      { btnWrap = new Fl_Check_Button(753, 105, 28, 28, "wrap");
         btnWrap->down_box(FL_DOWN_BOX);
         btnWrap->callback((Fl_Callback*)cb_btnWrap);
       } // Fl_Check_Button* btnWrap
-      { btnScroll = new Fl_Check_Button(806, 572, 72, 28, "scroll");
+      { btnScroll = new Fl_Check_Button(805, 105, 72, 28, "scroll");
         btnScroll->down_box(FL_DOWN_BOX);
         btnScroll->callback((Fl_Callback*)cb_btnScroll);
       } // Fl_Check_Button* btnScroll
-      { btnStdout = new Fl_Check_Button(860, 572, 28, 28, "stdout");
+      { btnStdout = new Fl_Check_Button(859, 105, 28, 28, "stdout");
         btnStdout->down_box(FL_DOWN_BOX);
         btnStdout->callback((Fl_Callback*)cb_btnStdout);
       } // Fl_Check_Button* btnStdout
-      { btnStderr = new Fl_Check_Button(920, 572, 28, 28, "stderr");
+      { btnStderr = new Fl_Check_Button(919, 105, 28, 28, "stderr");
         btnStderr->down_box(FL_DOWN_BOX);
         btnStderr->callback((Fl_Callback*)cb_btnStderr);
       } // Fl_Check_Button* btnStderr

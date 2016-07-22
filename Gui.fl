@@ -17,76 +17,76 @@ class Gui {open
   } {
     Fl_Window {} {
       label {Compiler Lab} open
-      xywh {272 238 1032 748} type Double visible
+      xywh {399 269 1032 748} type Double visible
     } {
       Fl_Text_Editor srcCode {
         label dummyLabel
-        xywh {4 4 396 596} align 21 textfont 4
+        xywh {4 134 510 505} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
         code3 {srcBuf->add_modify_callback(onSourceModified, this);}
         class Fl_Text_Editor_C
       }
       Fl_Text_Display asmCode {
-        xywh {404 4 246 596} labelfont 4 labelsize 10 textfont 4 textsize 12
+        xywh {517 134 508 505} labelfont 4 labelsize 10 textfont 4 textsize 12
         code0 {asmBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(asmBuf);}
       }
       Fl_Text_Display outLog {
-        xywh {4 604 1022 140} box THIN_DOWN_FRAME color 0 textfont 4 textsize 12 textcolor 7
+        xywh {4 644 1022 100} box THIN_DOWN_FRAME color 0 textfont 4 textsize 12 textcolor 7
         code0 {outBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(outBuf);}
       }
-      Fl_Tabs {} {open
-        xywh {655 4 375 374}
+      Fl_Tabs {} {open selected
+        xywh {4 6 644 124}
       } {
         Fl_Group clangGroup {
           label clang open
-          xywh {657 34 369 344} hide
+          xywh {6 36 369 94}
         } {
           Fl_Input_Choice icOptimization {
             label {optimization:}
             callback {recompile();} open
-            xywh {750 74 107 24}
+            xywh {99 76 107 24}
           } {}
           Fl_Input_Choice icCompiler {
             label compiler
             callback {recompile();} open
-            xywh {749 44 263 24}
+            xywh {98 46 263 24}
           } {}
           Fl_Check_Button btnVerbose {
             label verbose
             callback {recompile();}
-            xywh {940 100 28 28} down_box DOWN_BOX
+            xywh {289 102 28 28} down_box DOWN_BOX
           }
           Fl_Input_Choice icDebug {
             label {debug:}
             callback {recompile();} open
-            xywh {905 74 107 24}
+            xywh {254 76 107 24}
           } {}
           Fl_Round_Button btnC {
             label C
             callback {onButtonC();}
-            xywh {667 100 28 28} down_box ROUND_DOWN_BOX
+            xywh {16 102 28 28} down_box ROUND_DOWN_BOX
           }
           Fl_Round_Button btnCPP {
             label {C++}
             callback {onButtonCPP();}
-            xywh {705 100 28 28} down_box ROUND_DOWN_BOX
+            xywh {54 102 28 28} down_box ROUND_DOWN_BOX
           }
         }
         Fl_Group {} {
           label gcc open
-          xywh {660 33 352 338} hide
+          xywh {9 35 464 84} hide
         } {}
         Fl_Group {} {
           label {visual studio} open
-          xywh {660 33 352 338}
+          xywh {9 35 236 85} hide
         } {}
       }
       Fl_Text_Display compilerCommandLine {
         label {compiler command line:}
-        xywh {655 450 375 124} color 0 align 5 textfont 4 textsize 12 textcolor 7
+        xywh {652 66 375 38} color 0 align 5 textfont 4 textsize 12 textcolor 7
         code0 {clBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(clBuf);}
         code2 {o->wrap_mode(Fl_Text_Display::WRAP_AT_BOUNDS, 0);}
@@ -94,38 +94,37 @@ class Gui {open
       Fl_Text_Editor customFlags {
         label {custom flags:}
         callback {recompile();}
-        xywh {655 395 375 40} align 5 textsize 12
+        xywh {652 18 375 26} align 5 textsize 12
         code0 {customFlagsBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(customFlagsBuf);}
       }
       Fl_Group {} {
         label {output settings:} open
-        xywh {754 572 194 28} color 0 align 4
+        xywh {753 105 194 28} color 0 align 4
       } {
         Fl_Check_Button btnWrap {
           label wrap
           callback {recompile();}
-          xywh {754 572 28 28} down_box DOWN_BOX
+          xywh {753 105 28 28} down_box DOWN_BOX
         }
         Fl_Check_Button btnScroll {
           label scroll
           callback {recompile()}
-          xywh {806 572 72 28} down_box DOWN_BOX
+          xywh {805 105 72 28} down_box DOWN_BOX
         }
         Fl_Check_Button btnStdout {
           label stdout
           callback {recompile();}
-          xywh {860 572 28 28} down_box DOWN_BOX
+          xywh {859 105 28 28} down_box DOWN_BOX
         }
         Fl_Check_Button btnStderr {
           label stderr
           callback {recompile();}
-          xywh {920 572 28 28} down_box DOWN_BOX
+          xywh {919 105 28 28} down_box DOWN_BOX
         }
       }
     }
-    code {srcCode->linenumber_width(24);} {selected
-    }
+    code {srcCode->linenumber_width(24);} {}
   }
   decl {Fl_Text_Buffer *srcBuf;} {public local
   }
