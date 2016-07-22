@@ -5,7 +5,7 @@
 #include <FL/Fl_Text_Buffer.H>
 #include <FL/Fl_Text_Display.H>
 
-#include "Gui.h"
+#include "ClabGui.h"
 
 
 extern "C" {
