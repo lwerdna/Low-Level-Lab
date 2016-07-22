@@ -85,14 +85,21 @@ Fl_Double_Window* Gui::make_window() {
   { Fl_Double_Window* o = new Fl_Double_Window(1032, 748, "Compiler Lab");
     w = o;
     o->user_data((void*)(this));
-    { Fl_Text_Editor* o = srcCode = new Fl_Text_Editor(4, 4, 396, 596);
+    { Fl_Text_Editor_C* o = srcCode = new Fl_Text_Editor_C(4, 4, 396, 596, "dummyLabel");
+      srcCode->box(FL_DOWN_FRAME);
+      srcCode->color(FL_BACKGROUND2_COLOR);
+      srcCode->selection_color(FL_SELECTION_COLOR);
+      srcCode->labeltype(FL_NORMAL_LABEL);
+      srcCode->labelfont(0);
+      srcCode->labelsize(14);
+      srcCode->labelcolor(FL_FOREGROUND_COLOR);
       srcCode->textfont(4);
       srcCode->align(Fl_Align(FL_ALIGN_TOP_LEFT|FL_ALIGN_INSIDE));
+      srcCode->when(FL_WHEN_RELEASE);
       srcBuf = new Fl_Text_Buffer();
       o->buffer(srcBuf);
-      srcBuf->text("#include <stdio.h>\n\nint main(int ac, char **av)\n{\n\tprintf(\"Hello, world!\\n\");\n\treturn 0;\n}");
       srcBuf->add_modify_callback(onSourceModified, this);
-    } // Fl_Text_Editor* srcCode
+    } // Fl_Text_Editor_C* srcCode
     { Fl_Text_Display* o = asmCode = new Fl_Text_Display(404, 4, 246, 596);
       asmCode->labelfont(4);
       asmCode->labelsize(10);
@@ -112,6 +119,7 @@ Fl_Double_Window* Gui::make_window() {
     } // Fl_Text_Display* outLog
     { Fl_Tabs* o = new Fl_Tabs(655, 4, 375, 374);
       { clangGroup = new Fl_Group(657, 34, 369, 344, "clang");
+        clangGroup->hide();
         { icOptimization = new Fl_Input_Choice(750, 74, 107, 24, "optimization:");
           icOptimization->callback((Fl_Callback*)cb_icOptimization);
         } // Fl_Input_Choice* icOptimization
@@ -140,7 +148,6 @@ Fl_Double_Window* Gui::make_window() {
         o->end();
       } // Fl_Group* o
       { Fl_Group* o = new Fl_Group(660, 33, 352, 338, "visual studio");
-        o->hide();
         o->end();
       } // Fl_Group* o
       o->end();
@@ -185,7 +192,7 @@ Fl_Double_Window* Gui::make_window() {
     } // Fl_Group* o
     o->end();
   } // Fl_Double_Window* o
-  srcCode->linenumber_width(16);
+  srcCode->linenumber_width(24);
   return w;
 }
 

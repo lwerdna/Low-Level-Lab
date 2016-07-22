@@ -5,20 +5,27 @@ code_name {.cxx}
 decl {\#include "logic.h"} {private global
 } 
 
+decl {\#include "Fl_Text_Editor_C.h"} {public global
+} 
+
+class UserInterfaceBlah {open
+} {} 
+
 class Gui {open
 } {
   Function {make_window()} {open
   } {
     Fl_Window {} {
       label {Compiler Lab} open
-      xywh {588 214 1032 748} type Double visible
+      xywh {272 238 1032 748} type Double visible
     } {
       Fl_Text_Editor srcCode {
+        label dummyLabel
         xywh {4 4 396 596} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
-        code2 {srcBuf->text("\#include <stdio.h>\\n\\nint main(int ac, char **av)\\n{\\n\\tprintf(\\"Hello, world!\\\\n\\");\\n\\treturn 0;\\n}");}
         code3 {srcBuf->add_modify_callback(onSourceModified, this);}
+        class Fl_Text_Editor_C
       }
       Fl_Text_Display asmCode {
         xywh {404 4 246 596} labelfont 4 labelsize 10 textfont 4 textsize 12
@@ -35,7 +42,7 @@ class Gui {open
       } {
         Fl_Group clangGroup {
           label clang open
-          xywh {657 34 369 344}
+          xywh {657 34 369 344} hide
         } {
           Fl_Input_Choice icOptimization {
             label {optimization:}
@@ -64,7 +71,7 @@ class Gui {open
           }
           Fl_Round_Button btnCPP {
             label {C++}
-            callback {onButtonCPP();} selected
+            callback {onButtonCPP();}
             xywh {705 100 28 28} down_box ROUND_DOWN_BOX
           }
         }
@@ -74,7 +81,7 @@ class Gui {open
         } {}
         Fl_Group {} {
           label {visual studio} open
-          xywh {660 33 352 338} hide
+          xywh {660 33 352 338}
         } {}
       }
       Fl_Text_Display compilerCommandLine {
@@ -117,7 +124,8 @@ class Gui {open
         }
       }
     }
-    code {srcCode->linenumber_width(16);} {}
+    code {srcCode->linenumber_width(24);} {selected
+    }
   }
   decl {Fl_Text_Buffer *srcBuf;} {public local
   }

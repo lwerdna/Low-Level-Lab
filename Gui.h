@@ -3,19 +3,23 @@
 #ifndef Gui_h
 #define Gui_h
 #include <FL/Fl.H>
+#include "Fl_Text_Editor_C.h"
+
+class UserInterfaceBlah {
+};
 #include <FL/Fl_Double_Window.H>
-#include <FL/Fl_Text_Editor.H>
 #include <FL/Fl_Text_Display.H>
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Input_Choice.H>
 #include <FL/Fl_Check_Button.H>
 #include <FL/Fl_Round_Button.H>
+#include <FL/Fl_Text_Editor.H>
 
 class Gui {
 public:
   Fl_Double_Window* make_window();
-  Fl_Text_Editor *srcCode;
+  Fl_Text_Editor_C *srcCode;
   Fl_Text_Display *asmCode;
   Fl_Text_Display *outLog;
   Fl_Group *clangGroup;

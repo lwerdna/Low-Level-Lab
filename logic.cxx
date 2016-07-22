@@ -334,11 +334,22 @@ onGuiFinished(Gui *gui_)
     gui->icDebug->value(0);
 
     /* initial source */
-    gui->srcBuf->text("#include <stdio.h>\n\nint main(int ac, char **av)\n{\n\tprintf(\"Hello, world!\\n\");\n\treturn 0;\n}");
+    gui->srcBuf->text(
+        "// example source code\n"
+        "#include <stdio.h>\n"
+        "\n"
+        "int main(int ac, char **av)\n"
+        "{\n"
+        "\tprintf(\"Hello, world!\\n\");\n"
+        "\treturn 0;\n"
+        "}\n"
+    );
+
     gui->srcBuf->text(
         "#include <stdio.h>\n"
         "#include <memory>\n"
         "\n"
+        "// what's a class doing here?\n"
         "class Foo\n"
         "{\n"
         "    private:\n"
@@ -351,6 +362,7 @@ onGuiFinished(Gui *gui_)
         "	void speak(void) { printf(\"I'm here!\\n\"); }\n"
         "};\n"
         "\n"
+        "// what's a main doing here?\n"
         "int main(int ac, char **av)\n"
         "{\n"
         "	std::unique_ptr<Foo> pfoo(new Foo(3,4));\n"
