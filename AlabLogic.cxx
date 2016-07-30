@@ -60,6 +60,8 @@ bool assemble_requested = false;
 int length_last_assemble = 0;
 time_t time_last_assemble = 0;
 uint32_t crc_last_assemble = 0;
+/* configuration string */
+const char *configTriple = NULL;
 
 /*****************************************************************************/
 /* MAIN ROUTINE */
@@ -77,7 +79,7 @@ assemble()
     uint32_t crc_now = 0;
 
     Fl_Text_Buffer *srcBuf = gui->srcBuf;
-    Fl_Text_Buffer *asmBuf = gui->asmBuf;
+    Fl_Text_Buffer *bytesBuf = gui->bytesBuf;
 
     srcText = srcBuf->text();
 
@@ -115,6 +117,9 @@ assemble()
     if(crc_now) crc_last_assemble = crc_now;
     if(time_now) time_last_assemble = time_now;
     if(length_now) length_last_assemble = length_now;
+    
+    /* clear the output text */
+    bytesBuf->text("");
 
     /* real assembly work now */
     SourceMgr SrcMgr;
@@ -134,7 +139,7 @@ assemble()
 
     // see /lib/Support/Triple.cpp for the details
     //spec = llvm::sys::getDefaultTargetTriple();
-    std::string machSpec = "x86_64-apple-darwin14.5.0";
+    std::string machSpec(configTriple);
     //std::string machSpec = "x86_64-apple-darwin";
     //std::string machSpec = "x86_64-thumb-linux-gnu";
     //std::string machSpec = "x86_64-unknown-linux-gnu";
@@ -168,7 +173,7 @@ assemble()
     // arg0:
     // llvm::SourceMgr (Support/SourceMgr.h) that holds assembler source
     // has vector of llvm::SrcBuffer encaps (Support/MemoryBuffer.h) and vector of include dirs
-    std::string asmSrc = ".text\n.org 0x100\nfoo:\nxor %eax, %ebx\npush %rbp\njmp foo\nrdtsc\n";
+    std::string asmSrc(srcText);
     std::unique_ptr<MemoryBuffer> memBuf = MemoryBuffer::getMemBuffer(asmSrc);
     SrcMgr.AddNewSourceBuffer(std::move(memBuf), SMLoc());
 
@@ -240,8 +245,7 @@ assemble()
     printf("output:\n%s", strOutput.c_str());
 
     /* output */
-
-    asmBuf->text(strOutput.c_str());
+    bytesBuf->text(strOutput.c_str());
 
     rc = 0;
     //cleanup:
@@ -277,14 +281,14 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 void
 onConfigSelection()
 {
-    const char *selection = gui->icPresets->value();
-    printf("you selected: %s\n", selection);
+    configTriple = gui->icPresets->value();
+    printf("you selected: %s\n", configTriple);
     //spec = llvm::sys::getDefaultTargetTriple();
     //std::string machSpec = "x86_64-apple-darwin14.5.0";
     //std::string machSpec = "x86_64-apple-darwin";
     //std::string machSpec = "x86_64-thumb-linux-gnu";
     //std::string machSpec = "x86_64-unknown-linux-gnu";
-    Triple trip(selection);
+    Triple trip(configTriple);
 
     std::string arch = trip.getArchName();
     //string subarch = Triple::SubArchType(
@@ -296,6 +300,9 @@ onConfigSelection()
     gui->oVendor->value(vendor.c_str());
     gui->oOs->value(os.c_str());
     gui->oEnviron->value(environ.c_str());
+
+    /* with new choice, reassemble */
+    assemble_forced = true;
 }
 
 void
@@ -307,6 +314,7 @@ onGuiFinished(AlabGui *gui_)
     gui = gui_;
 
     /* initial input choices */
+    // TODO: add the default machine config */
     gui->icPresets->add("i386-apple-darwin");
     gui->icPresets->add("x86_64-apple-darwin");
     gui->icPresets->add("ppc32-apple-darwin");
@@ -317,6 +325,8 @@ onGuiFinished(AlabGui *gui_)
     gui->icPresets->add("arm64-apple-darwin");
     /* start it at the 0'th value */
     gui->icPresets->value(0);
+    /* pretend the user did it */
+    onConfigSelection();
 
     /* initial source */
     gui->srcBuf->text(

@@ -26,8 +26,8 @@ class AlabGui {open
       }
       Fl_Text_Editor asmCode {
         xywh {517 81 508 505} labelfont 4 labelsize 10 textfont 4 textsize 12
-        code0 {asmBuf = new Fl_Text_Buffer();}
-        code1 {o->buffer(asmBuf);}
+        code0 {bytesBuf = new Fl_Text_Buffer();}
+        code1 {o->buffer(bytesBuf);}
         class Fl_Text_Editor
       }
       Fl_Group {} {
@@ -69,7 +69,7 @@ class AlabGui {open
   }
   decl {Fl_Text_Buffer *srcBuf;} {public local
   }
-  decl {Fl_Text_Buffer *asmBuf;} {public local
+  decl {Fl_Text_Buffer *bytesBuf;} {public local
   }
 } 
 

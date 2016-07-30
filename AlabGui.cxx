@@ -43,8 +43,8 @@ Fl_Double_Window* AlabGui::make_window() {
       asmCode->textsize(12);
       asmCode->align(Fl_Align(FL_ALIGN_TOP));
       asmCode->when(FL_WHEN_RELEASE);
-      asmBuf = new Fl_Text_Buffer();
-      o->buffer(asmBuf);
+      bytesBuf = new Fl_Text_Buffer();
+      o->buffer(bytesBuf);
     } // Fl_Text_Editor* asmCode
     { Fl_Group* o = new Fl_Group(5, 21, 1020, 58, "Configuration String:");
       o->box(FL_BORDER_BOX);

@@ -26,6 +26,6 @@ private:
 public:
   Fl_Output *oVendor;
   Fl_Text_Buffer *srcBuf; 
-  Fl_Text_Buffer *asmBuf; 
+  Fl_Text_Buffer *bytesBuf; 
 };
 #endif
