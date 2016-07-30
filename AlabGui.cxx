@@ -10,12 +10,19 @@ void AlabGui::cb_icPresets(Fl_Input_Choice* o, void* v) {
   ((AlabGui*)(o->parent()->parent()->user_data()))->cb_icPresets_i(o,v);
 }
 
+void AlabGui::cb_icExamples_i(Fl_Input_Choice*, void*) {
+  onExampleSelection();
+}
+void AlabGui::cb_icExamples(Fl_Input_Choice* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_icExamples_i(o,v);
+}
+
 Fl_Double_Window* AlabGui::make_window() {
   Fl_Double_Window* w;
-  { Fl_Double_Window* o = new Fl_Double_Window(1032, 593, "Assembler Lab");
+  { Fl_Double_Window* o = new Fl_Double_Window(1032, 656, "Assembler Lab");
     w = o;
     o->user_data((void*)(this));
-    { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(4, 81, 510, 505);
+    { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(4, 85, 510, 505);
       srcCode->box(FL_DOWN_FRAME);
       srcCode->color(FL_BACKGROUND2_COLOR);
       srcCode->selection_color(FL_SELECTION_COLOR);
@@ -31,7 +38,7 @@ Fl_Double_Window* AlabGui::make_window() {
       srcBuf->text("testes");
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor_Asm* srcCode
-    { Fl_Text_Editor* o = asmCode = new Fl_Text_Editor(517, 81, 508, 505);
+    { Fl_Text_Editor* o = asmCode = new Fl_Text_Editor(517, 85, 508, 505);
       asmCode->box(FL_DOWN_FRAME);
       asmCode->color(FL_BACKGROUND2_COLOR);
       asmCode->selection_color(FL_SELECTION_COLOR);
@@ -46,33 +53,37 @@ Fl_Double_Window* AlabGui::make_window() {
       bytesBuf = new Fl_Text_Buffer();
       o->buffer(bytesBuf);
     } // Fl_Text_Editor* asmCode
-    { Fl_Group* o = new Fl_Group(5, 21, 1020, 58, "Configuration String:");
+    { Fl_Group* o = new Fl_Group(276, 21, 749, 57, "Configuration String:");
       o->box(FL_BORDER_BOX);
       o->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      { oArch = new Fl_Output(235, 44, 84, 24, "arch:");
+      { oArch = new Fl_Output(507, 48, 84, 24, "arch:");
         oArch->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oArch
-      { oSubArch = new Fl_Output(321, 44, 84, 24, "subarch:");
+      { oSubArch = new Fl_Output(593, 48, 84, 24, "subarch:");
         oSubArch->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oSubArch
-      { oOs = new Fl_Output(493, 44, 84, 24, "os:");
+      { oOs = new Fl_Output(765, 48, 84, 24, "os:");
         oOs->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oOs
-      { oEnviron = new Fl_Output(579, 44, 84, 24, "environ:");
+      { oEnviron = new Fl_Output(851, 48, 84, 24, "environ:");
         oEnviron->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oEnviron
-      { oFormat = new Fl_Output(665, 44, 84, 24, "format:");
+      { oFormat = new Fl_Output(937, 48, 84, 24, "format:");
         oFormat->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oFormat
-      { icPresets = new Fl_Input_Choice(10, 44, 221, 24, "presets:");
+      { icPresets = new Fl_Input_Choice(282, 48, 221, 24, "presets:");
         icPresets->callback((Fl_Callback*)cb_icPresets);
         icPresets->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Input_Choice* icPresets
-      { oVendor = new Fl_Output(407, 44, 84, 24, "vendor:");
+      { oVendor = new Fl_Output(679, 48, 84, 24, "vendor:");
         oVendor->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oVendor
       o->end();
     } // Fl_Group* o
+    { icExamples = new Fl_Input_Choice(5, 21, 259, 24, "examples:");
+      icExamples->callback((Fl_Callback*)cb_icExamples);
+      icExamples->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    } // Fl_Input_Choice* icExamples
     o->end();
   } // Fl_Double_Window* o
   srcCode->linenumber_width(24);

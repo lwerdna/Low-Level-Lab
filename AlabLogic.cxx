@@ -306,6 +306,140 @@ onConfigSelection()
 }
 
 void
+onExampleSelection()
+{
+    const char *file = gui->icExamples->value();
+
+    if(0==strcmp(file, "i386.s")) {
+        gui->srcBuf->text(
+            "main:                                   # @main\n"
+            "	pushl	%ebp\n"
+            "	movl	%esp, %ebp\n"
+            "	subl	$12, %esp\n"
+            "	movl	12(%ebp), %eax\n"
+            "	movl	8(%ebp), %ecx\n"
+            "	movl	$0, -4(%ebp)\n"
+            "	movl	%ecx, -8(%ebp)\n"
+            "	movl	%eax, -12(%ebp)\n"
+            "	movl	-8(%ebp), %eax\n"
+            "	addl	$42, %eax\n"
+            "	addl	$12, %esp\n"
+            "	popl	%ebp\n"
+            "	retl\n"
+            "\n"
+        );
+    }
+    else if(0==strcmp(file, "x86_64.s")) {
+        gui->srcBuf->text(
+            "main:                                   # @main\n"
+            "	.cfi_startproc\n"
+            "# BB#0:\n"
+            "	pushq	%rbp\n"
+            ".Ltmp0:\n"
+            "	.cfi_def_cfa_offset 16\n"
+            ".Ltmp1:\n"
+            "	.cfi_offset %rbp, -16\n"
+            "	movq	%rsp, %rbp\n"
+            ".Ltmp2:\n"
+            "	.cfi_def_cfa_register %rbp\n"
+            "	movl	$0, -4(%rbp)\n"
+            "	movl	%edi, -8(%rbp)\n"
+            "	movq	%rsi, -16(%rbp)\n"
+            "	movl	-8(%rbp), %edi\n"
+            "	addl	$42, %edi\n"
+            "	movl	%edi, %eax\n"
+            "	popq	%rbp\n"
+            "	retq\n"
+            "\n"
+        );
+    }
+    else if(0==strcmp(file, "ppc32.s")) {
+        gui->srcBuf->text(
+            "_main:                                  ; @main\n"
+            "	li r2, 0\n"
+            "	stw r2, -8(r1)\n"
+            "	stw r3, -12(r1)\n"
+            "	stw r4, -16(r1)\n"
+            "	lwz r2, -12(r1)\n"
+            "                                        ; kill: R4<def> R4<kill>\n"
+            "                                        ; kill: R3<def> R3<kill>\n"
+            "	addi r3, r2, 42\n"
+            "	blr\n"
+        );
+    }
+    else if(0==strcmp(file, "ppc64.s")) {
+        gui->srcBuf->text(
+            "_main:                                  ; @main\n"
+            "	li r2, 0\n"
+            "	stw r2, -12(r1)\n"
+            "	mr r2, r3\n"
+            "	stw r2, -16(r1)\n"
+            "	std r4, -24(r1)\n"
+            "	lwz r2, -16(r1)\n"
+            "	addi r2, r2, 42\n"
+            "                                        ; kill: X4<def> X4<kill>\n"
+            "                                        ; implicit-def: X3\n"
+            "	mr r3, r2\n"
+            "	blr\n"
+        );
+    }
+    else if(0==strcmp(file, "arm.s")) {
+        gui->srcBuf->text(
+            "main:                                   @ @main\n"
+            "	.fnstart\n"
+            "@ BB#0:\n"
+            "	sub	sp, sp, #20\n"
+            "	mov	r2, r1\n"
+            "	mov	r3, r0\n"
+            "	mov	r12, #0\n"
+            "	str	r12, [sp, #16]\n"
+            "	str	r0, [sp, #12]\n"
+            "	str	r1, [sp, #8]\n"
+            "	ldr	r0, [sp, #12]\n"
+            "	add	r0, r0, #42\n"
+            "	str	r2, [sp, #4]            @ 4-byte Spill\n"
+            "	str	r3, [sp]                @ 4-byte Spill\n"
+            "	add	sp, sp, #20\n"
+            "	bx	lr\n"
+        );
+    }
+    else if(0==strcmp(file, "thumb.s")) {
+        gui->srcBuf->text(
+            "main:                                   @ @main\n"
+            "	.fnstart\n"
+            "	.pad	#20\n"
+            "	sub	sp, sp, #20\n"
+            "	mov	r2, r1\n"
+            "	mov	r3, r0\n"
+            "	mov	r12, #0\n"
+            "	str	r12, [sp, #16]\n"
+            "	str	r0, [sp, #12]\n"
+            "	str	r1, [sp, #8]\n"
+            "	ldr	r0, [sp, #12]\n"
+            "	add	r0, r0, #42\n"
+            "	str	r2, [sp, #4]            @ 4-byte Spill\n"
+            "	str	r3, [sp]                @ 4-byte Spill\n"
+            "	add	sp, sp, #20\n"
+            "	bx	lr\n"
+        );
+    }
+    else if(0==strcmp(file, "arm64.s")) {
+        gui->srcBuf->text(
+            "main:                                   // @main\n"
+            "// BB#0:\n"
+            "	sub	sp, sp, #16             // =16\n"
+            "	str	wzr, [sp, #12]\n"
+            "	str	w0, [sp, #8]\n"
+            "	str	 x1, [sp]\n"
+            "	ldr	w0, [sp, #8]\n"
+            "	add	w0, w0, #42             // =42\n"
+            "	add	sp, sp, #16             // =16\n"
+            "	ret\n"
+        );
+    }
+}
+
+void
 onGuiFinished(AlabGui *gui_)
 {
     printf("%s()\n", __func__);
@@ -314,32 +448,34 @@ onGuiFinished(AlabGui *gui_)
     gui = gui_;
 
     /* initial input choices */
+
+    gui->icExamples->add("i386.s");
+    gui->icExamples->add("x86_64.s");
+    gui->icExamples->add("ppc32.s");
+    gui->icExamples->add("ppc64.s");
+    gui->icExamples->add("arm.s");
+    gui->icExamples->add("thumb.s");
+    gui->icExamples->add("arm64.s");
+    gui->icExamples->value(0);
+    onExampleSelection();
+
+    // can test triples with:
+    // clang -S -c -target ppc32le-apple-darwin hello.c
+    // see also lib/Support/Triple.cpp in llvm source
+    // see also http://clang.llvm.org/docs/CrossCompilation.html
     // TODO: add the default machine config */
-    gui->icPresets->add("i386-apple-darwin");
-    gui->icPresets->add("x86_64-apple-darwin");
-    gui->icPresets->add("ppc32-apple-darwin");
+    gui->icPresets->add("i386-unknown-elf");
+    gui->icPresets->add("x86_64-unknown-elf");
+    gui->icPresets->add("ppc-unknown-elf");
     gui->icPresets->add("ppc64-apple-darwin");
-    gui->icPresets->add("ppc64le-apple-darwin");
-    gui->icPresets->add("arm-apple-darwin");
-    gui->icPresets->add("thumb-apple-darwin");
-    gui->icPresets->add("arm64-apple-darwin");
+    gui->icPresets->add("ppc64le-unknown-elf");
+    gui->icPresets->add("arm-unknown-elf");
+    gui->icPresets->add("thumb-unknown-eabi");
+    gui->icPresets->add("arm64-unknown-elf");
     /* start it at the 0'th value */
     gui->icPresets->value(0);
     /* pretend the user did it */
     onConfigSelection();
-
-    /* initial source */
-    gui->srcBuf->text(
-        ".text\n"
-        ".org 0x100\n"
-        "\n"
-        "foo:\n"
-        "    xor %eax, %ebx\n"
-        "    push %rbp\n"
-        "    jmp foo\n"
-        "\n"
-        "rdtsc\n"
-    );
 
     assemble_forced = true;
 

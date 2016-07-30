@@ -14,10 +14,10 @@ class AlabGui {open
   } {
     Fl_Window {} {
       label {Assembler Lab} open
-      xywh {763 414 1032 593} type Double visible
+      xywh {763 414 1032 656} type Double visible
     } {
       Fl_Text_Editor srcCode {
-        xywh {4 81 510 505} align 21 textfont 4
+        xywh {4 85 510 505} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
         code2 {srcBuf->text("testes");}
@@ -25,45 +25,50 @@ class AlabGui {open
         class Fl_Text_Editor_Asm
       }
       Fl_Text_Editor asmCode {
-        xywh {517 81 508 505} labelfont 4 labelsize 10 textfont 4 textsize 12
+        xywh {517 85 508 505} labelfont 4 labelsize 10 textfont 4 textsize 12
         code0 {bytesBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(bytesBuf);}
         class Fl_Text_Editor
       }
       Fl_Group {} {
         label {Configuration String:} open
-        xywh {5 21 1020 58} box BORDER_BOX align 5
+        xywh {276 21 749 57} box BORDER_BOX align 5
       } {
         Fl_Output oArch {
           label {arch:}
-          xywh {235 44 84 24} align 5
+          xywh {507 48 84 24} align 5
         }
         Fl_Output oSubArch {
           label {subarch:}
-          xywh {321 44 84 24} align 5
+          xywh {593 48 84 24} align 5
         }
         Fl_Output oOs {
           label {os:}
-          xywh {493 44 84 24} align 5
+          xywh {765 48 84 24} align 5
         }
         Fl_Output oEnviron {
           label {environ:}
-          xywh {579 44 84 24} align 5
+          xywh {851 48 84 24} align 5
         }
         Fl_Output oFormat {
           label {format:}
-          xywh {665 44 84 24} align 5
+          xywh {937 48 84 24} align 5
         }
         Fl_Input_Choice icPresets {
           label {presets:}
-          callback {onConfigSelection();} open selected
-          xywh {10 44 221 24} align 5
+          callback {onConfigSelection();} open
+          xywh {282 48 221 24} align 5
         } {}
         Fl_Output oVendor {
           label {vendor:}
-          xywh {407 44 84 24} align 5
+          xywh {679 48 84 24} align 5
         }
       }
+      Fl_Input_Choice icExamples {
+        label {examples:}
+        callback {onExampleSelection();} open selected
+        xywh {5 21 259 24} align 5
+      } {}
     }
     code {srcCode->linenumber_width(24);} {}
   }

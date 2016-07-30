@@ -25,6 +25,11 @@ private:
   static void cb_icPresets(Fl_Input_Choice*, void*);
 public:
   Fl_Output *oVendor;
+  Fl_Input_Choice *icExamples;
+private:
+  inline void cb_icExamples_i(Fl_Input_Choice*, void*);
+  static void cb_icExamples(Fl_Input_Choice*, void*);
+public:
   Fl_Text_Buffer *srcBuf; 
   Fl_Text_Buffer *bytesBuf; 
 };
