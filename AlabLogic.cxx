@@ -275,12 +275,48 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 }
 
 void
+onConfigSelection()
+{
+    const char *selection = gui->icPresets->value();
+    printf("you selected: %s\n", selection);
+    //spec = llvm::sys::getDefaultTargetTriple();
+    //std::string machSpec = "x86_64-apple-darwin14.5.0";
+    //std::string machSpec = "x86_64-apple-darwin";
+    //std::string machSpec = "x86_64-thumb-linux-gnu";
+    //std::string machSpec = "x86_64-unknown-linux-gnu";
+    Triple trip(selection);
+
+    std::string arch = trip.getArchName();
+    //string subarch = Triple::SubArchType(
+    std::string vendor = trip.getVendorName();
+    std::string os = trip.getOSName();
+    std::string environ = trip.getEnvironmentName();
+
+    gui->oArch->value(arch.c_str());
+    gui->oVendor->value(vendor.c_str());
+    gui->oOs->value(os.c_str());
+    gui->oEnviron->value(environ.c_str());
+}
+
+void
 onGuiFinished(AlabGui *gui_)
 {
     printf("%s()\n", __func__);
     int rc = -1;
 
     gui = gui_;
+
+    /* initial input choices */
+    gui->icPresets->add("i386-apple-darwin");
+    gui->icPresets->add("x86_64-apple-darwin");
+    gui->icPresets->add("ppc32-apple-darwin");
+    gui->icPresets->add("ppc64-apple-darwin");
+    gui->icPresets->add("ppc64le-apple-darwin");
+    gui->icPresets->add("arm-apple-darwin");
+    gui->icPresets->add("thumb-apple-darwin");
+    gui->icPresets->add("arm64-apple-darwin");
+    /* start it at the 0'th value */
+    gui->icPresets->value(0);
 
     /* initial source */
     gui->srcBuf->text(
