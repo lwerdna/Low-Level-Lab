@@ -3,84 +3,84 @@
 #include "ClabGui.h"
 #include "ClabLogic.h"
 
-void Gui::cb_icOptimization_i(Fl_Input_Choice*, void*) {
+void ClabGui::cb_icOptimization_i(Fl_Input_Choice*, void*) {
   recompile();
 }
-void Gui::cb_icOptimization(Fl_Input_Choice* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_icOptimization_i(o,v);
+void ClabGui::cb_icOptimization(Fl_Input_Choice* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->parent()->user_data()))->cb_icOptimization_i(o,v);
 }
 
-void Gui::cb_icCompiler_i(Fl_Input_Choice*, void*) {
+void ClabGui::cb_icCompiler_i(Fl_Input_Choice*, void*) {
   recompile();
 }
-void Gui::cb_icCompiler(Fl_Input_Choice* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_icCompiler_i(o,v);
+void ClabGui::cb_icCompiler(Fl_Input_Choice* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->parent()->user_data()))->cb_icCompiler_i(o,v);
 }
 
-void Gui::cb_btnVerbose_i(Fl_Check_Button*, void*) {
+void ClabGui::cb_btnVerbose_i(Fl_Check_Button*, void*) {
   recompile();
 }
-void Gui::cb_btnVerbose(Fl_Check_Button* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnVerbose_i(o,v);
+void ClabGui::cb_btnVerbose(Fl_Check_Button* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->parent()->user_data()))->cb_btnVerbose_i(o,v);
 }
 
-void Gui::cb_icDebug_i(Fl_Input_Choice*, void*) {
+void ClabGui::cb_icDebug_i(Fl_Input_Choice*, void*) {
   recompile();
 }
-void Gui::cb_icDebug(Fl_Input_Choice* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_icDebug_i(o,v);
+void ClabGui::cb_icDebug(Fl_Input_Choice* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->parent()->user_data()))->cb_icDebug_i(o,v);
 }
 
-void Gui::cb_btnC_i(Fl_Round_Button*, void*) {
+void ClabGui::cb_btnC_i(Fl_Round_Button*, void*) {
   onButtonC();
 }
-void Gui::cb_btnC(Fl_Round_Button* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnC_i(o,v);
+void ClabGui::cb_btnC(Fl_Round_Button* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->parent()->user_data()))->cb_btnC_i(o,v);
 }
 
-void Gui::cb_btnCPP_i(Fl_Round_Button*, void*) {
+void ClabGui::cb_btnCPP_i(Fl_Round_Button*, void*) {
   onButtonCPP();
 }
-void Gui::cb_btnCPP(Fl_Round_Button* o, void* v) {
-  ((Gui*)(o->parent()->parent()->parent()->user_data()))->cb_btnCPP_i(o,v);
+void ClabGui::cb_btnCPP(Fl_Round_Button* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->parent()->user_data()))->cb_btnCPP_i(o,v);
 }
 
-void Gui::cb_customFlags_i(Fl_Text_Editor*, void*) {
+void ClabGui::cb_customFlags_i(Fl_Text_Editor*, void*) {
   recompile();
 }
-void Gui::cb_customFlags(Fl_Text_Editor* o, void* v) {
-  ((Gui*)(o->parent()->user_data()))->cb_customFlags_i(o,v);
+void ClabGui::cb_customFlags(Fl_Text_Editor* o, void* v) {
+  ((ClabGui*)(o->parent()->user_data()))->cb_customFlags_i(o,v);
 }
 
-void Gui::cb_btnWrap_i(Fl_Check_Button*, void*) {
+void ClabGui::cb_btnWrap_i(Fl_Check_Button*, void*) {
   recompile();
 }
-void Gui::cb_btnWrap(Fl_Check_Button* o, void* v) {
-  ((Gui*)(o->parent()->parent()->user_data()))->cb_btnWrap_i(o,v);
+void ClabGui::cb_btnWrap(Fl_Check_Button* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->user_data()))->cb_btnWrap_i(o,v);
 }
 
-void Gui::cb_btnScroll_i(Fl_Check_Button*, void*) {
+void ClabGui::cb_btnScroll_i(Fl_Check_Button*, void*) {
   recompile();
 }
-void Gui::cb_btnScroll(Fl_Check_Button* o, void* v) {
-  ((Gui*)(o->parent()->parent()->user_data()))->cb_btnScroll_i(o,v);
+void ClabGui::cb_btnScroll(Fl_Check_Button* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->user_data()))->cb_btnScroll_i(o,v);
 }
 
-void Gui::cb_btnStdout_i(Fl_Check_Button*, void*) {
+void ClabGui::cb_btnStdout_i(Fl_Check_Button*, void*) {
   recompile();
 }
-void Gui::cb_btnStdout(Fl_Check_Button* o, void* v) {
-  ((Gui*)(o->parent()->parent()->user_data()))->cb_btnStdout_i(o,v);
+void ClabGui::cb_btnStdout(Fl_Check_Button* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->user_data()))->cb_btnStdout_i(o,v);
 }
 
-void Gui::cb_btnStderr_i(Fl_Check_Button*, void*) {
+void ClabGui::cb_btnStderr_i(Fl_Check_Button*, void*) {
   recompile();
 }
-void Gui::cb_btnStderr(Fl_Check_Button* o, void* v) {
-  ((Gui*)(o->parent()->parent()->user_data()))->cb_btnStderr_i(o,v);
+void ClabGui::cb_btnStderr(Fl_Check_Button* o, void* v) {
+  ((ClabGui*)(o->parent()->parent()->user_data()))->cb_btnStderr_i(o,v);
 }
 
-Fl_Double_Window* Gui::make_window() {
+Fl_Double_Window* ClabGui::make_window() {
   Fl_Double_Window* w;
   { Fl_Double_Window* o = new Fl_Double_Window(1032, 748, "Compiler Lab");
     w = o;
@@ -204,7 +204,7 @@ Fl_Double_Window* Gui::make_window() {
 }
 
 int main(int argc, char **argv) {
-  Gui gui;
+  ClabGui gui;
   Fl_Double_Window *w = gui.make_window();
   onGuiFinished(&gui);
   Fl::add_idle(onIdle, &gui);

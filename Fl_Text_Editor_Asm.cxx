@@ -265,6 +265,8 @@ void Fl_Text_Editor_Asm::onSrcMod(int pos,        // Position of update
         ((Fl_Text_Editor *)cbArg)->redisplay_range(start, end);
     }
 
+    printf("got to the end of style parsing\n");
+
     free(text);
     free(style);
 }

@@ -14,7 +14,7 @@ extern "C" {
 #include <autils/subprocess.h>
 }
 
-Gui *gui = NULL;
+ClabGui *gui = NULL;
 
 /* recompile state vars */
 bool compile_forced = false;
@@ -273,7 +273,7 @@ onButtonCPP(void)
 }
 
 void
-onGuiFinished(Gui *gui_)
+onGuiFinished(ClabGui *gui_)
 {
     printf("%s()\n", __func__);
     int rc = -1;

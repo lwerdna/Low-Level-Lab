@@ -2,7 +2,7 @@
 version 1.0303 
 header_name {.h} 
 code_name {.cxx}
-decl {\#include "logic.h"} {private global
+decl {\#include "ClabLogic.h"} {private global
 } 
 
 decl {\#include "Fl_Text_Editor_C.h"} {public global
@@ -14,7 +14,7 @@ decl {\#include "Fl_Text_Editor_Asm.h"} {public global
 class UserInterfaceBlah {open
 } {} 
 
-class Gui {open
+class ClabGui {open
 } {
   Function {make_window()} {open
   } {
@@ -22,7 +22,7 @@ class Gui {open
       label {Compiler Lab} open
       xywh {395 132 1032 748} type Double visible
     } {
-      Fl_Text_Editor srcCode {selected
+      Fl_Text_Editor srcCode {
         xywh {4 134 510 505} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
@@ -143,7 +143,7 @@ class Gui {open
 
 Function {} {open
 } {
-  code {Gui gui;
+  code {ClabGui gui;
 Fl_Double_Window *w = gui.make_window();
 onGuiFinished(&gui);
 Fl::add_idle(onIdle, &gui);
@@ -152,5 +152,6 @@ w->show();
 int rc = Fl::run();
 onExit();
 return rc;
-/* fluid will insert Fl::run() here... */} {}
+/* fluid will insert Fl::run() here... */} {selected
+  }
 } 
