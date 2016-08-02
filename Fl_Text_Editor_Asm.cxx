@@ -28,7 +28,7 @@ static
 Fl_Text_Editor::Style_Table_Entry
 styletable[] = {    // Style table
     { FL_BLACK,      FL_COURIER,           TS }, // A - Plain
-    { FL_DARK_GREEN, FL_HELVETICA_ITALIC,  TS }, // B - Line comments
+    { FL_DARK_GREEN, FL_HELVETICA,         TS }, // B - Line comments
     { FL_DARK_BLUE,  FL_COURIER,           TS }, // C - numbers
     { FL_DARK_CYAN,  FL_COURIER_BOLD,      TS }, // D - Labels
     { FL_DARK_RED,   FL_COURIER,           TS }, // E - Directives

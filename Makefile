@@ -8,6 +8,12 @@ LD_LLVM = -lLLVMSupport \
     -lLLVMAsmParser -lLLVMAsmPrinter \
     -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMX86Disassembler -lLLVMX86Utils \
     -lLLVMX86AsmPrinter -lLLVMX86Desc -lLLVMX86Info \
+    -lLLVMArmAsmParser -lLLVMArmCodeGen -lLLVMArmDisassembler \
+    -lLLVMArmAsmPrinter -lLLVMArmDesc -lLLVMArmInfo \
+    -lLLVMAArch64AsmParser -lLLVMAArch64CodeGen -lLLVMAArch64Disassembler -lLLVMAArch64Utils \
+    -lLLVMAArch64AsmPrinter -lLLVMAArch64Desc -lLLVMAArch64Info \
+    -lLLVMPowerPCAsmParser -lLLVMPowerPCCodeGen -lLLVMPowerPCDisassembler \
+    -lLLVMPowerPCAsmPrinter -lLLVMPowerPCDesc -lLLVMPowerPCInfo \
     -lncurses
 LINK = $(CXX)
 
@@ -40,20 +46,28 @@ ClabLogic.o: ClabLogic.cxx ClabLogic.h
 AlabLogic.o: AlabLogic.cxx AlabLogic.h
 	g++ $(FLAGS_FLTK) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c AlabLogic.cxx
 
+# RESOURCES
+rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s
+	./genrsrc.py source > rsrc.c
+	./genrsrc.py header > rsrc.h
+
+rsrc.o: rsrc.c
+	gcc -c rsrc.c
+
 # LINK
 #
 clab: ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o Makefile
 	$(LINK) ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o -o clab $(LD_FLTK)
 
-alab: AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o Makefile
-	$(LINK) AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o -o alab $(LD_FLTK) $(LD_LLVM)
+alab: AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o rsrc.o Makefile
+	$(LINK) AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
 
 # OTHER targets
 #
 clean: $(TARGET) $(OBJS)
 	rm -f *.o 2> /dev/null
 	rm -f $(TARGET) 2> /dev/null
-	rm alab clab
+	rm alab clab rsrc.c rsrc.h
 
 install:
 	install ./clab /usr/local/bin
