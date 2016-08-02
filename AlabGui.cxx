@@ -17,9 +17,16 @@ void AlabGui::cb_icExamples(Fl_Input_Choice* o, void* v) {
   ((AlabGui*)(o->parent()->user_data()))->cb_icExamples_i(o,v);
 }
 
+void AlabGui::cb_cbAtt_i(Fl_Check_Button*, void*) {
+  onDialectChange();
+}
+void AlabGui::cb_cbAtt(Fl_Check_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_cbAtt_i(o,v);
+}
+
 Fl_Double_Window* AlabGui::make_window() {
   Fl_Double_Window* w;
-  { Fl_Double_Window* o = new Fl_Double_Window(1032, 656, "Assembler Lab");
+  { Fl_Double_Window* o = new Fl_Double_Window(1032, 694, "Assembler Lab");
     w = o;
     o->user_data((void*)(this));
     { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(4, 85, 510, 505);
@@ -53,7 +60,7 @@ Fl_Double_Window* AlabGui::make_window() {
       bytesBuf = new Fl_Text_Buffer();
       o->buffer(bytesBuf);
     } // Fl_Text_Editor* asmCode
-    { Fl_Group* o = new Fl_Group(276, 21, 749, 57, "Configuration String:");
+    { Fl_Group* o = new Fl_Group(276, 21, 749, 57, "Configuration String / Triple / Triplet:");
       o->box(FL_BORDER_BOX);
       o->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       { oArch = new Fl_Output(507, 48, 84, 24, "arch:");
@@ -84,6 +91,14 @@ Fl_Double_Window* AlabGui::make_window() {
       icExamples->callback((Fl_Callback*)cb_icExamples);
       icExamples->align(Fl_Align(FL_ALIGN_TOP_LEFT));
     } // Fl_Input_Choice* icExamples
+    { bLog = new Fl_Browser(4, 594, 1021, 96);
+      bLog->color(FL_FOREGROUND_COLOR);
+      bLog->textcolor(FL_GREEN);
+    } // Fl_Browser* bLog
+    { cbAtt = new Fl_Check_Button(176, 47, 28, 28, "at&&t syntax");
+      cbAtt->down_box(FL_DOWN_BOX);
+      cbAtt->callback((Fl_Callback*)cb_cbAtt);
+    } // Fl_Check_Button* cbAtt
     o->end();
   } // Fl_Double_Window* o
   srcCode->linenumber_width(24);

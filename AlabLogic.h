@@ -12,6 +12,7 @@ void onExit(void);
 void reassemble(void);
 void onExampleSelection(void);
 void onConfigSelection(void);
+void onDialectChange(void);
 void onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     const char * deletedText, void *cbArg);
 

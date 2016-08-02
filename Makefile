@@ -47,7 +47,7 @@ AlabLogic.o: AlabLogic.cxx AlabLogic.h
 	g++ $(FLAGS_FLTK) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c AlabLogic.cxx
 
 # RESOURCES
-rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s
+rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s ./rsrc/x86_intel.s ./rsrc/x86_64_intel.s
 	./genrsrc.py source > rsrc.c
 	./genrsrc.py header > rsrc.h
 

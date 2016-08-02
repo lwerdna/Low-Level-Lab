@@ -14,7 +14,7 @@ class AlabGui {open
   } {
     Fl_Window {} {
       label {Assembler Lab} open
-      xywh {763 414 1032 656} type Double visible
+      xywh {482 290 1032 694} type Double visible
     } {
       Fl_Text_Editor srcCode {
         xywh {4 85 510 505} align 21 textfont 4
@@ -31,7 +31,7 @@ class AlabGui {open
         class Fl_Text_Editor
       }
       Fl_Group {} {
-        label {Configuration String:} open
+        label {Configuration String / Triple / Triplet:} open
         xywh {276 21 749 57} box BORDER_BOX align 5
       } {
         Fl_Output oArch {
@@ -66,9 +66,17 @@ class AlabGui {open
       }
       Fl_Input_Choice icExamples {
         label {examples:}
-        callback {onExampleSelection();} open selected
+        callback {onExampleSelection();} open
         xywh {5 21 259 24} align 5
       } {}
+      Fl_Browser bLog {
+        xywh {4 594 1021 96} color 0 textcolor 63
+      }
+      Fl_Check_Button cbAtt {
+        label {at&&t syntax}
+        callback {onDialectChange();} selected
+        xywh {176 47 28 28} down_box DOWN_BOX
+      }
     }
     code {srcCode->linenumber_width(24);} {}
   }

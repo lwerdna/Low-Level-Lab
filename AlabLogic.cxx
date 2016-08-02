@@ -29,6 +29,8 @@ extern "C" {
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCParser/AsmLexer.h"
+#define DIALECT_ATT 0
+#define DIALECT_INTEL 1
 #include "llvm/MC/MCParser/MCTargetAsmParser.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSectionMachO.h"
@@ -169,14 +171,13 @@ assemble()
     printf("triple has been made\n");
 
     // Get the target specific parser.
-    std::string Error;
-    const Target *TheTarget = TargetRegistry::lookupTarget(/*arch*/"", TheTriple, Error);
+    std::string strErr;
+    const Target *TheTarget = TargetRegistry::lookupTarget(/*arch*/"", TheTriple, strErr);
     if (!TheTarget) {
-        printf("lookupTarget failed\n");
-        errs() << Error;
+        gui->bLog->add("TargetRegistry::lookupTarget() failed");
+        gui->bLog->add(strErr.c_str());
         return;
     }
-
 
     machSpec = TheTriple.getTriple();
     printf("machine spec (returned): %s\n", machSpec.c_str());
@@ -241,14 +242,16 @@ assemble()
 
     printf("trying to assemble, let's go..\n");
 
-    //AssembleInput(TheTarget, SrcMgr, Ctx, *as, *MAI, *STI,
-    //    *MCII, toptions);
-
     /* create MC target asm parser */
+    /* note that the parser will default its dialect to MAI
+        (AssemblerInfo)'s dialect if we don't specify */
 	std::unique_ptr<MCAsmParser> Parser(
         createMCAsmParser(SrcMgr, Ctx, *as, *MAI)
     );
+    if(gui->cbAtt->value()) Parser->setAssemblerDialect(DIALECT_ATT);
+    else Parser->setAssemblerDialect(DIALECT_INTEL);
 
+    /* this is TARGET asm parser */
     std::unique_ptr<MCTargetAsmParser> TAP(
         TheTarget->createMCAsmParser(*STI, *Parser, *MCII, toptions)
     );
@@ -343,11 +346,21 @@ onExampleSelection()
 {
     const char *file = gui->icExamples->value();
 
-    if(0==strcmp(file, "i386.s")) {
+    if(0==strcmp(file, "x86.s")) {
         gui->srcBuf->text((char *)rsrc_x86_s);
+        gui->cbAtt->value(1);
+    }
+    if(0==strcmp(file, "x86_intel.s")) {
+        gui->srcBuf->text((char *)rsrc_x86_intel_s);
+        gui->cbAtt->value(0);
     }
     else if(0==strcmp(file, "x86_64.s")) {
+        gui->cbAtt->value(1);
         gui->srcBuf->text((char *)rsrc_x86_64_s);
+    }
+    else if(0==strcmp(file, "x86_64_intel.s")) {
+        gui->cbAtt->value(0);
+        gui->srcBuf->text((char *)rsrc_x86_64_intel_s);
     }
     else if(0==strcmp(file, "ppc32.s")) {
         gui->srcBuf->text((char *)rsrc_ppc_s);
@@ -367,6 +380,14 @@ onExampleSelection()
 }
 
 void
+onDialectChange()
+{
+    int state = gui->cbAtt->value();
+    printf("new at&t check state: %d\n", state);
+    assemble_forced = true;
+}
+
+void
 onGuiFinished(AlabGui *gui_)
 {
     printf("%s()\n", __func__);
@@ -376,7 +397,9 @@ onGuiFinished(AlabGui *gui_)
 
     /* initial input choices */
 
-    gui->icExamples->add("i386.s");
+    gui->icExamples->add("x86_intel.s");
+    gui->icExamples->add("x86.s");
+    gui->icExamples->add("x86_64_intel.s");
     gui->icExamples->add("x86_64.s");
     gui->icExamples->add("ppc32.s");
     gui->icExamples->add("ppc64.s");
@@ -384,6 +407,7 @@ onGuiFinished(AlabGui *gui_)
     gui->icExamples->add("thumb.s");
     gui->icExamples->add("arm64.s");
     gui->icExamples->value(0);
+    gui->cbAtt->value(0);
     onExampleSelection();
 
     // can test triples with:
@@ -398,14 +422,13 @@ onGuiFinished(AlabGui *gui_)
     gui->icPresets->add("aarch64-none-none-eabi");
     gui->icPresets->add("powerpc-none-none");
     gui->icPresets->add("powerpc64-none-none");
+    gui->icPresets->add("haha-just-a-joke");
     /* start it at the 0'th value */
     gui->icPresets->value(0);
     /* pretend the user did it */
     onConfigSelection();
 
     assemble_forced = true;
-
-    printf("yo\n");
 
     rc = 0;
     //cleanup:
