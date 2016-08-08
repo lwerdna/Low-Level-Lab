@@ -66,6 +66,28 @@ uint32_t crc_last_assemble = 0;
 /* configuration string */
 const char *configTriple = NULL;
 
+
+/* source manager diagnostics handler
+    (instead of printing to stderr) */
+void srcMgrDiagHndlr(const SMDiagnostic &diag, void *ctx)
+{
+    printf("Source Manager Diagnostic Handler:\n");
+  
+    switch(diag.getKind()) {
+        case SourceMgr::DK_Note:
+            printf("NOTE "); break;
+        case SourceMgr::DK_Warning:
+            printf("WARNING "); break;
+        case SourceMgr::DK_Error:
+            printf("ERROR "); break;
+    }
+
+    std::string fName(diag.getFilename());
+    std::string message(diag.getMessage());
+
+    printf("line %d: %s\n", diag.getLineNo(), message.c_str());
+}
+
 /*****************************************************************************/
 /* MAIN ROUTINE */
 /*****************************************************************************/
@@ -126,6 +148,7 @@ assemble()
 
     /* real assembly work now */
     SourceMgr SrcMgr;
+    SrcMgr.setDiagHandler(srcMgrDiagHndlr, nullptr);
 
     if(0) {
         llvm::InitializeAllTargetInfos();
@@ -267,7 +290,7 @@ assemble()
 
     /* flush the FRO (formatted raw ostream) */
     fro.flush();
-    printf("output:\n%s", strOutput.c_str());
+    //printf("output:\n%s", strOutput.c_str());
 
     /* output */
     bytesBuf->text(strOutput.c_str());

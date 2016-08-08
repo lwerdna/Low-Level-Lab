@@ -49,9 +49,11 @@ AlabLogic.o: AlabLogic.cxx AlabLogic.h
 # RESOURCES
 rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s ./rsrc/x86_intel.s ./rsrc/x86_64_intel.s
 	./genrsrc.py source > rsrc.c
+	
+rsrc.h: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s ./rsrc/x86_intel.s ./rsrc/x86_64_intel.s
 	./genrsrc.py header > rsrc.h
 
-rsrc.o: rsrc.c
+rsrc.o: rsrc.c rsrc.h
 	gcc -c rsrc.c
 
 # LINK
@@ -59,7 +61,7 @@ rsrc.o: rsrc.c
 clab: ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o Makefile
 	$(LINK) ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o -o clab $(LD_FLTK)
 
-alab: AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o rsrc.o Makefile
+alab: rsrc.o AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o Makefile
 	$(LINK) AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
 
 # OTHER targets
@@ -67,7 +69,7 @@ alab: AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o rsrc.o Makefile
 clean: $(TARGET) $(OBJS)
 	rm -f *.o 2> /dev/null
 	rm -f $(TARGET) 2> /dev/null
-	rm alab clab rsrc.c rsrc.h
+	rm alab clab rsrc.o rsrc.c rsrc.h
 
 install:
 	install ./clab /usr/local/bin
