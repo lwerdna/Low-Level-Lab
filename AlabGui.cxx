@@ -91,10 +91,17 @@ Fl_Double_Window* AlabGui::make_window() {
       icExamples->callback((Fl_Callback*)cb_icExamples);
       icExamples->align(Fl_Align(FL_ALIGN_TOP_LEFT));
     } // Fl_Input_Choice* icExamples
-    { bLog = new Fl_Browser(4, 594, 1021, 96);
-      bLog->color(FL_FOREGROUND_COLOR);
-      bLog->textcolor(FL_GREEN);
-    } // Fl_Browser* bLog
+    { log = new Fl_Text_Display_Log(4, 594, 1021, 96);
+      log->box(FL_DOWN_FRAME);
+      log->color(FL_BACKGROUND2_COLOR);
+      log->selection_color(FL_SELECTION_COLOR);
+      log->labeltype(FL_NORMAL_LABEL);
+      log->labelfont(0);
+      log->labelsize(14);
+      log->labelcolor(FL_FOREGROUND_COLOR);
+      log->align(Fl_Align(FL_ALIGN_TOP));
+      log->when(FL_WHEN_RELEASE);
+    } // Fl_Text_Display_Log* log
     { cbAtt = new Fl_Check_Button(176, 47, 28, 28, "at&&t syntax");
       cbAtt->down_box(FL_DOWN_BOX);
       cbAtt->callback((Fl_Callback*)cb_cbAtt);

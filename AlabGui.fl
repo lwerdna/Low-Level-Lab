@@ -8,15 +8,18 @@ decl {\#include "AlabLogic.h"} {private global
 decl {\#include "Fl_Text_Editor_Asm.h"} {public global
 } 
 
+decl {\#include "Fl_Text_Display_Log.h"} {public global
+} 
+
 class AlabGui {open
 } {
   Function {make_window()} {open
   } {
     Fl_Window {} {
       label {Assembler Lab} open
-      xywh {482 290 1032 694} type Double visible
+      xywh {485 290 1032 694} type Double visible
     } {
-      Fl_Text_Editor srcCode {
+      Fl_Text_Editor srcCode {selected
         xywh {4 85 510 505} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
@@ -69,12 +72,13 @@ class AlabGui {open
         callback {onExampleSelection();} open
         xywh {5 21 259 24} align 5
       } {}
-      Fl_Browser bLog {
-        xywh {4 594 1021 96} color 0 textcolor 63
+      Fl_Text_Display log {
+        xywh {4 594 1021 96}
+        class Fl_Text_Display_Log
       }
       Fl_Check_Button cbAtt {
         label {at&&t syntax}
-        callback {onDialectChange();} selected
+        callback {onDialectChange();}
         xywh {176 47 28 28} down_box DOWN_BOX
       }
     }

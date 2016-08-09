@@ -71,21 +71,33 @@ const char *configTriple = NULL;
     (instead of printing to stderr) */
 void srcMgrDiagHndlr(const SMDiagnostic &diag, void *ctx)
 {
-    printf("Source Manager Diagnostic Handler:\n");
-  
+    char buf[128];
+    //printf("Source Manager Diagnostic Handler:\n");
+ 
     switch(diag.getKind()) {
         case SourceMgr::DK_Note:
-            printf("NOTE "); break;
+            gui->log->setColor(FL_WHITE);
+            gui->log->append("NOTE "); 
+            break;
         case SourceMgr::DK_Warning:
-            printf("WARNING "); break;
+            gui->log->setColor(FL_YELLOW);
+            gui->log->append("WARNING ");
+            break;
         case SourceMgr::DK_Error:
-            printf("ERROR "); break;
+            gui->log->setColor(FL_RED);
+            gui->log->append("ERROR "); 
+            break;
     }
 
     std::string fName(diag.getFilename());
     std::string message(diag.getMessage());
-
-    printf("line %d: %s\n", diag.getLineNo(), message.c_str());
+   
+    gui->log->setColor(FL_WHITE);
+    sprintf(buf, "line %d: ", diag.getLineNo());
+    gui->log->append(buf);
+    gui->log->append(message.c_str());
+    sprintf(buf, "\n");
+    gui->log->append(buf);
 }
 
 /*****************************************************************************/
@@ -197,8 +209,8 @@ assemble()
     std::string strErr;
     const Target *TheTarget = TargetRegistry::lookupTarget(/*arch*/"", TheTriple, strErr);
     if (!TheTarget) {
-        gui->bLog->add("TargetRegistry::lookupTarget() failed");
-        gui->bLog->add(strErr.c_str());
+        gui->log->append("TargetRegistry::lookupTarget() failed");
+        gui->log->append(strErr.c_str());
         return;
     }
 

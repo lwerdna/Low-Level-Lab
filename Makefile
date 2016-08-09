@@ -32,6 +32,9 @@ Fl_Text_Editor_C.o: Fl_Text_Editor_C.cxx Fl_Text_Editor_C.h
 Fl_Text_Editor_Asm.o: Fl_Text_Editor_Asm.cxx Fl_Text_Editor_Asm.h
 	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c Fl_Text_Editor_Asm.cxx
 
+Fl_Text_Display_Log.o: Fl_Text_Display_Log.cxx Fl_Text_Display_Log.h
+	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c Fl_Text_Display_Log.cxx
+
 ClabGui.o: ClabGui.cxx ClabGui.h
 	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c ClabGui.cxx
 
@@ -61,8 +64,8 @@ rsrc.o: rsrc.c rsrc.h
 clab: ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o Makefile
 	$(LINK) ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o -o clab $(LD_FLTK)
 
-alab: rsrc.o AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o Makefile
-	$(LINK) AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
+alab: rsrc.o AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o Fl_Text_Display_Log.o Makefile
+	$(LINK) AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o Fl_Text_Display_log.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
 
 # OTHER targets
 #

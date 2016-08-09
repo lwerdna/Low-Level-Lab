@@ -4,11 +4,11 @@
 #define AlabGui_h
 #include <FL/Fl.H>
 #include "Fl_Text_Editor_Asm.h"
+#include "Fl_Text_Display_Log.h"
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Output.H>
 #include <FL/Fl_Input_Choice.H>
-#include <FL/Fl_Browser.H>
 #include <FL/Fl_Check_Button.H>
 
 class AlabGui {
@@ -32,7 +32,7 @@ private:
   inline void cb_icExamples_i(Fl_Input_Choice*, void*);
   static void cb_icExamples(Fl_Input_Choice*, void*);
 public:
-  Fl_Browser *bLog;
+  Fl_Text_Display_Log *log;
   Fl_Check_Button *cbAtt;
 private:
   inline void cb_cbAtt_i(Fl_Check_Button*, void*);
