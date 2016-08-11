@@ -1,5 +1,9 @@
 /* FL_Text_Editor with C/C++ syntax highlighting (from fltk editor example) */
 
+#include <cctype>
+#include <locale>
+using namespace std;
+
 #include <FL/Fl.H>
 #include <FL/x.H> // for fl_open_callback
 #include <FL/Fl_Group.H>

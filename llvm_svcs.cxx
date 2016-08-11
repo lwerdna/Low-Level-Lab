@@ -66,7 +66,7 @@ diag_cb(const SMDiagnostic &diag, void *param)
     // call back back to llvm_svcs user
     string fileName = diag.getFilename().str();
     string message = diag.getMessage().str();
-    pfunc(diag.getKind(), fileName.c_str(), diag.getLineNo(), message.c_str()); 
+    pfunc(k, fileName.c_str(), diag.getLineNo(), message.c_str()); 
 }
 
 int 

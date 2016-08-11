@@ -1,6 +1,6 @@
 #pragma once
 
-#include <FL/Fl_Text_Editor.h>
+#include <FL/Fl_Text_Editor.H>
 
 #define X86_FLAVOR_ATT 0
 #define X86_FLAVOR_INTEL 1

@@ -1,6 +1,9 @@
 /* FL_Text_Editor with assembly syntax highlighting */
 
-#include <string.h>
+#include <string>
+#include <cctype>
+#include <locale>
+using namespace std;
 
 #include <FL/Fl.H>
 #include <FL/x.H> // for fl_open_callback
@@ -119,7 +122,7 @@ style_parse_x86_att(const char *text, char *style, int length)
 
         /* pick out labels */
         if(boring && (length-i >= 3) && text[i] != ' ') {
-            char *b = strstr(text+i, "\n");
+            const char *b = strstr(text+i, "\n");
             if(b && b!=(text+i) && b[-1] == ':') {
                 int labelLen = b - (text+i);
                 //printf("labelLen is %d\n", labelLen);
@@ -179,7 +182,7 @@ style_parse_x86_intel(const char *text, char *style, int length)
 
         /* pick out labels */
         if(boring && (length-i >= 3) && text[i] != ' ') {
-            char *b = strstr(text+i, "\n");
+            const char *b = strstr(text+i, "\n");
             if(b && b!=(text+i) && b[-1] == ':') {
                 int labelLen = b - (text+i);
                 //printf("labelLen is %d\n", labelLen);

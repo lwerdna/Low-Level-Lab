@@ -1,6 +1,6 @@
 #pragma once
 
-#include <FL/Fl_Text_Editor.h>
+#include <FL/Fl_Text_Editor.H>
 
 class Fl_Text_Editor_C : public Fl_Text_Editor {
     private:

@@ -1,5 +1,6 @@
 #include <time.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include <FL/Fl.H>
 #include <FL/Fl_Text_Buffer.H>
