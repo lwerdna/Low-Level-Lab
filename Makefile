@@ -1,20 +1,9 @@
 FLAGS_DEBUG = -g -O0
-FLAGS_LLVM = $(shell llvm-config --cxxflags) -fno-rtti
+FLAGS_LLVM = $(shell llvm-config --cxxflags)
 FLAGS_FLTK = $(shell fltk-config --use-images --cxxflags )
 #LDFLAGS  = $(shell fltk-config --use-images --ldflags )
 LD_FLTK = $(shell fltk-config --use-images --ldstaticflags ) -lautils
-LD_LLVM = -lLLVMSupport \
-    -lLLVMMC -lLLVMMCParser -lLLVMMCDisassembler \
-    -lLLVMAsmParser -lLLVMAsmPrinter \
-    -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMX86Disassembler -lLLVMX86Utils \
-    -lLLVMX86AsmPrinter -lLLVMX86Desc -lLLVMX86Info \
-    -lLLVMArmAsmParser -lLLVMArmCodeGen -lLLVMArmDisassembler \
-    -lLLVMArmAsmPrinter -lLLVMArmDesc -lLLVMArmInfo \
-    -lLLVMAArch64AsmParser -lLLVMAArch64CodeGen -lLLVMAArch64Disassembler -lLLVMAArch64Utils \
-    -lLLVMAArch64AsmPrinter -lLLVMAArch64Desc -lLLVMAArch64Info \
-    -lLLVMPowerPCAsmParser -lLLVMPowerPCCodeGen -lLLVMPowerPCDisassembler \
-    -lLLVMPowerPCAsmPrinter -lLLVMPowerPCDesc -lLLVMPowerPCInfo \
-    -lncurses
+LD_LLVM = $(shell llvm-config --ldflags) $(shell llvm-config --libs)
 LINK = $(CXX)
 
 # this is a pattern rule
@@ -47,7 +36,11 @@ ClabLogic.o: ClabLogic.cxx ClabLogic.h
 	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c ClabLogic.cxx
 
 AlabLogic.o: AlabLogic.cxx AlabLogic.h
-	g++ $(FLAGS_FLTK) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c AlabLogic.cxx
+	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c AlabLogic.cxx
+
+# OTHER objects
+llvm_svcs.o: llvm_svcs.cxx llvm_svcs.h
+	g++ $(FLAGS_LLVM) $(FLAGS_DEBUG) -c llvm_svcs.cxx
 
 # RESOURCES
 rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s ./rsrc/x86_intel.s ./rsrc/x86_64_intel.s
@@ -64,8 +57,8 @@ rsrc.o: rsrc.c rsrc.h
 clab: ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o Makefile
 	$(LINK) ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o -o clab $(LD_FLTK)
 
-alab: rsrc.o AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o Fl_Text_Display_Log.o Makefile
-	$(LINK) AlabGui.o AlabLogic.o Fl_Text_Editor_Asm.o Fl_Text_Display_log.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
+alab: rsrc.o AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_Log.o Makefile
+	$(LINK) AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_log.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
 
 # OTHER targets
 #
