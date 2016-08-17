@@ -1,0 +1,46 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0303 
+header_name {.h} 
+code_name {.cxx}
+decl {\#include "HlabLogic.h"} {private global
+} 
+
+decl {\#include "HexView.h"} {public global
+} 
+
+class HlabGui {open
+} {
+  Function {make_window()} {open
+  } {
+    Fl_Window mainWindow {
+      label {Hex Lab} open
+      xywh {288 170 604 527} type Double visible
+    } {
+      Fl_Menu_Bar menuBar {
+        label menu open
+        xywh {0 0 604 20} color 29
+      } {}
+      Fl_Box hexView {
+        xywh {0 20 604 480} box BORDER_BOX color 7 labeltype NO_LABEL
+        class HexView
+      }
+      Fl_Output statusBar {selected
+        xywh {0 500 604 20} color 29
+      }
+    }
+  }
+} 
+
+Function {} {open
+} {
+  code {HlabGui gui;
+Fl_Double_Window *w = gui.make_window();
+onGuiFinished(&gui);
+Fl::add_idle(onIdle, &gui);
+w->end();
+w->show();
+int rc = Fl::run();
+onExit();
+return rc;
+/* fluid will insert Fl::run() here... */} {}
+} 
