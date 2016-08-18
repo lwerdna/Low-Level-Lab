@@ -27,6 +27,9 @@ class HexView : public Fl_Widget {
     int getNumBytesCapacity();
     int getNumBytesInView();
     int getNumLinesInView();
+    void getAddrRangeInView(uint64_t *start, uint64_t *end);
+    int viewAddrToBytesXY(uint64_t addr, int *x, int *y);
+    int viewAddrToAsciiXY(uint64_t addr, int *x, int *y);
 
     private:
     int addrMode; // 32 or 64
@@ -56,5 +59,6 @@ class HexView : public Fl_Widget {
 
     int cursorOffs;
 
+    int selEditing=0, selActive=0;
     uint64_t selAddrStart, selAddrEnd;
 };
