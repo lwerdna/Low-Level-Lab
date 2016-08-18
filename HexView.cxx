@@ -246,7 +246,6 @@ void HexView::draw(void)
         /* if the highlight is light, draw dark, and visa versa */
         fl_color(0x000000);
 
-        printf("drawing text at (%d, %d)\n", x0+addrWidth, y0+(curLine+1)*lineHeight);
         fl_draw(buf, x0+addrWidth, y0+(curLine+1)*lineHeight);
     }
 
@@ -320,6 +319,7 @@ int HexView::handle(int event)
     else
     if(event == FL_KEYDOWN) {
         int numBytesInView = getNumBytesInView();
+        uint64_t addrViewEnd = addrView + numBytesInView;
 
         int keyCode = Fl::event_key();
 
@@ -344,22 +344,47 @@ int HexView::handle(int event)
                 else if(keyCode == FL_Left) delta = -1;
                 else if(keyCode == FL_Right) delta = 1;
                 else if(keyCode == FL_Down) delta = 16;
+    
+                int hypothOffs = cursorOffs + delta;
+                uint64_t hypothAddr = addrView + cursorOffs + delta;
+                printf("hypothOffs: %d\n", hypothOffs);
+                printf("hypothAddr: %016llx\n", hypothAddr);
 
-                int hypoth = cursorOffs + delta;
-                printf("hypoth: %d\n", hypoth);
-                if(hypoth < 0 || hypoth >= numBytesInView) {
-                    printf("can't\n");
-                    rc = 1;
+                /* scroll up? */
+                if(hypothAddr < addrView && hypothAddr >= addrStart) {
+                    addrView -= bytesPerLine;
+                    cursorOffs = hypothAddr - addrView;
+                    redraw();
+                }
+                /* scroll down? */
+                else
+                if(hypothAddr >= addrViewEnd &&
+                  hypothAddr < addrEnd) {
+                    addrView += bytesPerLine;
+                    cursorOffs = hypothAddr - addrView;
+                    redraw();
+                }
+                /* cannot decrease */
+                else
+                if(hypothAddr < addrStart) {
+                    printf("can't move left\n");
+                }
+                else
+                if(hypothAddr >= addrEnd) {
+                    printf("can't move right\n");
                 }
                 else {
                     cursorOffs += delta;
-                    if(selEditing) {
-                        selAddrEnd += delta;
-                        printf("selection modified to [%016llx,%016llx]\n", selAddrStart, selAddrEnd);
-                    }
-                    rc = 1;
                     redraw();
                 }
+                
+                /* modify the selection to the new cursor position */
+                if(selEditing) {
+                    selAddrEnd = addrView + cursorOffs + 1;
+                    printf("selection modified to [%016llx,%016llx]\n", selAddrStart, selAddrEnd);
+                }
+
+                rc = 1;
                 break;
             }
 
