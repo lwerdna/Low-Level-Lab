@@ -30,6 +30,8 @@ class HexView : public Fl_Widget {
     void getAddrRangeInView(uint64_t *start, uint64_t *end);
     int viewAddrToBytesXY(uint64_t addr, int *x, int *y);
     int viewAddrToAsciiXY(uint64_t addr, int *x, int *y);
+    int viewOffsToBytesXY(int offset, int *x, int *y);
+    int viewOffsToAsciiXY(int offset, int *x, int *y);
 
     private:
     int addrMode; // 32 or 64

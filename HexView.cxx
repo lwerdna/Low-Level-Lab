@@ -97,7 +97,6 @@ int HexView::viewAddrToBytesXY(uint64_t addr, int *x, int *y)
     if(addr < left || addr >= right) return -1;
 
     int offs = addr - addrView;
-
     int lineNum = offs / 16;
     int colNum = offs % 16;
 
@@ -109,9 +108,28 @@ int HexView::viewAddrToBytesXY(uint64_t addr, int *x, int *y)
 
 int HexView::viewAddrToAsciiXY(uint64_t addr, int *x, int *y)
 {
-    if(0 != viewAddrToBytesXY(addr, x, y)) return -1;
-    *x += bytesWidth;
+    uint64_t left, right;
+    getAddrRangeInView(&left, &right);
+    if(addr < left || addr >= right) return -1;
+
+    int offs = addr - addrView;
+    int lineNum = offs / 16;
+    int colNum = offs % 16;
+
+    *x = Fl::x() + marginLeft + addrWidth + bytesWidth + colNum*charWidth;
+    *y = Fl::y() + marginTop + lineNum*lineHeight;
+
     return 0;
+}
+
+int HexView::viewOffsToBytesXY(int offset, int *x, int *y)
+{
+    return viewAddrToBytesXY(addrView + offset, x, y);
+}
+
+int HexView::viewOffsToAsciiXY(int offset, int *x, int *y)
+{
+    return viewAddrToAsciiXY(addrView + offset, x, y);
 }
 
 void HexView::draw(void)
@@ -147,8 +165,10 @@ void HexView::draw(void)
                 FL_GREEN);
     */
 
+    uint64_t addrViewStart, addrViewEnd;
+    getAddrRangeInView(&addrViewStart, &addrViewEnd);
     int nBytesToDraw = getNumBytesInView();
-    int nLinesToDraw = (nBytesToDraw + (bytesPerLine-1)) / bytesPerLine;
+    int nLinesToDraw = getNumLinesInView();
 
     /* draw the addresses */
     uint64_t addrCurr = addrView;
@@ -178,55 +198,14 @@ void HexView::draw(void)
     if(selActive) {
         fl_color(0xFFFF0000);
 
-        int nBytesLeft = nBytesToDraw;
-    
-        for(int curLine=0; nBytesLeft>0; ++curLine) {
-            int addrLineStart = addrView + curLine*bytesPerLine;
-            int addrLineEnd = addrLineStart + std::min(bytesPerLine, nBytesLeft);
-
-            #define WITHIN(X) ((X)>=selAddrStart && (X)<=selAddrEnd)
-            int cond;
-            if(WITHIN(addrLineStart)) cond += 2;
-            if(WITHIN(addrLineEnd)) cond += 1;
-
-            uint64_t addrHlStart = -1;
-            uint64_t addrHlEnd = -1;
-
-            printf("selection conditon: %d\n", cond);
-            switch(cond) {
-                case 0: // neither are within the selection, do nothing
-                    break;
-                case 1: // the RHS is within the selection, but not the left
-                    addrHlStart = selAddrStart;
-                    addrHlEnd = addrLineEnd;
-                    break;
-                case 2: // the LHS is within the selection, but not the right
-                    addrHlStart = addrLineEnd;
-                    addrHlEnd = selAddrEnd;
-                    break;
-                case 3: // they're both in, highlight the whole line
-                    addrHlStart = addrLineStart;
-                    addrHlEnd = addrLineEnd;
-                    break;
+        for(uint64_t addr=addrViewStart; addr<addrViewEnd; ++addr) {
+            if(addr>=selAddrStart && addr<selAddrEnd) {
+                int x, y;
+                viewAddrToBytesXY(addr, &x, &y);
+                fl_rectf(x-1, y+3, 3*charWidth, lineHeight);
+                viewAddrToAsciiXY(addr, &x, &y);
+                fl_rectf(x-1, y+3, 1*charWidth, lineHeight);
             }
-
-            if(addrHlStart != -1) {
-                int offsHlStart = addrHlStart - addrLineStart;
-                int offsHlEnd = addrHlEnd - addrLineStart;
-                int numHlChars = offsHlEnd - offsHlStart;
-
-                int rectX = x0+addrWidth + offsHlStart*byteWidth;
-                int rectY = y0+(curLine*lineHeight);
-                fl_rectf(rectX-1, rectY+3, (3*charWidth-1)*numHlChars+3, lineHeight+1);
-            }
-                                     
-            if(nBytesLeft < 16) {
-                nBytesLeft = 0;
-            }
-            else {
-                nBytesLeft -= 16;
-            }
-    
         }
     }
 
@@ -347,10 +326,12 @@ int HexView::handle(int event)
         switch(keyCode) {
             case FL_Shift_L:
             case FL_Shift_R:
-                selAddrStart = selAddrEnd = addrView + cursorOffs;
-                printf("selection started to [%016llx,%016llx]\n", selAddrStart, selAddrEnd);
+                selAddrStart = addrView + cursorOffs;
+                selAddrEnd = selAddrStart + 1; // remember RHS is ')' inclusion
+                printf("selection started to [%016llx,%016llx)\n", selAddrStart, selAddrEnd);
                 selEditing = selActive = 1;
                 rc = 1;
+                redraw();
                 break;
 
             case FL_Up:
@@ -365,8 +346,10 @@ int HexView::handle(int event)
                 else if(keyCode == FL_Down) delta = 16;
 
                 int hypoth = cursorOffs + delta;
+                printf("hypoth: %d\n", hypoth);
                 if(hypoth < 0 || hypoth >= numBytesInView) {
                     printf("can't\n");
+                    rc = 1;
                 }
                 else {
                     cursorOffs += delta;
