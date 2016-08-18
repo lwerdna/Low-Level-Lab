@@ -397,6 +397,24 @@ int HexView::handle(int event)
                 break;
             }
 
+            case FL_Home:
+                setView(addrStart);
+                break;
+
+            case FL_End:
+                if(addrStart + bytesPerPage >= addrEnd) {
+                    setView(addrStart);
+                }
+                else {
+                    printf("addrEnd: %llX\n", addrEnd);
+                    printf("bytesPerPage: %d\n", bytesPerPage);
+                    uint64_t addrNew = addrEnd - bytesPerPage;
+                    addrNew += bytesPerLine - (addrNew % bytesPerLine);
+                    printf("addrNew: %llX\n", addrNew);
+                    setView(addrNew);
+                }
+                break;
+
             case FL_Page_Up:
                 if(addrViewStart == addrStart) {
                     printf("at page 0\n");
