@@ -23,8 +23,10 @@ class HexView : public Fl_Widget {
     //int getCursorLoc(int *loc);
     //int getSelection(uint64_t &addrStart, uint64_t &addrEnd);
 
-    int getNumLines();
-    int getNumBytesDisplayable();
+    int getNumLinesCapacity();
+    int getNumBytesCapacity();
+    int getNumBytesInView();
+    int getNumLinesInView();
 
     private:
     int addrMode; // 32 or 64
@@ -35,13 +37,13 @@ class HexView : public Fl_Widget {
 
     uint8_t *bytes;
     int nBytes;
-    int addrWidth;
-    int addrWidth64;
-    int addrWidth32;
-    int byteWidth;
-    int bytesWidth;
-    int asciiWidth;
-    int charWidth;
+    int addrWidth=0;
+    int addrWidth64=0;
+    int addrWidth32=0;
+    int byteWidth=0;
+    int bytesWidth=0;
+    int asciiWidth=0;
+    int charWidth=0;
     int marginLeft, marginRight, marginTop, marginBottom;
     int viewWidth, viewHeight;
     int lineWidth, lineHeight;
@@ -51,6 +53,8 @@ class HexView : public Fl_Widget {
     vector<uint64_t> hlStarts;
     map<uint64_t,uint64_t> hlStartToEnd;
     map<uint64_t,uint64_t> hlStartToColor;
+
+    int cursorOffs;
 
     uint64_t selAddrStart, selAddrEnd;
 };

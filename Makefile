@@ -1,3 +1,4 @@
+CFLAGS = -std=c++11
 FLAGS_DEBUG = -g -O0
 FLAGS_LLVM = $(shell llvm-config --cxxflags)
 FLAGS_FLTK = $(shell fltk-config --use-images --cxxflags )
@@ -16,40 +17,40 @@ all: clab alab hlab
 # GUI objects
 #
 Fl_Text_Editor_C.o: Fl_Text_Editor_C.cxx Fl_Text_Editor_C.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c Fl_Text_Editor_C.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c Fl_Text_Editor_C.cxx
 
 Fl_Text_Editor_Asm.o: Fl_Text_Editor_Asm.cxx Fl_Text_Editor_Asm.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c Fl_Text_Editor_Asm.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c Fl_Text_Editor_Asm.cxx
 
 Fl_Text_Display_Log.o: Fl_Text_Display_Log.cxx Fl_Text_Display_Log.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c Fl_Text_Display_Log.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c Fl_Text_Display_Log.cxx
 
 HexView.o: HexView.cxx HexView.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c HexView.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c HexView.cxx
 
 ClabGui.o: ClabGui.cxx ClabGui.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c ClabGui.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c ClabGui.cxx
 
 HlabGui.o: HlabGui.cxx HlabGui.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c HlabGui.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c HlabGui.cxx
 
 AlabGui.o: AlabGui.cxx AlabGui.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c AlabGui.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c AlabGui.cxx
 
 # LOGIC objects
 #
 ClabLogic.o: ClabLogic.cxx ClabLogic.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c ClabLogic.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c ClabLogic.cxx
 
 AlabLogic.o: AlabLogic.cxx AlabLogic.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c AlabLogic.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c AlabLogic.cxx
 
 HlabLogic.o: HlabLogic.cxx HlabLogic.h
-	g++ $(FLAGS_FLTK) $(FLAGS_DEBUG) -c HlabLogic.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c HlabLogic.cxx
 
 # OTHER objects
 llvm_svcs.o: llvm_svcs.cxx llvm_svcs.h
-	g++ $(FLAGS_LLVM) $(FLAGS_DEBUG) -c llvm_svcs.cxx
+	g++ $(CFLAGS) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c llvm_svcs.cxx
 
 # RESOURCES
 rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s ./rsrc/x86_intel.s ./rsrc/x86_64_intel.s

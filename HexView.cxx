@@ -34,11 +34,14 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
     fl_measure("DEADBEEF: ", addrWidth32, lineHeight); 
     fl_measure("DEADBEEFCAFEBABE: ", addrWidth64, lineHeight); 
     fl_measure("0", charWidth, lineHeight); 
+    printf("lineHeight: %d\n", lineHeight);
     fl_measure("00 ", byteWidth, lineHeight); 
+    printf("lineHeight: %d\n", lineHeight);
     fl_measure("00 11 22 33 44 55 66 77 88 99 AA BB CC DD EE FF  ", bytesWidth,
         lineHeight);
 
     fl_measure("abcdefghijklmnop", asciiWidth, lineHeight);
+    printf("lineHeight: %d\n", lineHeight);
    
     /* set mode, calculate address width */
     addrMode = 32;
@@ -61,6 +64,7 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
 
     /* initial color, selection */
     //selActive = 0;
+    cursorOffs = 0;
 }
 
 void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
@@ -116,25 +120,20 @@ void HexView::draw(void)
                 FL_GREEN);
     */
 
-    int nLinesMax = (h() - marginTop - marginBottom) / lineHeight;
-    int nLinesNeeded = (addrEnd - addrView + (bytesPerLine-1)) / bytesPerLine;
-    int nLinesDraw = std::min(nLinesMax, nLinesNeeded);
+    int nBytesToDraw = getNumBytesInView();
+    int nLinesToDraw = (nBytesToDraw + (bytesPerLine-1)) / bytesPerLine;
 
     /* draw the addresses */
     uint64_t addrCurr = addrView;
 
     fl_color(0x00640000);
 
-    for(int i=0; i<nLinesDraw; ++i) {
-        int strLen;
-
+    for(int i=0; i<nLinesToDraw; ++i) {
         if(addrMode == 32) {
-            sprintf(buf, "%08llX: ", addrCurr + i*bytesPerLine);
-            strLen = 10;
+            sprintf(buf, "%08llX: ", addrCurr);
         }
         else if(addrMode == 64) {
-            sprintf(buf, "%016llX: ", addrCurr + i*bytesPerLine);
-            strLen = 18;
+            sprintf(buf, "%016llX: ", addrCurr);
         }
        
         fl_draw(buf, x0+0, y0 + (i+1)*lineHeight);
@@ -148,15 +147,14 @@ void HexView::draw(void)
 //            fl_rectf(x0+addrWidth + bi*byteWidth, y0+(line*lineHeight)+4, charWidth*2, lineHeight);
 //        }
 
+
     /* draw the bytes */
-    int nBytesMax = nLinesMax * bytesPerLine;
-    int nBytesNeeded = addrEnd - addrView;
-    int nBytesDraw = std::min(nBytesMax, nBytesNeeded);
     uint8_t *b = bytes + (addrView - addrStart);
 
-    for(int i=0; nBytesDraw>0; ++i)
-    {
-        switch(nBytesDraw) {
+    int nBytesLeft = nBytesToDraw;
+
+    for(int curLine=0; nBytesLeft>0; ++curLine) {
+        switch(nBytesLeft) {
             case 0: break;
             case 1: sprintf(buf, "%02X", b[0]); break;
             case 2: sprintf(buf, "%02X %02X", b[0],b[1]); break;
@@ -176,27 +174,29 @@ void HexView::draw(void)
             default: sprintf(buf, "%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X", b[0],b[1],b[2],b[3],b[4],b[5],b[6],b[7],b[8],b[9],b[10],b[11],b[12],b[13],b[14],b[15]); break;
         }
 
-        if(nBytesDraw < 16) {
-            nBytesDraw = 0;
+        if(nBytesLeft < 16) {
+            nBytesLeft = 0;
         }
         else {
-            nBytesDraw -= 16;
+            nBytesLeft -= 16;
             b += 16;
         }
 
         /* if the highlight is light, draw dark, and visa versa */
         fl_color(0x000000);
-        fl_draw(buf, x0+addrWidth, y0+(i+1)*lineHeight);
+
+        printf("drawing text at (%d, %d)\n", x0+addrWidth, y0+(curLine+1)*lineHeight);
+        fl_draw(buf, x0+addrWidth, y0+(curLine+1)*lineHeight);
     }
 
     /* draw the ascii */  
     #define B2A(X) ( ((X)>=' ' && (X)<='~') ? (X) : '.' )
-    nBytesDraw = std::min(nBytesMax, nBytesNeeded);
+    nBytesLeft = nBytesToDraw;
     b = bytes + (addrView - addrStart);
 
-    for(int i=0; nBytesDraw>0; ++i)
+    for(int curLine=0; nBytesLeft>0; ++curLine)
     {
-        switch(nBytesDraw) {
+        switch(nBytesLeft) {
             case 0: break;
             case 1: sprintf(buf, "%c", B2A(b[0])); break;
             case 2: sprintf(buf, "%c%c", B2A(b[0]),B2A(b[1])); break;
@@ -216,18 +216,33 @@ void HexView::draw(void)
             default: sprintf(buf, "%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c", B2A(b[0]),B2A(b[1]),B2A(b[2]),B2A(b[3]),B2A(b[4]),B2A(b[5]),B2A(b[6]),B2A(b[7]),B2A(b[8]),B2A(b[9]),B2A(b[10]),B2A(b[11]),B2A(b[12]),B2A(b[13]),B2A(b[14]),B2A(b[15])); break;
         }
 
-        if(nBytesDraw <= 16) {
-            nBytesDraw = 0;
+        if(nBytesLeft <= 16) {
+            nBytesLeft = 0;
         }
         else {
-            nBytesDraw -= 16;
+            nBytesLeft -= 16;
             b += 16;
         }
 
         /* if the highlight is light, draw dark, and visa versa */
         fl_color(0x0000FF00);
-        fl_draw(buf, x0+addrWidth+bytesWidth, y0+((i+1) * lineHeight));
+        fl_draw(buf, x0+addrWidth+bytesWidth, y0+((curLine+1) * lineHeight));
     }
+
+    /* draw the cursor */
+    fl_color(0xff000000);
+    int cursorRow = cursorOffs / 16;
+    int cursorCol = cursorOffs % 16;
+    printf("cursorRow: %d\n", cursorRow);
+    printf("cursorCol: %d\n", cursorCol);
+
+    int rectX = x0+ addrWidth + cursorCol*byteWidth;
+    int rectY = y0+ cursorRow*lineHeight;
+    fl_rect(rectX-1, rectY+3, charWidth*2+3, lineHeight+1);
+
+    rectX = x0+addrWidth+bytesWidth + cursorCol*charWidth;
+    rectY = y0+(cursorRow*lineHeight);
+    fl_rect(rectX-1, rectY+3, charWidth+3, lineHeight+1);
 
     //fl_pop_clip();
 }
@@ -236,6 +251,56 @@ int HexView::handle(int event)
 {
     int x, y;
     int rc = 0; /* 0 if not used or understood, 1 if event was used and can be deleted */
+
+
+    if(event == FL_FOCUS || event == FL_UNFOCUS) {
+        /* To receive FL_KEYBOARD events you must also respond to the FL_FOCUS
+            and FL_UNFOCUS events by returning 1. */
+        rc = 1;
+    }
+
+    if(event == FL_KEYDOWN) {
+        int numBytesInView = getNumBytesInView();
+
+        int keyCode = Fl::event_key();
+        if(keyCode == FL_Up) {
+            if(cursorOffs < 16) {
+                printf("can't\n");
+            }
+            else {
+                cursorOffs -= 16;
+                redraw();
+            }
+        }
+        if(keyCode == FL_Left) {
+            if(cursorOffs <= 0) {
+                printf("can't\n");
+            }
+            else {
+                cursorOffs -= 1;
+                redraw();
+            }
+        }
+        if(keyCode == FL_Right) {
+            if(cursorOffs >= (numBytesInView-1)) {
+                printf("can't\n");
+            }
+            else {
+                cursorOffs += 1;
+                redraw();
+            }
+        }
+        if(keyCode == FL_Down) {
+            if((cursorOffs + 16) >= (numBytesInView)) {
+                printf("can't\n");
+            }
+            else {
+                cursorOffs += 16;
+                redraw();
+            }
+        }
+        rc = 1;
+    }
 
 //    if(event == FL_PUSH) {
 //        lastPushX = Fl::event_x();
@@ -278,12 +343,27 @@ void HexView::resize(int x, int y, int w, int h) {
     return;
 }
 
-int HexView::getNumLines()
+int HexView::getNumLinesCapacity()
 {
     return (h() - marginTop - marginBottom) / lineHeight;
 }
 
-int HexView::getNumBytesDisplayable()
+int HexView::getNumBytesCapacity()
 {
-    return getNumLines() * bytesPerLine;
+    return getNumLinesCapacity() * bytesPerLine;
 }
+
+int HexView::getNumBytesInView()
+{
+    int capacity = getNumBytesCapacity();
+    int bytesFromView = addrEnd - addrView;
+    return std::min(capacity, bytesFromView);
+}
+
+int HexView::getNumLinesInView()
+{
+    int n = getNumBytesInView();
+    return (n + (bytesPerLine-1))/bytesPerLine;
+}
+
+
