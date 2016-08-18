@@ -69,22 +69,53 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
 
 void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
 {
-    /* maybe clear highlight data? */
 
     printf("setBytes(addr=%016llX, data=<ptr>, len=0x%X\n", addr, len);
-    dump_bytes(data, len, (uintptr_t)0);
+    //dump_bytes(data, len, (uintptr_t)0);
+
+    /* maybe clear highlight data? */
+
+    /* clear the selection */
+    selEditing = selActive = 0;
+    selAddrStart = selAddrEnd = 0;
 
     addrStart = addr;
     addrEnd = addr + len; // non-inclusive ')' endpoint
     bytes = data;
-    redraw();
+    setView(addr);
 }
 
 void HexView::clearBytes(void)
 {
     addrStart = addrEnd = 0;
     bytes = NULL;
+    setView(0);
+}
+
+/* set the view, redraw, update variables */
+void HexView::setView(uint64_t addr)
+{
+    // capacity info
+    linesPerPage = (h() - marginTop - marginBottom) / lineHeight;
+    bytesPerPage = linesPerPage * bytesPerLine;
+
+    // range of displayed addresses
+    addrViewStart = addr;
+    if(addrViewStart + bytesPerPage >= addrEnd)
+        addrViewEnd = addrEnd;
+    else
+        addrViewEnd = addr + bytesPerPage;
+
+    // amount of bytes, lines 
+    bytesInView = std::min(bytesPerPage, (int)(addrViewEnd - addrViewStart));
+    linesInView = (bytesInView + (bytesPerLine-1)) / bytesPerLine;
+
     redraw();
+}
+
+void HexView::setView()
+{
+    setView(addrViewStart);
 }
 
 /*****************************************************************************/
@@ -92,11 +123,9 @@ void HexView::clearBytes(void)
 /*****************************************************************************/
 int HexView::viewAddrToBytesXY(uint64_t addr, int *x, int *y)
 {
-    uint64_t left, right;
-    getAddrRangeInView(&left, &right);
-    if(addr < left || addr >= right) return -1;
+    if(addr < addrViewStart || addr >= addrViewEnd) return -1;
 
-    int offs = addr - addrView;
+    int offs = addr - addrViewStart;
     int lineNum = offs / 16;
     int colNum = offs % 16;
 
@@ -108,11 +137,9 @@ int HexView::viewAddrToBytesXY(uint64_t addr, int *x, int *y)
 
 int HexView::viewAddrToAsciiXY(uint64_t addr, int *x, int *y)
 {
-    uint64_t left, right;
-    getAddrRangeInView(&left, &right);
-    if(addr < left || addr >= right) return -1;
+    if(addr < addrViewStart || addr >= addrViewEnd) return -1;
 
-    int offs = addr - addrView;
+    int offs = addr - addrViewStart;
     int lineNum = offs / 16;
     int colNum = offs % 16;
 
@@ -124,12 +151,12 @@ int HexView::viewAddrToAsciiXY(uint64_t addr, int *x, int *y)
 
 int HexView::viewOffsToBytesXY(int offset, int *x, int *y)
 {
-    return viewAddrToBytesXY(addrView + offset, x, y);
+    return viewAddrToBytesXY(addrViewStart + offset, x, y);
 }
 
 int HexView::viewOffsToAsciiXY(int offset, int *x, int *y)
 {
-    return viewAddrToAsciiXY(addrView + offset, x, y);
+    return viewAddrToAsciiXY(addrViewStart + offset, x, y);
 }
 
 void HexView::draw(void)
@@ -153,29 +180,14 @@ void HexView::draw(void)
         left corner, but is on text's bottom left corner (which is why we have
         (line+1) */
 
-    /* draw the following to enable debugging of margins/border */
-
     fl_draw_box(FL_FLAT_BOX, x(), y(), w(), h(), fl_rgb_color(255, 255, 255));
-    /*
-    fl_draw_box(FL_FLAT_BOX, 
-                x() + marginLeft, 
-                y() + marginTop, 
-                w() - marginLeft - marginRight, 
-                h() - marginTop - marginBottom, 
-                FL_GREEN);
-    */
-
-    uint64_t addrViewStart, addrViewEnd;
-    getAddrRangeInView(&addrViewStart, &addrViewEnd);
-    int nBytesToDraw = getNumBytesInView();
-    int nLinesToDraw = getNumLinesInView();
 
     /* draw the addresses */
-    uint64_t addrCurr = addrView;
+    uint64_t addrCurr = addrViewStart;
 
     fl_color(0x00640000);
 
-    for(int i=0; i<nLinesToDraw; ++i) {
+    for(int i=0; i<linesInView; ++i) {
         if(addrMode == 32) {
             sprintf(buf, "%08llX: ", addrCurr);
         }
@@ -210,9 +222,9 @@ void HexView::draw(void)
     }
 
     /* draw the bytes */
-    uint8_t *b = bytes + (addrView - addrStart);
+    uint8_t *b = bytes + (addrViewStart - addrStart);
 
-    int nBytesLeft = nBytesToDraw;
+    int nBytesLeft = bytesInView;
 
     for(int curLine=0; nBytesLeft>0; ++curLine) {
         switch(nBytesLeft) {
@@ -251,8 +263,8 @@ void HexView::draw(void)
 
     /* draw the ascii */  
     #define B2A(X) ( ((X)>=' ' && (X)<='~') ? (X) : '.' )
-    nBytesLeft = nBytesToDraw;
-    b = bytes + (addrView - addrStart);
+    nBytesLeft = bytesInView;
+    b = bytes + (addrViewStart - addrStart);
 
     for(int curLine=0; nBytesLeft>0; ++curLine)
     {
@@ -318,15 +330,15 @@ int HexView::handle(int event)
     }
     else
     if(event == FL_KEYDOWN) {
-        int numBytesInView = getNumBytesInView();
-        uint64_t addrViewEnd = addrView + numBytesInView;
+        uint64_t sampleAddrView = addrViewStart;
+        int sampleCursorOffs = cursorOffs;
 
         int keyCode = Fl::event_key();
 
         switch(keyCode) {
             case FL_Shift_L:
             case FL_Shift_R:
-                selAddrStart = addrView + cursorOffs;
+                selAddrStart = addrViewStart + cursorOffs;
                 selAddrEnd = selAddrStart + 1; // remember RHS is ')' inclusion
                 printf("selection started to [%016llx,%016llx)\n", selAddrStart, selAddrEnd);
                 selEditing = selActive = 1;
@@ -346,23 +358,26 @@ int HexView::handle(int event)
                 else if(keyCode == FL_Down) delta = 16;
     
                 int hypothOffs = cursorOffs + delta;
-                uint64_t hypothAddr = addrView + cursorOffs + delta;
+                uint64_t hypothAddr = addrViewStart + cursorOffs + delta;
+                printf("---------\n");
                 printf("hypothOffs: %d\n", hypothOffs);
                 printf("hypothAddr: %016llx\n", hypothAddr);
+                printf("addrViewStart: %016llx\n", addrViewStart);
+                printf("addrViewEnd: %016llx\n", addrViewEnd);
 
                 /* scroll up? */
-                if(hypothAddr < addrView && hypothAddr >= addrStart) {
-                    addrView -= bytesPerLine;
-                    cursorOffs = hypothAddr - addrView;
-                    redraw();
+                if(hypothAddr < addrViewStart && hypothAddr >= addrStart) {
+                    uint64_t addrNew = addrViewStart - bytesPerLine;
+                    cursorOffs = hypothAddr - addrNew;
+                    setView(addrNew);
                 }
                 /* scroll down? */
                 else
                 if(hypothAddr >= addrViewEnd &&
                   hypothAddr < addrEnd) {
-                    addrView += bytesPerLine;
-                    cursorOffs = hypothAddr - addrView;
-                    redraw();
+                    uint64_t addrNew = addrViewStart + bytesPerLine;
+                    cursorOffs = hypothAddr - addrNew;
+                    setView(addrNew);
                 }
                 /* cannot decrease */
                 else
@@ -378,21 +393,57 @@ int HexView::handle(int event)
                     redraw();
                 }
                 
-                /* modify the selection to the new cursor position */
-                if(selEditing) {
-                    selAddrEnd = addrView + cursorOffs + 1;
-                    printf("selection modified to [%016llx,%016llx]\n", selAddrStart, selAddrEnd);
-                }
-
                 rc = 1;
                 break;
             }
+
+            case FL_Page_Up:
+                if(addrViewStart == addrStart) {
+                    printf("at page 0\n");
+                }
+                else {
+                    if(addrStart + bytesPerPage < addrViewStart) {
+                        addrViewStart -= bytesPerPage;
+                    }
+                    else {
+                        addrViewStart = addrStart;
+                    }
+                    setView();
+                }
+                break;
+            
+            case FL_Page_Down:
+                if(addrViewStart + bytesPerPage >= addrEnd) {
+                    printf("at last page\n");
+                }
+                else {
+                    uint64_t addrLastPage = addrEnd - 1 - bytesPerPage;
+                    addrLastPage -= addrLastPage % bytesPerLine;
+
+                    if(addrViewStart + bytesPerPage > addrLastPage) {
+                        addrViewStart = addrLastPage;
+                    }
+                    else {
+                        addrViewStart += bytesPerPage;
+                    }
+                    setView();
+                }
+                break;
 
             case FL_Escape:
                 selActive = 0;
                 rc = 1;
                 redraw();
                 break;
+        }
+
+        /* if the view or cursor has changed... */
+        if(sampleAddrView != addrViewStart || sampleCursorOffs != cursorOffs) {
+            /* modify the selection? */
+            if(selEditing) {
+                selAddrEnd = addrViewStart + cursorOffs + 1;
+                printf("selection modified to [%016llx,%016llx]\n", selAddrStart, selAddrEnd);
+            }
         }
     }
     else
@@ -418,34 +469,7 @@ void HexView::resize(int x, int y, int w, int h) {
     this->y(y);
     this->h(h);
     this->w(w);
+    setView(addrViewStart);
     return;
 }
 
-int HexView::getNumLinesCapacity()
-{
-    return (h() - marginTop - marginBottom) / lineHeight;
-}
-
-int HexView::getNumBytesCapacity()
-{
-    return getNumLinesCapacity() * bytesPerLine;
-}
-
-int HexView::getNumBytesInView()
-{
-    int capacity = getNumBytesCapacity();
-    int bytesFromView = addrEnd - addrView;
-    return std::min(capacity, bytesFromView);
-}
-
-int HexView::getNumLinesInView()
-{
-    int n = getNumBytesInView();
-    return (n + (bytesPerLine-1))/bytesPerLine;
-}
-
-void HexView::getAddrRangeInView(uint64_t *start, uint64_t *end)
-{
-    *start = addrView;
-    *end = addrView + getNumBytesInView();
-}
