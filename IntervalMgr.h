@@ -14,7 +14,7 @@ class Interval
     void print();
 };
 
-class IntervMgr
+class IntervalMgr
 {
     vector<Interval> intervals;
     bool searchPrepared;

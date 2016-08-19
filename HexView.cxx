@@ -158,6 +158,11 @@ int HexView::viewOffsToAsciiXY(int offset, int *x, int *y)
 {
     return viewAddrToAsciiXY(addrViewStart + offset, x, y);
 }
+    
+void HexView::hlAdd(uint64_t left, uint64_t right, uint32_t color)
+{
+    hlRanges.add(left, right, color);
+}
 
 void HexView::draw(void)
 {
@@ -201,10 +206,18 @@ void HexView::draw(void)
     }
 
     /* draw the highlights */
-//        if(selActive && addr_ >= selAddrStart && addr_ <= selAddrEnd) {
-//            fl_color(0xffff0000);
-//            fl_rectf(x0+addrWidth + bi*byteWidth, y0+(line*lineHeight)+4, charWidth*2, lineHeight);
-//        }
+    for(uint64_t addr=addrViewStart; addr<addrViewEnd; ++addr) {
+        uint32_t color;
+
+        if(hlRanges.searchFast(addr, &color)) {
+            fl_color(color);
+            int x, y;
+            viewAddrToBytesXY(addr, &x, &y);
+            fl_rectf(x-1, y+2, 3*charWidth, lineHeight-1);
+            viewAddrToAsciiXY(addr, &x, &y);
+            fl_rectf(x-1, y+2, 1*charWidth, lineHeight-1);
+        }
+    }
 
     /* draw the selection (trumps the highlights) */
     if(selActive) {
@@ -214,9 +227,9 @@ void HexView::draw(void)
             if(addr>=selAddrStart && addr<selAddrEnd) {
                 int x, y;
                 viewAddrToBytesXY(addr, &x, &y);
-                fl_rectf(x-1, y+3, 3*charWidth, lineHeight);
+                fl_rectf(x-1, y+2, 3*charWidth, lineHeight-1);
                 viewAddrToAsciiXY(addr, &x, &y);
-                fl_rectf(x-1, y+3, 1*charWidth, lineHeight);
+                fl_rectf(x-1, y+2, 1*charWidth, lineHeight-1);
             }
         }
     }
@@ -359,11 +372,11 @@ int HexView::handle(int event)
     
                 int hypothOffs = cursorOffs + delta;
                 uint64_t hypothAddr = addrViewStart + cursorOffs + delta;
-                printf("---------\n");
-                printf("hypothOffs: %d\n", hypothOffs);
-                printf("hypothAddr: %016llx\n", hypothAddr);
-                printf("addrViewStart: %016llx\n", addrViewStart);
-                printf("addrViewEnd: %016llx\n", addrViewEnd);
+                //printf("---------\n");
+                //printf("hypothOffs: %d\n", hypothOffs);
+                //printf("hypothAddr: %016llx\n", hypothAddr);
+                //printf("addrViewStart: %016llx\n", addrViewStart);
+                //printf("addrViewEnd: %016llx\n", addrViewEnd);
 
                 /* scroll up? */
                 if(hypothAddr < addrViewStart && hypothAddr >= addrStart) {

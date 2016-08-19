@@ -277,6 +277,15 @@ onGuiFinished(HlabGui *gui_)
     
     gui->hexView->setBytes(0, (uint8_t *)initStr, strlen(initStr));
 
+    /* test some colors */
+    gui->hexView->hlAdd(3,8,  0xFF000000);
+    gui->hexView->hlAdd(8,12, 0x0FF00000);
+    gui->hexView->hlAdd(12,15,0x00FF0000);
+    gui->hexView->hlAdd(20,30,0x000FF000);
+    gui->hexView->hlAdd(35,40,0x0000FF00);
+    gui->hexView->hlAdd(50,90,0x00000FF0);
+    gui->hexView->hlAdd(100,200,0x000000FF);
+
     rc = 0;
     //cleanup:
     return;

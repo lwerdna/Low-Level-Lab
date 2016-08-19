@@ -63,19 +63,19 @@ void Interval::print()
 /* interval manager class */
 /*****************************************************************************/
 
-void IntervMgr::add(uint64_t left, uint64_t right, int32_t color)
+void IntervalMgr::add(uint64_t left, uint64_t right, int32_t color)
 {
     intervals.push_back(Interval(left, right, color));
 }
 
 /* sort by interval start address */
-void IntervMgr::sortByStartAddr()
+void IntervalMgr::sortByStartAddr()
 {
     std::sort(intervals.begin(), intervals.end(), compareByStartAddr); 
 }
 
 /* sort by interval lengths */
-void IntervMgr::sortByLength()
+void IntervalMgr::sortByLength()
 {
     std::sort(intervals.begin(), intervals.end(), compareByLength); 
 }
@@ -92,7 +92,7 @@ void IntervMgr::sortByLength()
     now you can just binary search
 */
 
-void IntervMgr::searchFastPrep()
+void IntervalMgr::searchFastPrep()
 {
     // STEP 1: sorts intervals by descending size, overlap is still possible here
     sortByLength();
@@ -191,7 +191,7 @@ void IntervMgr::searchFastPrep()
     searchPrepared = true;
 }
 
-bool IntervMgr::searchFast(uint64_t target, int i, int j, uint32_t *data)
+bool IntervalMgr::searchFast(uint64_t target, int i, int j, uint32_t *data)
 {
     //printf("searchFast(%d, %d, %d)\n", target, i, j);
 
@@ -218,12 +218,16 @@ bool IntervMgr::searchFast(uint64_t target, int i, int j, uint32_t *data)
     }
 }
 
-bool IntervMgr::searchFast(uint64_t target, uint32_t *data)
+bool IntervalMgr::searchFast(uint64_t target, uint32_t *data)
 {
+    if(intervals.size() == 0) {
+        return false;
+    }
+
     return searchFast(target, 0, intervals.size()-1, data);
 }
 
-void IntervMgr::print()
+void IntervalMgr::print()
 {
     for(unsigned int i=0; i<intervals.size(); ++i) {
         Interval intv = intervals[i];
@@ -233,7 +237,7 @@ void IntervMgr::print()
 
 //int main(int ac, char **av)
 //{
-//    IntervMgr im;
+//    IntervalMgr im;
 //
 //    /* middle case */
 //    im.add(5, 0x35, 0xAA);

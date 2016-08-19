@@ -6,6 +6,7 @@ using namespace std;
 
 #include <FL/Fl_Widget.H>
 
+#include "IntervalMgr.h"
 
 using namespace std;
 
@@ -34,6 +35,8 @@ class HexView : public Fl_Widget {
     int viewOffsToBytesXY(int offset, int *x, int *y);
     int viewOffsToAsciiXY(int offset, int *x, int *y);
 
+    void hlAdd(uint64_t left, uint64_t right, uint32_t color);
+
     private:
     int addrMode; // 32 or 64
 
@@ -58,9 +61,7 @@ class HexView : public Fl_Widget {
     int cursorOffs;
    
     /* highlight info */
-    vector<uint64_t> hlStarts;
-    map<uint64_t,uint64_t> hlStartToEnd;
-    map<uint64_t,uint64_t> hlStartToColor;
+    IntervalMgr hlRanges;
 
     /* selection info */
     int selEditing=0, selActive=0;
