@@ -4,7 +4,7 @@
 #include <algorithm>
 using namespace std;
 
-#include "IntervMgr.h"
+#include "IntervalMgr.h"
 
 /*****************************************************************************/
 /* compare functions */
@@ -104,14 +104,13 @@ void IntervMgr::searchFastPrep()
     vector<Interval> flatList;
 
     // insert into sorted (by start addr) list (removing overlap)
-    for(int i=0; i<intervals.size(); ++i) {
+    for(unsigned int i=0; i<intervals.size(); ++i) {
         Interval newGuy = intervals[i];
 
         /* see if he stomps on someone (inefficient for now)
             ... due to the way these are inserted, there should be no chance
                 for double stompage */
         bool leftBreak=false, rightBreak=false;
-        bool splitInsert=false;
 
         /* we'll collect the split intervals and stuff into this temporary
             list then append to the flat list at the end */
@@ -120,9 +119,6 @@ void IntervMgr::searchFastPrep()
         for(auto iter = flatList.begin(); iter != flatList.end();) {
             
             Interval oldGuy = *iter;
-
-            oldGuy.print();
-            newGuy.print();
 
             // case:
             // oldGuy: [            ]
@@ -135,10 +131,6 @@ void IntervMgr::searchFastPrep()
                     tmpList.push_back(Interval(oldGuy.left, newGuy.left, oldGuy.data));
                 }
                 
-                /* middle section */
-                //printf("b:\n");
-                tmpList.push_back(newGuy);
-
                 /* right section */
                 if(oldGuy.right > newGuy.right) {
                     //printf("c:\n");
@@ -160,7 +152,6 @@ void IntervMgr::searchFastPrep()
                 if(newGuy.left > oldGuy.left) {
                     tmpList.push_back(Interval(oldGuy.left, newGuy.left, oldGuy.data));
                 }
-                tmpList.push_back(newGuy);
 
                 /* since flatList is non-overlapping, the LHS cannot be
                     contained in another interval */
@@ -176,7 +167,6 @@ void IntervMgr::searchFastPrep()
                 if(oldGuy.right > newGuy.right) {
                     tmpList.push_back(Interval(newGuy.right, oldGuy.right, oldGuy.data));
                 }
-                tmpList.push_back(newGuy);
 
                 iter = flatList.erase(iter);
                 rightBreak = true;
@@ -190,14 +180,8 @@ void IntervMgr::searchFastPrep()
             }
         }
 
-        /* if we didn't collide with any other intervals, just insert normal */
-        if(tmpList.size() == 0) {
-            printf("inserting by default\n");
-            flatList.push_back(newGuy);
-        }
-        else {
-            flatList.insert(flatList.end(), tmpList.begin(), tmpList.end());
-        }
+        flatList.push_back(newGuy);
+        flatList.insert(flatList.end(), tmpList.begin(), tmpList.end());
     }
 
     // STEP 3: sort the list by starting address
@@ -207,19 +191,41 @@ void IntervMgr::searchFastPrep()
     searchPrepared = true;
 }
 
-bool IntervMgr::searchFast(uint64_t target, int i, int j)
+bool IntervMgr::searchFast(uint64_t target, int i, int j, uint32_t *data)
 {
-    return true;
+    //printf("searchFast(%d, %d, %d)\n", target, i, j);
+
+    /* base case */
+    if(i==j) {
+        if(intervals[i].contains(target)) {
+            *data = intervals[i].data;
+            return true;
+        }
+
+        return false;
+    }
+
+    /* split */
+    int idxMid = i + ((j - i) / 2);
+    Interval intMid = intervals[idxMid];
+
+    /* binary search */
+    if(target < intMid.right) {
+        return searchFast(target, i, idxMid, data);
+    }
+    else {
+        return searchFast(target, idxMid+1, j, data);
+    }
 }
 
-bool IntervMgr::searchFast(uint64_t target)
+bool IntervMgr::searchFast(uint64_t target, uint32_t *data)
 {
-    return true;
+    return searchFast(target, 0, intervals.size()-1, data);
 }
 
 void IntervMgr::print()
 {
-    for(int i=0; i<intervals.size(); ++i) {
+    for(unsigned int i=0; i<intervals.size(); ++i) {
         Interval intv = intervals[i];
         intv.print();
     }
@@ -230,12 +236,12 @@ void IntervMgr::print()
 //    IntervMgr im;
 //
 //    /* middle case */
-//    im.add(5, 50, 0xAA);
-//    im.add(8, 25, 0xBB);
+//    im.add(5, 0x35, 0xAA);
+//    im.add(8, 0x25, 0xBB);
 //
 //    /* left intersect */
-//    im.add(5, 50, 0xCC);
-//    im.add(2, 25, 0xDD);
+//    im.add(5, 0x35, 0xCC);
+//    im.add(2, 0x25, 0xDD);
 //
 //    /* right intersect */
 //    im.add(0x8, 0x50, 0xEE);
@@ -244,4 +250,9 @@ void IntervMgr::print()
 //    im.searchFastPrep();
 //    im.print();
 //
+//    for(int i=0; i<200; ++i) {
+//        uint32_t data = 0xFFFFFFFF;
+//        im.searchFast(i, &data);
+//        printf("search(%X) returns: %08X\n", i, data);
+//    }
 //}

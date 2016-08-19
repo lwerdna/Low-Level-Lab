@@ -26,8 +26,8 @@ class IntervMgr
     void sortByLength();
 
     void searchFastPrep();
-    bool searchFast(uint64_t target, int i, int j);
-    bool searchFast(uint64_t target);
+    bool searchFast(uint64_t target, int i, int j, uint32_t *data);
+    bool searchFast(uint64_t target, uint32_t *data);
 
     void print();
 };

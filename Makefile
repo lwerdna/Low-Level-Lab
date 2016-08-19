@@ -52,6 +52,9 @@ HlabLogic.o: HlabLogic.cxx HlabLogic.h
 llvm_svcs.o: llvm_svcs.cxx llvm_svcs.h
 	g++ $(CFLAGS) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c llvm_svcs.cxx
 
+IntervalMgr.o: IntervalMgr.cxx IntervalMgr.h
+	g++ $(CFLAGS) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c IntervalMgr.cxx
+
 # RESOURCES
 rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s ./rsrc/x86_intel.s ./rsrc/x86_64_intel.s
 	./genrsrc.py source > rsrc.c
@@ -70,8 +73,8 @@ clab: ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o Makefile
 alab: rsrc.o AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_Log.o Makefile
 	$(LINK) AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_log.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
 
-hlab: HlabGui.o HlabLogic.o HexView.o Makefile
-	$(LINK) HlabGui.o HlabLogic.o HexView.o -o hlab $(LD_FLTK) -lautils
+hlab: HlabGui.o HlabLogic.o HexView.o IntervalMgr.o Makefile
+	$(LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o -o hlab $(LD_FLTK) -lautils
 
 # OTHER targets
 #
