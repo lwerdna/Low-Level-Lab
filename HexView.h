@@ -32,8 +32,7 @@ class HexView : public Fl_Widget {
 
     int viewAddrToBytesXY(uint64_t addr, int *x, int *y);
     int viewAddrToAsciiXY(uint64_t addr, int *x, int *y);
-    int viewOffsToBytesXY(int offset, int *x, int *y);
-    int viewOffsToAsciiXY(int offset, int *x, int *y);
+    int viewAddrToAddressesXY(uint64_t addr, int *x, int *y);
 
     void hlAdd(uint64_t left, uint64_t right, uint32_t color);
 
