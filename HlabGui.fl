@@ -25,7 +25,7 @@ class HlabGui {open
         class HexView
       }
       Fl_Output statusBar {selected
-        xywh {0 500 604 20} color 29
+        xywh {0 500 604 20} color 29 labelfont 4 textfont 4
       }
     }
   }

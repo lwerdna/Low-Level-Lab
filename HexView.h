@@ -8,12 +8,25 @@ using namespace std;
 
 #include "IntervalMgr.h"
 
-using namespace std;
+
+typedef void (*HexView_callback)(int type, void *data);
+
+#define HV_CB_SELECTION 0 /* hexview reports a selection change */
+#define HV_CB_VIEW_MOVE 1 /* hexview reports the view has moved */
+#define HV_CB_NEW_BYTES 2 /* hexview reports its loaded new bytes */
 
 class HexView : public Fl_Widget {
     public:
-
     HexView(int X, int Y, int W, int H, const char *label=0);
+ 
+    /* the entire memory buffer */
+    int addrMode; // 32 or 64
+    uint64_t addrStart, addrEnd;
+    uint8_t *bytes;
+    int nBytes;
+   
+    void setCallback(HexView_callback cb);
+    void clrCallback(void);
 
     void setBytes(uint64_t addr, uint8_t *bytes, int len);
     void setView(uint64_t addr);
@@ -22,12 +35,14 @@ class HexView : public Fl_Widget {
     int handle(int event);
     void draw();
     void resize(int, int, int, int);
-
+    
     /* live view information */
     int linesPerPage;
     int bytesPerPage;
     int linesInView;
     int bytesInView;
+    int pageTotal, pageCurrent;
+    float viewPercent;
     uint64_t addrViewStart, addrViewEnd; // [,)
 
     int viewAddrToBytesXY(uint64_t addr, int *x, int *y);
@@ -35,14 +50,6 @@ class HexView : public Fl_Widget {
     int viewAddrToAddressesXY(uint64_t addr, int *x, int *y);
 
     void hlAdd(uint64_t left, uint64_t right, uint32_t color);
-
-    private:
-    int addrMode; // 32 or 64
-
-    /* the entire memory buffer */
-    uint64_t addrStart, addrEnd;
-    uint8_t *bytes;
-    int nBytes;
 
     /* GUI geometry */
     int addrWidth=0;
@@ -64,5 +71,8 @@ class HexView : public Fl_Widget {
 
     /* selection info */
     int selEditing=0, selActive=0;
-    uint64_t selAddrStart, selAddrEnd;
+    uint64_t addrSelStart, addrSelEnd;
+
+    /* callback */
+    HexView_callback callback=NULL;
 };

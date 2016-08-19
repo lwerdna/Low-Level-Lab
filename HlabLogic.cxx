@@ -60,6 +60,68 @@ int close_current_file(void)
 }
 
 /*****************************************************************************/
+/* HEXVIEW CALLBACK */
+/*****************************************************************************/
+
+void HexView_cb(int type, void *data)
+{
+    char msg[256] = {0};
+    uint64_t tmp;
+    HexView *hv = gui->hexView;
+
+    char strAddrSelStart[16];
+    char strAddrSelEnd[16];
+    char strAddrViewStart[16];
+    char strAddrViewEnd[16];
+    char strAddrStart[16];
+    char strAddrEnd[16];
+
+    if(hv->addrMode == 64) {
+        sprintf(strAddrSelStart, "0x%016llX", hv->addrSelStart);
+        sprintf(strAddrSelEnd, "0x%016llX", hv->addrSelEnd);
+        sprintf(strAddrViewStart, "0x%016llX", hv->addrViewStart);
+        sprintf(strAddrViewEnd, "0x%016llX", hv->addrViewEnd);
+        sprintf(strAddrStart, "0x%016llX", hv->addrStart);
+        sprintf(strAddrEnd, "0x%016llX", hv->addrEnd);
+    }
+    else {
+        sprintf(strAddrSelStart, "0x%08llX", hv->addrSelStart);
+        sprintf(strAddrSelEnd, "0x%08llX", hv->addrSelEnd);
+        sprintf(strAddrViewStart, "0x%08llX", hv->addrViewStart);
+        sprintf(strAddrViewEnd, "0x%08llX", hv->addrViewEnd);
+        sprintf(strAddrStart, "0x%08llX", hv->addrStart);
+        sprintf(strAddrEnd, "0x%08llX", hv->addrEnd);
+    }
+
+    switch(type) {
+        case HV_CB_SELECTION:
+            if(hv->selActive) {
+                tmp = hv->addrSelEnd - hv->addrSelStart;
+                sprintf(msg, "selected 0x%llX (%lld) bytes [%s,%s)",
+                    tmp, tmp, strAddrSelStart, strAddrSelEnd);
+            }
+            else {
+                sprintf(msg, "selection cleared");
+            }
+            break;
+
+        case HV_CB_VIEW_MOVE:
+            sprintf(msg, "view moved [%s,%s) %.1f%%",
+                strAddrViewStart, strAddrViewEnd, hv->viewPercent);
+            break;
+            
+        case HV_CB_NEW_BYTES:
+            sprintf(msg, "0x%X (%d) bytes to [%s,%s)",
+                hv->nBytes, hv->nBytes, strAddrStart, strAddrEnd);
+            break;
+    }
+
+    if(msg[0]) {
+        gui->statusBar->value(msg);
+    }
+}
+
+/*****************************************************************************/
 /* MENU CALLBACKS */
 /*****************************************************************************/
 
@@ -275,6 +337,8 @@ onGuiFinished(HlabGui *gui_)
     
     gui->menuBar->copy(menuItems);
     
+    gui->hexView->setCallback(HexView_cb);
+
     gui->hexView->setBytes(0, (uint8_t *)initStr, strlen(initStr));
 
     /* test some colors */

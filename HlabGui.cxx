@@ -22,6 +22,8 @@ Fl_Double_Window* HlabGui::make_window() {
     } // HexView* hexView
     { statusBar = new Fl_Output(0, 500, 604, 20);
       statusBar->color((Fl_Color)29);
+      statusBar->labelfont(4);
+      statusBar->textfont(4);
     } // Fl_Output* statusBar
     mainWindow->end();
   } // Fl_Double_Window* mainWindow

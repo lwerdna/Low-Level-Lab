@@ -67,6 +67,16 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
     cursorOffs = 0;
 }
 
+void HexView::setCallback(HexView_callback cb)
+{
+    callback = cb;
+}
+
+void HexView::clrCallback(void)
+{
+    callback = NULL;
+}
+
 void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
 {
 
@@ -77,12 +87,15 @@ void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
 
     /* clear the selection */
     selEditing = selActive = 0;
-    selAddrStart = selAddrEnd = 0;
+    addrSelStart = addrSelEnd = 0;
 
     addrStart = addr;
     addrEnd = addr + len; // non-inclusive ')' endpoint
+    nBytes = addrEnd - addrStart;
     bytes = data;
     setView(addr);
+    
+    if(callback) callback(HV_CB_NEW_BYTES, 0);
 }
 
 void HexView::clearBytes(void)
@@ -109,6 +122,14 @@ void HexView::setView(uint64_t addr)
     // amount of bytes, lines 
     bytesInView = std::min(bytesPerPage, (int)(addrViewEnd - addrViewStart));
     linesInView = (bytesInView + (bytesPerLine-1)) / bytesPerLine;
+   
+    //
+    pageTotal = (nBytes + (bytesPerPage-1))/bytesPerPage;
+    uint64_t viewOffs = addrViewStart - addrStart;
+    pageCurrent = (viewOffs + (bytesPerPage-1))/bytesPerPage;
+    viewPercent = 100.0 * (((float)pageCurrent+1.0)/(float)pageTotal);
+    
+    if(callback) callback(HV_CB_VIEW_MOVE, 0);
 
     redraw();
 }
@@ -188,17 +209,15 @@ void HexView::draw(void)
     fl_draw_box(FL_FLAT_BOX, x(), y(), w(), h(), fl_rgb_color(255, 255, 255));
 
     /* draw the addresses */
-    uint64_t addrCurr = addrViewStart;
-
     fl_color(0x00640000);
 
     for(uint64_t addr=addrViewStart; addr<addrViewEnd; addr+=16) {
         viewAddrToAddressesXY(addr, &x1, &y1);
         if(addrMode == 32) {
-            sprintf(buf, "%08llX: ", addrCurr);
+            sprintf(buf, "%08llX: ", addr);
         }
         else if(addrMode == 64) {
-            sprintf(buf, "%016llX: ", addrCurr);
+            sprintf(buf, "%016llX: ", addr);
         }
        
         fl_draw(buf, x1, y1+lineHeight);
@@ -226,7 +245,7 @@ void HexView::draw(void)
         }
 
         /* selection? */
-        if(selActive && addr>=selAddrStart && addr<selAddrEnd) {
+        if(selActive && addr>=addrSelStart && addr<addrSelEnd) {
             color = 0xFFFF00;
             SET_PACKED_COLOR(color);
             fl_rectf(x1-1, y1+3, 3*charWidth, lineHeight);
@@ -277,9 +296,10 @@ int HexView::handle(int event)
         switch(keyCode) {
             case FL_Shift_L:
             case FL_Shift_R:
-                selAddrStart = addrViewStart + cursorOffs;
-                selAddrEnd = selAddrStart + 1; // remember RHS is ')' inclusion
-                //printf("selection started to [%016llx,%016llx)\n", selAddrStart, selAddrEnd);
+                addrSelStart = addrViewStart + cursorOffs;
+                addrSelEnd = addrSelStart + 1; // remember RHS is ')' inclusion
+                if(callback) callback(HV_CB_SELECTION, 0);
+                //printf("selection started to [%016llx,%016llx)\n", addrSelStart, addrSelEnd);
                 selEditing = selActive = 1;
                 rc = 1;
                 redraw();
@@ -389,6 +409,7 @@ int HexView::handle(int event)
 
             case FL_Escape:
                 selActive = 0;
+                if(callback) callback(HV_CB_SELECTION, 0);
                 //printf("selection cleared\n");
                 rc = 1;
                 redraw();
@@ -399,8 +420,9 @@ int HexView::handle(int event)
         if(sampleAddrView != addrViewStart || sampleCursorOffs != cursorOffs) {
             /* modify the selection? */
             if(selEditing) {
-                selAddrEnd = addrViewStart + cursorOffs + 1;
-                //printf("selection modified to [%016llx,%016llx]\n", selAddrStart, selAddrEnd);
+                addrSelEnd = addrViewStart + cursorOffs + 1;
+                if(callback) callback(HV_CB_SELECTION, 0);
+                //printf("selection modified to [%016llx,%016llx]\n", addrSelStart, addrSelEnd);
             }
         }
     }
@@ -412,7 +434,8 @@ int HexView::handle(int event)
             case FL_Shift_L:
             case FL_Shift_R:
                 selEditing = 0;
-                //printf("selection closed to [%016llx,%016llx]\n", selAddrStart, selAddrEnd);
+                if(callback) callback(HV_CB_SELECTION, 0);
+                //printf("selection closed to [%016llx,%016llx]\n", addrSelStart, addrSelEnd);
                 rc = 1;
                 break;
         }
