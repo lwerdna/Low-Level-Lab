@@ -2,9 +2,10 @@ class Interval
 {
     private:
     bool bOnDestructionFree=false;
+    vector<Interval *> children;
 
     public:
-    void *data_void_ptr;
+    void *data_void_ptr = NULL;
     uint32_t data_u32;
 
     Interval(uint64_t addr, int length);
@@ -17,10 +18,15 @@ class Interval
     bool contains(uint64_t addr);
     bool contains(Interval &ival);
     bool intersects(Interval &ival);
+
+    void childAdd(Interval *);
+    void childSortByAddr(void);
+    void childSortByLength(void);
+    vector<Interval *> childRetrieve(void);
+
     uint64_t left;
     uint64_t right;
-    int length;
-    void *data;
+    uint64_t length;
 
     void print();
 };
@@ -47,6 +53,8 @@ class IntervalMgr
 
     void searchFastPrep();
     bool searchFast(uint64_t target, Interval **result);
+
+    vector<Interval *> arrangeIntoTree();
 
     void setDestructorFree(void);
 
