@@ -31,6 +31,7 @@ class HexView : public Fl_Widget {
     void setBytes(uint64_t addr, uint8_t *bytes, int len);
     void setView(uint64_t addr);
     void setView();
+    void setSelection(uint64_t start, uint64_t end);
     void clearBytes(void);
     int handle(int event);
     void draw();

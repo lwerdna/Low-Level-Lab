@@ -27,6 +27,9 @@ extern "C" {
     #include <autils/bytes.h>
 }
 
+/* forward dec's */
+void tree_cb(Fl_Tree *, void *);
+
 /* globals */
 HlabGui *gui = NULL;
 
@@ -35,6 +38,8 @@ void *fileOpenPtrMap = NULL;
 size_t fileOpenSize = 0;
 
 Fl_Window *winTags = NULL;
+Fl_Tree *tree = NULL;
+map<Fl_Tree_Item *, Interval *> treeItemToInterv;
 
 const char *initStr = "This is the default bytes when no file is open. Here's some deadbeef: \xDE\xAD\xBE\xEF";
 
@@ -64,11 +69,32 @@ int close_current_file(void)
 /* FILE READ TAGS */
 /*****************************************************************************/
 
+void populateTree(Fl_Tree *tree, Fl_Tree_Item *parentItem, Interval *parentIval)
+{
+    /* add this dude straight away */
+    Fl_Tree_Item *childItem = tree->insert(parentItem, "test", 0);
+    uint32_t color = parentIval->data_u32;
+    childItem->labelbgcolor(color << 8);
+
+    treeItemToInterv[childItem] = parentIval;
+    printf("child ITEM %p maps to INTERVAL %p\n", childItem, parentIval);
+
+    /* recur on each child */
+    vector<Interval *> childrenIval = parentIval->childRetrieve();
+
+    for(int i=0; i<childrenIval.size(); ++i) {
+        Interval *childIval = childrenIval[i];
+        populateTree(tree, childItem, childIval);
+    }
+}
+
 int readTagsFile(const char *fpath)
 {
     int rc = -1;
     int line_num = 1;
     char *line = NULL;
+
+    IntervalMgr intervMgr;
 
     bool bOldHighlightsCleared = false;
 
@@ -168,17 +194,43 @@ int readTagsFile(const char *fpath)
             continue;
         }
 
-        /* add it */
+        /* if we're adding at least one valid highlight... */
         if(!bOldHighlightsCleared) {
+            /* blow the old highlights away */
             gui->hexView->hlDisable();
             bOldHighlightsCleared = true;
+
+            /* make the tree window here, and the tree widget */
+            winTags = new Fl_Window(gui->mainWindow->x()+gui->mainWindow->w(), gui->mainWindow->y(), gui->mainWindow->w()/2, gui->mainWindow->h(), "tags");
+            tree = new Fl_Tree(0, 0, winTags->w(), winTags->h());
+            tree->end();
+            tree->clear();
+            tree->callback((Fl_Callback *)tree_cb);
+            winTags->end();
         }
 
+        /* add hl info to hexview */
         gui->hexView->hlAdd(start, end, color);
+        /* add hl info to the interval manager */
+        intervMgr.add(start, end, color);
     }
 
+    /* add new tree item to the tree window */
     if(bOldHighlightsCleared) {
         gui->hexView->hlEnable();
+
+        /* seed the tree with a single root item */
+        Fl_Tree_Item *rootItem = tree->add("MyRoot");
+
+        /* for each root of the intervals, recursively add into tree */
+        vector<Interval *> rootsIval = intervMgr.arrangeIntoTree();
+        for(int i=0; i<rootsIval.size(); ++i) {
+            printf("calling populateTree on ");
+            rootsIval[i]->print();
+            populateTree(tree, rootItem, rootsIval[i]);
+        }
+            
+        winTags->show();
     }
 
     rc = 0;
@@ -451,6 +503,35 @@ void tags_cb(Fl_Widget *widg, void *ptr)
 }
 
 /*****************************************************************************/
+/* TREE CALLBACK */
+/*****************************************************************************/
+void tree_cb(Fl_Tree *, void *)
+{
+    switch(tree->callback_reason()) {
+        case FL_TREE_REASON_NONE: break;
+        case FL_TREE_REASON_SELECTED: 
+        {
+            Fl_Tree_Item *item = tree->callback_item();
+            printf("tree item %p clicked!\n", item);
+            if(treeItemToInterv.find(item) == treeItemToInterv.end()) {
+                printf("not found though!\n");
+            }
+            else { 
+                Interval *ival = treeItemToInterv[item];
+                printf("interval addr is %p and has [%016llX,%016llX]\n", 
+                    ival, ival->left, ival->right);
+                gui->hexView->setSelection(ival->left, ival->right);
+            }
+        }
+        case FL_TREE_REASON_DESELECTED: break;
+        case FL_TREE_REASON_OPENED: break;
+        case FL_TREE_REASON_CLOSED: break;
+        case FL_TREE_REASON_DRAGGED: break;
+        default: break;
+    }
+}
+
+/*****************************************************************************/
 /* GUI CALLBACK STUFF */
 /*****************************************************************************/
 
@@ -509,15 +590,7 @@ onGuiFinished(HlabGui *gui_)
     gui->hexView->hlAdd(50,90,0x880000);
     gui->hexView->hlAdd(100,200,0x088000);
     gui->hexView->hlEnable();
-    gui->hexView->hlDisable();
-    gui->hexView->hlAdd(3,8,  0xFF0000);
-    gui->hexView->hlAdd(8,12, 0x0FF000);
-    gui->hexView->hlAdd(12,15,0x00FF00);
-    gui->hexView->hlAdd(20,30,0x000FF0);
-    gui->hexView->hlAdd(35,40,0x0000FF);
-    gui->hexView->hlAdd(50,90,0x880000);
-    gui->hexView->hlAdd(100,200,0x088000);
-    gui->hexView->hlEnable();
+    gui->hexView->hlRanges.print();
 
     rc = 0;
     //cleanup:

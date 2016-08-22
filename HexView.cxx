@@ -56,6 +56,7 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
     marginLeft = marginRight = 2;
     marginTop = 0;
     marginBottom = 2;
+    void setSelection(uint64_t start, uint64_t end);
 
     int width = marginLeft + addrWidth + bytesWidth + asciiWidth + marginRight;
     int height = lineHeight * 32;
@@ -137,6 +138,21 @@ void HexView::setView(uint64_t addr)
 void HexView::setView()
 {
     setView(addrViewStart);
+}
+
+void HexView::setSelection(uint64_t start, uint64_t end)
+{
+    if(start < addrEnd || end < addrEnd || end >= start) {
+        selEditing=0;
+        selActive=1;
+        addrSelStart = start;
+        addrSelEnd = end;
+        redraw();
+        if(callback) callback(HV_CB_SELECTION, 0);
+    }
+    else {
+        printf("ERROR: [%016llX,%016llX) is invalid\n", start, end);
+    }
 }
 
 /*****************************************************************************/
@@ -259,6 +275,7 @@ void HexView::draw(void)
         /* highlighter? */
         if(hlEnabled && hlRanges.searchFast(addr, &ival)) {
             color = ival->data_u32; 
+            //printf("search hit for addr 0x%llx, color is: %X\n", addr, color);
             SET_PACKED_COLOR(color);
             fl_rectf(x1-1, y1+3, 3*charWidth, lineHeight);
             fl_rectf(x2, y2+3, charWidth, lineHeight);

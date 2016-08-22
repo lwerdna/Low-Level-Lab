@@ -7,7 +7,7 @@ class Interval
     public:
     void *data_void_ptr = NULL;
     uint32_t data_u32;
-
+    
     Interval(uint64_t addr, int length);
     Interval(uint64_t addr, int length, void *data);
     Interval(uint64_t addr, int length, uint32_t data);
@@ -44,8 +44,8 @@ class IntervalMgr
 
     /* you can add various things with the integer intervals with simple over-
         loaded methods here */
-    void add(uint64_t left, uint64_t right, void *data);
-    void add(uint64_t left, uint64_t right, uint32_t data);
+    Interval * add(uint64_t left, uint64_t right, void *data);
+    Interval * add(uint64_t left, uint64_t right, uint32_t data);
     void clear(void);
 
     void sortByStartAddr();

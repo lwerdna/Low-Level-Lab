@@ -146,18 +146,20 @@ IntervalMgr::~IntervalMgr()
     intervals.clear(); 
 }
 
-void IntervalMgr::add(uint64_t left, uint64_t right, void *data)
+Interval * IntervalMgr::add(uint64_t left, uint64_t right, void *data)
 {
     Interval i = Interval(left, right, data);
     if(bOnDestructionFree) {
         i.setDestructorFree();
     }
     intervals.push_back(i);
+    return &(intervals[intervals.size()-1]);
 }
 
-void IntervalMgr::add(uint64_t left, uint64_t right, uint32_t data)
+Interval * IntervalMgr::add(uint64_t left, uint64_t right, uint32_t data)
 {
     intervals.push_back(Interval(left, right, data));
+    return &(intervals[intervals.size()-1]);
 }
 
 void IntervalMgr::clear()
