@@ -183,12 +183,30 @@ int HexView::viewAddrToAsciiXY(uint64_t addr, int *x, int *y)
     return 0;
 }
 
+/*****************************************************************************/
+/* highlighting API */
+/*****************************************************************************/
+void HexView::hlDisable(void)
+{
+    hlEnabled = false;
+    hlRanges.clear();
+}
+
 void HexView::hlAdd(uint64_t left, uint64_t right, uint32_t color)
 {
-    printf("adding color to list: %08X\n", color);
     hlRanges.add(left, right, color);
 }
 
+void HexView::hlEnable(void)
+{
+    hlRanges.searchFastPrep();
+    hlEnabled = true;
+    redraw();
+}
+
+/*****************************************************************************/
+/* draw */
+/*****************************************************************************/
 void HexView::draw(void)
 {
     char buf[256];
@@ -229,6 +247,7 @@ void HexView::draw(void)
     uint8_t *b = bytes + (addrViewStart - addrStart);
     for(uint64_t addr=addrViewStart; addr<addrViewEnd; ++addr, ++b) {
         uint32_t color = 0xFFFFFF;
+        Interval *ival;
         int x1,y1,x2,y2;
 
         /* 
@@ -238,7 +257,8 @@ void HexView::draw(void)
         viewAddrToAsciiXY(addr, &x2, &y2);
 
         /* highlighter? */
-        if(hlRanges.searchFast(addr, &color)) {
+        if(hlEnabled && hlRanges.searchFast(addr, &ival)) {
+            color = ival->data_u32; 
             SET_PACKED_COLOR(color);
             fl_rectf(x1-1, y1+3, 3*charWidth, lineHeight);
             fl_rectf(x2, y2+3, charWidth, lineHeight);

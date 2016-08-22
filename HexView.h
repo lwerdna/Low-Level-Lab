@@ -1,13 +1,13 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include <vector>
 using namespace std;
 
 #include <FL/Fl_Widget.H>
 
 #include "IntervalMgr.h"
-
 
 typedef void (*HexView_callback)(int type, void *data);
 
@@ -49,7 +49,9 @@ class HexView : public Fl_Widget {
     int viewAddrToAsciiXY(uint64_t addr, int *x, int *y);
     int viewAddrToAddressesXY(uint64_t addr, int *x, int *y);
 
+    void hlDisable(void);
     void hlAdd(uint64_t left, uint64_t right, uint32_t color);
+    void hlEnable(void);
 
     /* GUI geometry */
     int addrWidth=0;
@@ -67,6 +69,7 @@ class HexView : public Fl_Widget {
     int cursorOffs;
    
     /* highlight info */
+    bool hlEnabled=false;
     IntervalMgr hlRanges;
 
     /* selection info */

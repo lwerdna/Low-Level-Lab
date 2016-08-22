@@ -24,6 +24,7 @@ using namespace std;
 
 /* autils */
 extern "C" {
+    #include <autils/bytes.h>
 }
 
 /* globals */
@@ -55,6 +56,174 @@ int close_current_file(void)
     if(!fileOpenFp && !fileOpenPtrMap && !fileOpenSize) {
         rc = 0;
     }
+
+    return rc;
+}
+
+/*****************************************************************************/
+/* FILE READ TAGS */
+/*****************************************************************************/
+
+int readTagsFile(const char *fpath)
+{
+    int rc = -1;
+    int line_num = 1;
+    char *line = NULL;
+
+    bool bOldHighlightsCleared = false;
+
+    FILE *fp = fopen(fpath, "r");
+    if(!fp) {
+        printf("ERROR: fopen()\n");
+        goto cleanup;
+    }
+
+    for(int line_num=1; 1; ++line_num) {
+        size_t line_len;
+
+        if(line) {
+            free(line);
+            line = NULL;
+        }
+        if(getline(&line, &line_len, fp) <= 0) {
+            // error or EOF? don't squawk
+            break;
+        }
+
+        if(0 == strcmp(line, "\x0d\x0a") || 0 == strcmp(line, "\x0a")) {
+            continue;
+        }
+
+        /* remove trailing newline */
+        while(line[line_len-1] == '\x0d' || line[line_len-1] == '\x0a') {
+            line[line_len-1] = '\x00';
+            line_len -= 1;
+        }
+
+        //printf("got line %d (len:%ld): -%s-", line_num, line_len, line);
+
+        uint64_t start, end;
+        uint32_t color;
+        int oStart=-1, oEnd=-1, oColor=-1, oComment=-1;
+        if(line[0] != '[') {
+            printf("ERROR: expected '[' on line %d: %s\n", line_num, line);
+            continue;
+        }
+
+        oStart = 1;
+        /* seek comma (ending the start address) */
+        for(int i=oStart; i<line_len; ++i) {
+            if(line[i]==',') {
+                line[i]='\x00';
+                oEnd = i+1;
+                break;
+            }
+        }
+
+        if(oEnd == -1 || oEnd >= (line_len-1)) {
+            printf("ERROR: missing or bad comma on line %d: %s\n", line_num, line);
+            continue;
+        }
+
+        if(0 != parse_uint64_hex(line + oStart, &start)) {
+            printf("ERROR: couldn't parse start address on line %d: %s\n", line_num, line);
+            continue;
+        }
+
+        /* seek ') ' (ending the end address) */
+        for(int i=oEnd; i<line_len; ++i) {
+            if(0 == strncmp(line + i, ") ", 2)) {
+                line[i]='\x00';
+                oColor = i+2;
+                break;
+            }
+        }
+
+        if(oColor == -1 || oColor >= (line_len-1)) {
+            printf("ERROR: missing or bad \") \" on line %d: %s\n", line_num, line);
+            continue;
+        }
+
+        if(0 != parse_uint64_hex(line + oEnd, &end)) {
+            printf("ERROR: couldn't parse end address on line %d: %s\n", line_num, line);
+            continue;
+        }
+       
+        /* seek next space or null (ending the color) */
+        for(int i=oColor; 1; ++i) {
+            if(0 == strncmp(line + i, " ", 1) || line[i]=='\x00') {
+                line[i]='\x00';
+                oComment = i+1;
+                break;
+            }
+        }
+
+        if(oComment >= line_len || strlen(line+oComment) == 0) {
+            // missing comment, run it into null byte
+            oComment = oColor-1;
+        }
+
+        if(0 != parse_uint32_hex(line + oColor, &color)) {
+            printf("ERROR: couldn't parse color address on line %d: %s\n", line_num, line);
+            continue;
+        }
+
+        /* add it */
+        if(!bOldHighlightsCleared) {
+            gui->hexView->hlDisable();
+            bOldHighlightsCleared = true;
+        }
+
+        gui->hexView->hlAdd(start, end, color);
+    }
+
+    if(bOldHighlightsCleared) {
+        gui->hexView->hlEnable();
+    }
+
+    rc = 0;
+    cleanup:
+
+    /* this free must occur even if getline() failed */
+    if(line) {
+        free(line);
+        line = NULL;
+    }
+
+    if(fp) {
+        fclose(fp);
+        fp = NULL;
+    }
+
+//    Fl_Tree *tree;
+//
+//    if(!winTags) {
+//        winTags = new Fl_Window(gui->mainWindow->x()+gui->mainWindow->w(), gui->mainWindow->y(), gui->mainWindow->w()/2, gui->mainWindow->h(), "tags");
+//        tree = new Fl_Tree(0, 0, winTags->w(), winTags->h());
+//        tree->end();
+//        tree->clear();
+//        Fl_Tree_Item *i = tree->add("one");
+//        tree->add(i, "one_sub_0");
+//        tree->add(i, "one_sub_1");
+//        tree->add(i, "one_sub_2");
+//        tree->add("two");
+//        tree->add("three");
+//        tree->add("mystruct");
+//        tree->add("mystruct/memberA");
+//        tree->add("mystruct/memberB");
+//        tree->add("mystruct/memberC");
+//        tree->add("mystruct/memberA/fieldA");
+//        tree->add("mystruct/memberA/fieldB");
+//        tree->add("mystruct/memberA/fieldC");
+//        tree->add("mystruct/memberA/fieldA", NULL);
+//        tree->add("mystruct/memberA/fieldB", NULL);
+//        tree->add("mystruct/memberA/fieldC", NULL);
+//        winTags->end();
+//        winTags->resizable(tree);
+//    }
+//        
+//    winTags->show();
+
 
     return rc;
 }
@@ -259,34 +428,24 @@ void replace2_cb(Fl_Widget *, void *) {
 
 void tags_cb(Fl_Widget *widg, void *ptr)
 {
-    Fl_Tree *tree;
+    Fl_File_Chooser chooser(
+        ".",    // directory
+        "*",    // filter
+        Fl_File_Chooser::MULTI, // type
+        "Edit File"             // title
+    );
 
-    if(!winTags) {
-        winTags = new Fl_Window(gui->mainWindow->x()+gui->mainWindow->w(), gui->mainWindow->y(), gui->mainWindow->w()/2, gui->mainWindow->h(), "tags");
-        tree = new Fl_Tree(0, 0, winTags->w(), winTags->h());
-        tree->end();
-        tree->clear();
-        Fl_Tree_Item *i = tree->add("one");
-        tree->add(i, "one_sub_0");
-        tree->add(i, "one_sub_1");
-        tree->add(i, "one_sub_2");
-        tree->add("two");
-        tree->add("three");
-        tree->add("mystruct");
-        tree->add("mystruct/memberA");
-        tree->add("mystruct/memberB");
-        tree->add("mystruct/memberC");
-        tree->add("mystruct/memberA/fieldA");
-        tree->add("mystruct/memberA/fieldB");
-        tree->add("mystruct/memberA/fieldC");
-        tree->add("mystruct/memberA/fieldA", NULL);
-        tree->add("mystruct/memberA/fieldB", NULL);
-        tree->add("mystruct/memberA/fieldC", NULL);
-        winTags->end();
-        winTags->resizable(tree);
+    chooser.show();
+
+    while(chooser.shown()) {
+        Fl::wait();
     }
-        
-    winTags->show();
+
+    if(chooser.value() == NULL) {
+        return;
+    }
+
+    readTagsFile(chooser.value());
 
     return;
 }
@@ -349,6 +508,16 @@ onGuiFinished(HlabGui *gui_)
     gui->hexView->hlAdd(35,40,0x0000FF);
     gui->hexView->hlAdd(50,90,0x880000);
     gui->hexView->hlAdd(100,200,0x088000);
+    gui->hexView->hlEnable();
+    gui->hexView->hlDisable();
+    gui->hexView->hlAdd(3,8,  0xFF0000);
+    gui->hexView->hlAdd(8,12, 0x0FF000);
+    gui->hexView->hlAdd(12,15,0x00FF00);
+    gui->hexView->hlAdd(20,30,0x000FF0);
+    gui->hexView->hlAdd(35,40,0x0000FF);
+    gui->hexView->hlAdd(50,90,0x880000);
+    gui->hexView->hlAdd(100,200,0x088000);
+    gui->hexView->hlEnable();
 
     rc = 0;
     //cleanup:

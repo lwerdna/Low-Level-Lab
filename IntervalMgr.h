@@ -1,15 +1,26 @@
 class Interval
 {
+    private:
+    bool bOnDestructionFree=false;
+
     public:
+    void *data_void_ptr;
+    uint32_t data_u32;
+
     Interval(uint64_t addr, int length);
+    Interval(uint64_t addr, int length, void *data);
     Interval(uint64_t addr, int length, uint32_t data);
+    ~Interval();
+
+    void setDestructorFree(void);
+
     bool contains(uint64_t addr);
     bool contains(Interval &ival);
     bool intersects(Interval &ival);
     uint64_t left;
     uint64_t right;
     int length;
-    uint32_t data;
+    void *data;
 
     void print();
 };
@@ -17,17 +28,27 @@ class Interval
 class IntervalMgr
 {
     vector<Interval> intervals;
-    bool searchPrepared;
+    bool searchPrepared=false;
+    bool bOnDestructionFree=false;
+    
+    bool searchFast(uint64_t target, int i, int j, Interval **result);
 
     public:
-    void add(uint64_t left, uint64_t right, int32_t color);
+    ~IntervalMgr();
+
+    /* you can add various things with the integer intervals with simple over-
+        loaded methods here */
+    void add(uint64_t left, uint64_t right, void *data);
+    void add(uint64_t left, uint64_t right, uint32_t data);
+    void clear(void);
 
     void sortByStartAddr();
     void sortByLength();
 
     void searchFastPrep();
-    bool searchFast(uint64_t target, int i, int j, uint32_t *data);
-    bool searchFast(uint64_t target, uint32_t *data);
+    bool searchFast(uint64_t target, Interval **result);
+
+    void setDestructorFree(void);
 
     void print();
 };

@@ -28,15 +28,36 @@ Interval::Interval(uint64_t left_, int right_)
     left = left_;
     right = right_; // [,)
     length = right - left;
-    data = 0;
 }
 
-Interval::Interval(uint64_t left_, int right_, uint32_t data_)
+Interval::Interval(uint64_t left_, int right_, void *data_void_ptr_)
 {
     left = left_;
     right = right_; // [,)
     length = right - left;
-    data = data_;
+    data_void_ptr = data_void_ptr_;
+}
+
+Interval::Interval(uint64_t left_, int right_, uint32_t data_u32_)
+{
+    left = left_;
+    right = right_; // [,)
+    length = right - left;
+    data_u32 = data_u32_;
+}
+
+Interval::~Interval()
+{
+    if(bOnDestructionFree && data) {
+        free(data);
+    }
+
+    data = NULL;
+}
+
+void Interval::setDestructorFree(void)
+{
+    bOnDestructionFree = true;
 }
 
 bool Interval::contains(uint64_t addr)
@@ -56,16 +77,38 @@ bool Interval::intersects(Interval &ival)
 
 void Interval::print()
 {
-    printf("[%016llX,%016llX) with data: %08X\n", left, right, data);
+    printf("[%016llX,%016llX) with data: 0x%p\n", left, right, data);
 }
 
 /*****************************************************************************/
 /* interval manager class */
 /*****************************************************************************/
 
-void IntervalMgr::add(uint64_t left, uint64_t right, int32_t color)
+IntervalMgr::~IntervalMgr()
 {
-    intervals.push_back(Interval(left, right, color));
+    /* c++ noob explicitly calls vector clear() which I hope will call all
+        destructors of members */
+    intervals.clear(); 
+}
+
+void IntervalMgr::add(uint64_t left, uint64_t right, void *data)
+{
+    Interval i = Interval(left, right, data);
+    if(bOnDestructionFree) {
+        i.setDestructorFree();
+    }
+    intervals.push_back(i);
+}
+
+void IntervalMgr::add(uint64_t left, uint64_t right, uint32_t data)
+{
+    intervals.push_back(Interval(left, right, data));
+}
+
+void IntervalMgr::clear()
+{
+    searchPrepared = false;
+    intervals.clear();
 }
 
 /* sort by interval start address */
@@ -191,14 +234,14 @@ void IntervalMgr::searchFastPrep()
     searchPrepared = true;
 }
 
-bool IntervalMgr::searchFast(uint64_t target, int i, int j, uint32_t *data)
+bool IntervalMgr::searchFast(uint64_t target, int i, int j, Interval **result)
 {
     //printf("searchFast(%d, %d, %d)\n", target, i, j);
 
     /* base case */
     if(i==j) {
         if(intervals[i].contains(target)) {
-            *data = intervals[i].data;
+            *result = &(intervals[i]);
             return true;
         }
 
@@ -211,20 +254,20 @@ bool IntervalMgr::searchFast(uint64_t target, int i, int j, uint32_t *data)
 
     /* binary search */
     if(target < intMid.right) {
-        return searchFast(target, i, idxMid, data);
+        return searchFast(target, i, idxMid, result);
     }
     else {
-        return searchFast(target, idxMid+1, j, data);
+        return searchFast(target, idxMid+1, j, result);
     }
 }
 
-bool IntervalMgr::searchFast(uint64_t target, uint32_t *data)
+bool IntervalMgr::searchFast(uint64_t target, Interval **result)
 {
     if(intervals.size() == 0) {
         return false;
     }
 
-    return searchFast(target, 0, intervals.size()-1, data);
+    return searchFast(target, 0, intervals.size()-1, result);
 }
 
 void IntervalMgr::print()
@@ -232,6 +275,16 @@ void IntervalMgr::print()
     for(unsigned int i=0; i<intervals.size(); ++i) {
         Interval intv = intervals[i];
         intv.print();
+    }
+}
+
+void IntervalMgr::setDestructorFree(void)
+{
+    if(bOnDestructionFree) return;
+
+    bOnDestructionFree = 1;
+    for(unsigned int i=0; i<intervals.size(); ++i) {
+        intervals[i].setDestructorFree();
     }
 }
 
