@@ -488,7 +488,9 @@ void tree_cb(Fl_Tree *, void *)
                 //    ival, ival->left, ival->right);
 
                 /* move upwards along the tree, coloring */
-                uint32_t palette[5] = {0xece2a5, 0xa5cebc, 0x768aa5, 0x496376, 0xa9212e};
+                //uint32_t palette[5] = {0xece2a5, 0xa5cebc, 0x768aa5, 0x496376, 0xa9212e};
+                uint32_t palette[5] = {0xFFFF00, 0x0000FF, 0x088000, 0x880000, 0xFF0000};
+
                 vector<Fl_Tree_Item *> lineage;
     
                 Fl_Tree_Item *curr = item;

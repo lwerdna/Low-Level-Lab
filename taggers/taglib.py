@@ -99,8 +99,7 @@ def peek(FP,len):
 
 def tag(FP, length, comment, rewind=0):
     pos = FP.tell()
-    color = colorFromBytesFP(FP, length)
-    print '[0x%X,0x%X) 0x%X %s' % (pos, pos+length, color, comment)
+    print '[0x%X,0x%X) 0x0 %s' % (pos, pos+length, comment)
     if rewind: FP.seek(pos)
 
 # 8-bit bytes
@@ -141,6 +140,11 @@ def uint32(FP, peek=0):
     value = unpack('<I', FP.read(4))[0]
     if peek: FP.seek(-4,1)
     return value
+def tagUint32(FP, comment, peek=0):
+    pos = FP.tell()
+    val = uint32(FP, peek)
+    print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+4, comment, val)
+    return val
 # 32-bit words, big endian
 def INT32(FP, peek=0):
     value = unpack('>i', FP.read(4))[0]
@@ -159,6 +163,11 @@ def uint64(FP, peek=0):
     value = unpack('<Q', FP.read(8))[0]
     if peek: FP.seek(-8,1)
     return value
+def tagUint64(FP, comment, peek=0):
+    pos = FP.tell()
+    val = uint64(FP, peek)
+    print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+8, comment, val)
+    return val
 # 64-bit words, big endian
 def INT64(FP, peek=0):
     value = unpack('>q', FP.read(8))[0]
@@ -171,5 +180,12 @@ def UINT64(FP, peek=0):
 # strings
 def string(FP, length, peek=0):
     value = unpack('%ds' % length, FP.read(length))[0]
+    while(value[-1]=='\x00'):
+        value = value[0:-1]
     if peek: FP.seek(-1*length, 1)
     return value
+def tagString(FP, length, comment, peek=0):
+    pos = FP.tell()
+    val = string(FP, length, peek)
+    print '[0x%X,0x%X) 0x0 %s \"%s\"' % (pos, pos+length, comment, val)
+    return val
