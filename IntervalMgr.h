@@ -59,4 +59,5 @@ class IntervalMgr
     void setDestructorFree(void);
 
     void print();
+    void dump();
 };

@@ -78,12 +78,12 @@ bool Interval::contains(uint64_t addr)
 
 bool Interval::contains(Interval &ival)
 {
-    return contains(ival.left) && contains(ival.right);
+    return contains(ival.left) && contains(ival.right-1);
 }
 
 bool Interval::intersects(Interval &ival)
 {
-    return contains(ival.left) || contains(ival.right);
+    return contains(ival.left) || contains(ival.right-1);
 }
     
 void Interval::childAdd(Interval *child)
@@ -392,6 +392,14 @@ void IntervalMgr::print()
     for(unsigned int i=0; i<intervals.size(); ++i) {
         Interval intv = intervals[i];
         intv.print();
+    }
+}
+
+void IntervalMgr::dump()
+{
+    for(unsigned int i=0; i<intervals.size(); ++i) {
+        printf("interval @%p ", &(intervals[i]));
+        intervals[i].print();
     }
 }
 
