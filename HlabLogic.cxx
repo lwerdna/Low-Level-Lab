@@ -237,7 +237,12 @@ int load_tags(const char *fpath)
 
     /* add new tree item to the tree window */
     if(intervMgr.size()) {
-        winTags = new Fl_Window(gui->mainWindow->x()+gui->mainWindow->w()+64, gui->mainWindow->y(), gui->mainWindow->w()/2, gui->mainWindow->h(), "tags");
+        winTags = new Fl_Window(
+            gui->mainWindow->x()+gui->mainWindow->w()+32, 
+            gui->mainWindow->y(), gui->mainWindow->w(), 
+            gui->mainWindow->h(), 
+            "tags"
+        );
         tree = new Fl_Tree(0, 0, winTags->w(), winTags->h());
         tree->end();
         tree->callback((Fl_Callback *)tree_cb);

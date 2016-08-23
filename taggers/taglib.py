@@ -99,8 +99,10 @@ def peek(FP,len):
 
 def tag(FP, length, comment, rewind=0):
     pos = FP.tell()
+    val = FP.read(length)
     print '[0x%X,0x%X) 0x0 %s' % (pos, pos+length, comment)
     if rewind: FP.seek(pos)
+    return val
 
 # 8-bit bytes
 def int8(FP, name, comment, peek=0):
