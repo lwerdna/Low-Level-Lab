@@ -115,6 +115,12 @@ def uint8(FP, peek=0):
     if peek: FP.seek(-1,1)
     return value
 
+def tagUint8(FP, comment, peek=0):
+    pos = FP.tell()
+    val = uint8(FP, peek)
+    print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+1, comment, val)
+    return val
+
 # 16-bit words, little endian
 def int16(FP, peek=0):
     value = unpack('<h', FP.read(2))[0]
@@ -124,6 +130,11 @@ def uint16(FP, peek=0):
     value = unpack('<H', FP.read(2))[0]
     if peek: FP.seek(-2,1)
     return value
+def tagUint16(FP, comment, peek=0):
+    pos = FP.tell()
+    val = uint16(FP, peek)
+    print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+2, comment, val)
+    return val
 # 16-bit words, big endian
 def INT16(FP, peek=0):
     value = unpack('>h', FP.read(2))[0]

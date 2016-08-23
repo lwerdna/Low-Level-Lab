@@ -394,6 +394,9 @@ vector<Interval *> IntervalMgr::findParentChild()
     }
 
     // STEP 3: sort the list by starting address
+    std::sort(listRoot.begin(), listRoot.end(), compareByStartAddrP); 
+
+    // and the children
     for(unsigned int i=0; i<listRoot.size(); ++i) {
         listRoot[i]->childSortByAddr();
     }
