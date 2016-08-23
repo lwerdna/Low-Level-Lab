@@ -1,3 +1,5 @@
+#include <string>
+
 class Interval
 {
     private:
@@ -5,12 +7,15 @@ class Interval
     vector<Interval *> children;
 
     public:
-    void *data_void_ptr = NULL;
-    uint32_t data_u32;
+    int data_type = 0; // data type 0 is no data
+    void *data_void_ptr = NULL; // data type 1
+    uint32_t data_u32; // data type 2
+    string data_string; // data type 3
     
     Interval(uint64_t addr, int length);
     Interval(uint64_t addr, int length, void *data);
     Interval(uint64_t addr, int length, uint32_t data);
+    Interval(uint64_t addr, int length, string &data);
     ~Interval();
 
     void setDestructorFree(void);

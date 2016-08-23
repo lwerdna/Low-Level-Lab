@@ -40,6 +40,7 @@ size_t fileOpenSize = 0;
 Fl_Window *winTags = NULL;
 Fl_Tree *tree = NULL;
 map<Fl_Tree_Item *, Interval *> treeItemToInterv;
+map<Interval *, string> intervToComment;
 IntervalMgr intervMgr;
 
 const char *initStr = "This is the default bytes when no file is open. Here's some deadbeef: \xDE\xAD\xBE\xEF";
@@ -74,12 +75,16 @@ void populateTree(Fl_Tree *tree, Fl_Tree_Item *parentItem, Interval *parentIval)
 {
     /* add this dude straight away */
     int pos = parentItem->children();
-    Fl_Tree_Item *childItem = tree->insert(parentItem, "test", pos);
+    Fl_Tree_Item *childItem = tree->insert(parentItem, parentIval->data_string.c_str(), pos);
     uint32_t color = parentIval->data_u32;
     childItem->labelbgcolor(color << 8);
+    float luma = 1 - (.299*(((color)&0xFF0000)>>16) + .587*(((color)&0xFF00)>>8) + .114*(color&0xFF))/255.0; // thx stackoverflow
+    if(luma < .5) childItem->labelcolor(0);
+    else childItem->labelcolor(0xFFFFFF00);
+
 
     treeItemToInterv[childItem] = parentIval;
-    printf("child ITEM %p maps to INTERVAL %p\n", childItem, parentIval);
+    //printf("child ITEM %p maps to INTERVAL %p\n", childItem, parentIval);
 
     /* recur on each child */
     vector<Interval *> childrenIval = parentIval->childRetrieve();
@@ -211,7 +216,8 @@ int readTagsFile(const char *fpath)
         /* add hl info to hexview */
         gui->hexView->hlAdd(start, end, color);
         /* add hl info to the interval manager */
-        intervMgr.add(start, end, color);
+        Interval *ival = intervMgr.add(start, end, color);
+        ival->data_string = string(line + oComment);
     }
 
     /* add new tree item to the tree window */
@@ -219,7 +225,6 @@ int readTagsFile(const char *fpath)
         gui->hexView->hlEnable();
 
         /* seed the tree with a single root item */
-        //Fl_Tree_Item *rootItem = tree->add("MyRoot");
         tree->root_label("file");
         Fl_Tree_Item *rootItem = tree->root();
 
@@ -246,36 +251,6 @@ int readTagsFile(const char *fpath)
         fclose(fp);
         fp = NULL;
     }
-
-//    Fl_Tree *tree;
-//
-//    if(!winTags) {
-//        winTags = new Fl_Window(gui->mainWindow->x()+gui->mainWindow->w(), gui->mainWindow->y(), gui->mainWindow->w()/2, gui->mainWindow->h(), "tags");
-//        tree = new Fl_Tree(0, 0, winTags->w(), winTags->h());
-//        tree->end();
-//        tree->clear();
-//        Fl_Tree_Item *i = tree->add("one");
-//        tree->add(i, "one_sub_0");
-//        tree->add(i, "one_sub_1");
-//        tree->add(i, "one_sub_2");
-//        tree->add("two");
-//        tree->add("three");
-//        tree->add("mystruct");
-//        tree->add("mystruct/memberA");
-//        tree->add("mystruct/memberB");
-//        tree->add("mystruct/memberC");
-//        tree->add("mystruct/memberA/fieldA");
-//        tree->add("mystruct/memberA/fieldB");
-//        tree->add("mystruct/memberA/fieldC");
-//        tree->add("mystruct/memberA/fieldA", NULL);
-//        tree->add("mystruct/memberA/fieldB", NULL);
-//        tree->add("mystruct/memberA/fieldC", NULL);
-//        winTags->end();
-//        winTags->resizable(tree);
-//    }
-//        
-//    winTags->show();
-
 
     return rc;
 }
@@ -509,7 +484,7 @@ void tree_cb(Fl_Tree *, void *)
 {
     switch(tree->callback_reason()) {
         case FL_TREE_REASON_NONE:
-            printf("tree, no reason\n");
+            //printf("tree, no reason\n");
             break;
         case FL_TREE_REASON_SELECTED: 
         {
@@ -523,22 +498,23 @@ void tree_cb(Fl_Tree *, void *)
                 printf("interval @%p has [%016llX,%016llX]\n", 
                     ival, ival->left, ival->right);
                 gui->hexView->setSelection(ival->left, ival->right);
+                gui->hexView->setView(ival->left);
             }
         }
         case FL_TREE_REASON_DESELECTED: 
-            printf("tree, deselected\n");
+            //printf("tree, deselected\n");
             break;
         case FL_TREE_REASON_OPENED: 
-            printf("tree, opened\n");
+            //printf("tree, opened\n");
             break;
         case FL_TREE_REASON_CLOSED: 
-            printf("tree, closed\n");
+            //printf("tree, closed\n");
             break;
         case FL_TREE_REASON_DRAGGED: 
-            printf("tree, dragged\n");
+            //printf("tree, dragged\n");
             break;
         default: 
-            printf("tree, %d\n", tree->callback_reason());
+            //printf("tree, %d\n", tree->callback_reason());
             break;
     }
 }

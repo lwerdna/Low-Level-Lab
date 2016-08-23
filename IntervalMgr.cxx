@@ -46,6 +46,7 @@ Interval::Interval(uint64_t left_, int right_, void *data_void_ptr_)
     left = left_;
     right = right_; // [,)
     length = right - left;
+    data_type = 1;
     data_void_ptr = data_void_ptr_;
 }
 
@@ -54,7 +55,17 @@ Interval::Interval(uint64_t left_, int right_, uint32_t data_u32_)
     left = left_;
     right = right_; // [,)
     length = right - left;
+    data_type = 2;
     data_u32 = data_u32_;
+}
+
+Interval::Interval(uint64_t left_, int right_, string& data_string_)
+{
+    left = left_;
+    right = right_; // [,)
+    length = right - left;
+    data_type = 3;
+    data_string = data_string_;
 }
 
 Interval::~Interval()
@@ -116,16 +127,12 @@ vector<Interval *> Interval::childRetrieve()
 
 void Interval::print()
 {
-    printf("[%016llX,%016llX) with data: ", left, right);
-    
-    /* if the void pointer data member is non-null, we'll assume the user is
-        using this */
-    if(data_void_ptr) {
-        printf("%p", data_void_ptr);
-    }
-    /* otherwise we'll assume they're using the u32 data */
-    else {
-        printf("0x%08X", data_u32);
+    printf("[%016llX,%016llX)", left, right);
+    if(data_type) printf(" with data ");
+    switch(data_type) {
+        case 1: printf("%p", data_void_ptr); break;
+        case 2: printf("0x%08X", data_u32); break;
+        case 3: printf("%s", data_string.c_str()); break;
     }
 
     if(children.size() > 0) {
@@ -352,6 +359,11 @@ bool IntervalMgr::searchFast(uint64_t target, Interval **result)
 vector<Interval *> IntervalMgr::arrangeIntoTree()
 {
     vector<Interval *> listRoot;
+    
+    for(unsigned int i=0; i<intervals.size(); ++i) {
+        printf("interval @%p ", &(intervals[i]));
+        intervals[i].print();
+    }
 
     for(unsigned int i=0; i<intervals.size(); ++i) {
 
