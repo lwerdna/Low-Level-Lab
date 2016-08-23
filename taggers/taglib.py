@@ -75,10 +75,11 @@ def colorFromBytes(data):
     assert avg >= 0 and avg <= 255
     return color_lookup[avg]
         
-def colorFromBytesFP(FP, length):
+def colorFromBytesFP(FP, length, rewind=0):
     tmp = FP.tell()
-    return colorFromBytes(FP.read(length));
-    FP.seek(tmp)
+    result = colorFromBytes(FP.read(length));
+    if rewind: FP.seek(tmp)
+    return result
 
 ###############################################################################
 # FP crap
@@ -167,4 +168,8 @@ def UINT64(FP, peek=0):
     value = unpack('>Q', FP.read(8))[0]
     if peek: FP.seek(-8,1)
     return value
-
+# strings
+def string(FP, length, peek=0):
+    value = unpack('%ds' % length, FP.read(length))[0]
+    if peek: FP.seek(-1*length, 1)
+    return value

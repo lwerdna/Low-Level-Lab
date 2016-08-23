@@ -33,7 +33,7 @@ Fl_Double_Window* HlabGui::make_window() {
 int main(int argc, char **argv) {
   HlabGui gui;
   Fl_Double_Window *w = gui.make_window();
-  onGuiFinished(&gui);
+  onGuiFinished(&gui, argc, argv);
   Fl::add_idle(onIdle, &gui);
   w->end();
   w->show();

@@ -59,7 +59,7 @@ Interval::Interval(uint64_t left_, int right_, uint32_t data_u32_)
     data_u32 = data_u32_;
 }
 
-Interval::Interval(uint64_t left_, int right_, string& data_string_)
+Interval::Interval(uint64_t left_, int right_, string data_string_)
 {
     left = left_;
     right = right_; // [,)
@@ -70,16 +70,6 @@ Interval::Interval(uint64_t left_, int right_, string& data_string_)
 
 Interval::~Interval()
 {
-    if(bOnDestructionFree && data_void_ptr) {
-        free(data_void_ptr);
-    }
-
-    data_void_ptr = NULL;
-}
-
-void Interval::setDestructorFree(void)
-{
-    bOnDestructionFree = true;
 }
 
 bool Interval::contains(uint64_t addr)
@@ -153,20 +143,14 @@ IntervalMgr::~IntervalMgr()
     intervals.clear(); 
 }
 
-Interval * IntervalMgr::add(uint64_t left, uint64_t right, void *data)
+void IntervalMgr::IntervalMgr::add(Interval iv)
 {
-    Interval i = Interval(left, right, data);
-    if(bOnDestructionFree) {
-        i.setDestructorFree();
-    }
-    intervals.push_back(i);
-    return &(intervals[intervals.size()-1]);
+    intervals.push_back(iv);
 }
-
-Interval * IntervalMgr::add(uint64_t left, uint64_t right, uint32_t data)
+    
+unsigned int IntervalMgr::size(void)
 {
-    intervals.push_back(Interval(left, right, data));
-    return &(intervals[intervals.size()-1]);
+    return intervals.size();
 }
 
 void IntervalMgr::clear()
@@ -216,7 +200,7 @@ void IntervalMgr::searchFastPrep()
 
         /* see if he stomps on someone (inefficient for now)
             ... due to the way these are inserted, there should be no chance
-                for double stompage */
+                for doubmach/machine.hle stompage */
         bool leftBreak=false, rightBreak=false;
 
         /* we'll collect the split intervals and stuff into this temporary
@@ -344,6 +328,24 @@ bool IntervalMgr::searchFast(uint64_t target, Interval **result)
     return searchFast(target, 0, intervals.size()-1, result);
 }
 
+// return the smallest sized interval the target is a member of
+bool IntervalMgr::search(uint64_t target, Interval &result)
+{
+    uint64_t length_lowest = 0;
+
+    for(auto i=intervals.begin(); i!=intervals.end(); ++i) {
+        Interval ival = *i;
+        if(ival.contains(target)) {
+            if(!length_lowest || ival.length < length_lowest) {
+                length_lowest = ival.length;
+                result = ival;
+            }
+        }
+    }
+
+    return length_lowest != 0;
+}
+
 // arrange the intervals into a tree structure
 // intervals towards root are enveloping intervals
 // intervals towards branches are enveloped intervals
@@ -356,7 +358,7 @@ bool IntervalMgr::searchFast(uint64_t target, Interval **result)
 // return (by copy) a vector of pointers (within our internal intervals) of the
 // parents
 // 
-vector<Interval *> IntervalMgr::arrangeIntoTree()
+vector<Interval *> IntervalMgr::findParentChild()
 {
     vector<Interval *> listRoot;
     
@@ -412,16 +414,6 @@ void IntervalMgr::dump()
     for(unsigned int i=0; i<intervals.size(); ++i) {
         printf("interval @%p ", &(intervals[i]));
         intervals[i].print();
-    }
-}
-
-void IntervalMgr::setDestructorFree(void)
-{
-    if(bOnDestructionFree) return;
-
-    bOnDestructionFree = 1;
-    for(unsigned int i=0; i<intervals.size(); ++i) {
-        intervals[i].setDestructorFree();
     }
 }
 

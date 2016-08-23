@@ -24,7 +24,7 @@ class HlabGui {open
         xywh {0 20 604 480} box BORDER_BOX color 7 labeltype NO_LABEL
         class HexView
       }
-      Fl_Output statusBar {selected
+      Fl_Output statusBar {
         xywh {0 500 604 20} color 29 labelfont 4 textfont 4
       }
     }
@@ -35,7 +35,7 @@ Function {} {open
 } {
   code {HlabGui gui;
 Fl_Double_Window *w = gui.make_window();
-onGuiFinished(&gui);
+onGuiFinished(&gui, argc, argv);
 Fl::add_idle(onIdle, &gui);
 w->end();
 w->show();

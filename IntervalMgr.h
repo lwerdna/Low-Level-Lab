@@ -12,10 +12,10 @@ class Interval
     uint32_t data_u32; // data type 2
     string data_string; // data type 3
     
-    Interval(uint64_t addr, int length);
-    Interval(uint64_t addr, int length, void *data);
-    Interval(uint64_t addr, int length, uint32_t data);
-    Interval(uint64_t addr, int length, string &data);
+    Interval(uint64_t left, int right);
+    Interval(uint64_t left, int right, void *data);
+    Interval(uint64_t left, int right, uint32_t data);
+    Interval(uint64_t left, int right, string data);
     ~Interval();
 
     void setDestructorFree(void);
@@ -40,7 +40,6 @@ class IntervalMgr
 {
     vector<Interval> intervals;
     bool searchPrepared=false;
-    bool bOnDestructionFree=false;
     
     bool searchFast(uint64_t target, int i, int j, Interval **result);
 
@@ -49,8 +48,8 @@ class IntervalMgr
 
     /* you can add various things with the integer intervals with simple over-
         loaded methods here */
-    Interval * add(uint64_t left, uint64_t right, void *data);
-    Interval * add(uint64_t left, uint64_t right, uint32_t data);
+    void add(Interval);
+    unsigned int size(void);
     void clear(void);
 
     void sortByStartAddr();
@@ -58,8 +57,9 @@ class IntervalMgr
 
     void searchFastPrep();
     bool searchFast(uint64_t target, Interval **result);
+    bool search(uint64_t target, Interval &result);
 
-    vector<Interval *> arrangeIntoTree();
+    vector<Interval *> findParentChild(void);
 
     void setDestructorFree(void);
 

@@ -50,9 +50,8 @@ class HexView : public Fl_Widget {
     int viewAddrToAsciiXY(uint64_t addr, int *x, int *y);
     int viewAddrToAddressesXY(uint64_t addr, int *x, int *y);
 
-    void hlDisable(void);
     void hlAdd(uint64_t left, uint64_t right, uint32_t color);
-    void hlEnable(void);
+    void hlClear(void);
 
     /* GUI geometry */
     int addrWidth=0;

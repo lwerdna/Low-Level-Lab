@@ -40,12 +40,11 @@ size_t fileOpenSize = 0;
 Fl_Window *winTags = NULL;
 Fl_Tree *tree = NULL;
 map<Fl_Tree_Item *, Interval *> treeItemToInterv;
-map<Interval *, string> intervToComment;
 IntervalMgr intervMgr;
 
 const char *initStr = "This is the default bytes when no file is open. Here's some deadbeef: \xDE\xAD\xBE\xEF";
 
-int close_current_file(void)
+int file_unload(void)
 {
     int rc = -1;
 
@@ -67,6 +66,43 @@ int close_current_file(void)
     return rc;
 }
 
+int file_load(const char *path) 
+{
+    int rc = -1;
+
+    if(fileOpenFp)
+        file_unload();
+
+    fileOpenFp = fopen(path, "rb");
+    if(!fileOpenFp) {
+        printf("ERROR: fopen()\n");
+        goto cleanup;
+    }
+
+    fseek(fileOpenFp, 0, SEEK_END);
+    fileOpenSize = ftell(fileOpenFp);
+    fseek(fileOpenFp, 0, SEEK_SET);
+
+    fileOpenPtrMap = mmap(0, fileOpenSize, PROT_READ, MAP_PRIVATE, fileno(fileOpenFp), 0);
+    if(fileOpenPtrMap == MAP_FAILED) {
+        printf("ERROR: mmap()\n");
+        goto cleanup;
+    }
+
+    gui->hexView->setBytes(0, (uint8_t *)fileOpenPtrMap, fileOpenSize);
+
+    rc = 0;
+    cleanup:
+
+    if(rc) {
+        if(0 != file_unload()) {
+            printf("ERROR: file_unload()\n");
+        }
+    }
+
+    return rc;
+}
+
 /*****************************************************************************/
 /* FILE READ TAGS */
 /*****************************************************************************/
@@ -76,12 +112,6 @@ void populateTree(Fl_Tree *tree, Fl_Tree_Item *parentItem, Interval *parentIval)
     /* add this dude straight away */
     int pos = parentItem->children();
     Fl_Tree_Item *childItem = tree->insert(parentItem, parentIval->data_string.c_str(), pos);
-    uint32_t color = parentIval->data_u32;
-    childItem->labelbgcolor(color << 8);
-    float luma = 1 - (.299*(((color)&0xFF0000)>>16) + .587*(((color)&0xFF00)>>8) + .114*(color&0xFF))/255.0; // thx stackoverflow
-    if(luma < .5) childItem->labelcolor(0);
-    else childItem->labelcolor(0xFFFFFF00);
-
 
     treeItemToInterv[childItem] = parentIval;
     //printf("child ITEM %p maps to INTERVAL %p\n", childItem, parentIval);
@@ -95,7 +125,7 @@ void populateTree(Fl_Tree *tree, Fl_Tree_Item *parentItem, Interval *parentIval)
     }
 }
 
-int readTagsFile(const char *fpath)
+int load_tags(const char *fpath)
 {
     int rc = -1;
     int line_num = 1;
@@ -108,6 +138,8 @@ int readTagsFile(const char *fpath)
         printf("ERROR: fopen()\n");
         goto cleanup;
     }
+
+    intervMgr.clear();
 
     for(int line_num=1; 1; ++line_num) {
         size_t line_len;
@@ -199,42 +231,36 @@ int readTagsFile(const char *fpath)
             continue;
         }
 
-        /* if we're adding at least one valid highlight... */
-        if(!bOldHighlightsCleared) {
-            /* blow the old highlights away */
-            gui->hexView->hlDisable();
-            bOldHighlightsCleared = true;
-
-            /* make the tree window here, and the tree widget */
-            winTags = new Fl_Window(gui->mainWindow->x()+gui->mainWindow->w(), gui->mainWindow->y(), gui->mainWindow->w()/2, gui->mainWindow->h(), "tags");
-            tree = new Fl_Tree(0, 0, winTags->w(), winTags->h());
-            tree->end();
-            tree->callback((Fl_Callback *)tree_cb);
-            winTags->end();
-        }
-
-        /* add hl info to hexview */
-        gui->hexView->hlAdd(start, end, color);
-        /* add hl info to the interval manager */
-        Interval *ival = intervMgr.add(start, end, color);
-        ival->data_string = string(line + oComment);
+        /* done, add interval */
+        intervMgr.add(Interval(start, end, string(line + oComment)));
     }
 
     /* add new tree item to the tree window */
-    if(bOldHighlightsCleared) {
-        gui->hexView->hlEnable();
+    if(intervMgr.size()) {
+        winTags = new Fl_Window(gui->mainWindow->x()+gui->mainWindow->w()+64, gui->mainWindow->y(), gui->mainWindow->w()/2, gui->mainWindow->h(), "tags");
+        tree = new Fl_Tree(0, 0, winTags->w(), winTags->h());
+        tree->end();
+        tree->callback((Fl_Callback *)tree_cb);
+        winTags->end();
+        winTags->resizable(tree);
 
-        /* seed the tree with a single root item */
         tree->root_label("file");
         Fl_Tree_Item *rootItem = tree->root();
 
-        /* for each root of the intervals, recursively add into tree */
-        vector<Interval *> rootsIval = intervMgr.arrangeIntoTree();
+        vector<Interval *> rootsIval = intervMgr.findParentChild();
         for(int i=0; i<rootsIval.size(); ++i) {
             rootsIval[i]->print();
             populateTree(tree, rootItem, rootsIval[i]);
         }
-           
+
+        /* close all tree items except root */
+        for(Fl_Tree_Item *item = tree->first(); item; item = tree->next(item)) {
+            if (!item->is_root() && item->has_children()) {
+                item->close();
+            }
+        }
+
+        /* show window */
         winTags->show();
     }
 
@@ -342,43 +368,12 @@ void open_cb(Fl_Widget *, void *)
         return;
     }
 
-    printf("--------------------\n");
-    printf("DIRECTORY: '%s'\n", chooser.directory());
-    printf("    VALUE: '%s'\n", chooser.value());
-    printf("    COUNT: %d files selected\n", chooser.count());
+    //printf("--------------------\n");
+    //printf("DIRECTORY: '%s'\n", chooser.directory());
+    //printf("    VALUE: '%s'\n", chooser.value());
+    //printf("    COUNT: %d files selected\n", chooser.count());
 
-    if(0 != close_current_file()) {
-        printf("ERROR: close_current_file()\n");
-        goto cleanup;
-    }
-
-    fileOpenFp = fopen(chooser.value(), "rb");
-    if(!fileOpenFp) {
-        printf("ERROR: fopen()\n");
-        goto cleanup;
-    }
-
-    fseek(fileOpenFp, 0, SEEK_END);
-    fileOpenSize = ftell(fileOpenFp);
-    fseek(fileOpenFp, 0, SEEK_SET);
-
-    fileOpenPtrMap = mmap(0, fileOpenSize, PROT_READ, MAP_PRIVATE, fileno(fileOpenFp), 0);
-    if(fileOpenPtrMap == MAP_FAILED) {
-        printf("ERROR: mmap()\n");
-        goto cleanup;
-    }
-
-    gui->hexView->setBytes(0, (uint8_t *)fileOpenPtrMap, fileOpenSize);
-
-    rc = 0;
-    cleanup:
-
-    if(rc) {
-        if(0 != close_current_file()) {
-            printf("ERROR: close_current_file()\n");
-            goto cleanup;
-        }
-    }
+    file_load(chooser.value());
 
     return;
 }
@@ -405,20 +400,14 @@ void saveas_cb(Fl_Widget *, void *) {
 
 void close_cb(Fl_Widget *, void *) {
    gui->hexView->setBytes(0, (uint8_t *)initStr, strlen(initStr));
-   close_current_file();
+   file_unload();
    return;
 }
 
 void quit_cb(Fl_Widget *, void *) {
-   gui->hexView->setBytes(0, (uint8_t *)initStr, strlen(initStr));
-   close_current_file();
-   return;
-   if(fileOpenFp) {
-        fclose(fileOpenFp);
-        fileOpenFp = NULL;
-    }
+    file_unload();
     gui->mainWindow->hide();
-    return;
+    if(winTags) winTags->hide();
 }
 
 void cut_cb(Fl_Widget *, void *) {
@@ -472,7 +461,7 @@ void tags_cb(Fl_Widget *widg, void *ptr)
         return;
     }
 
-    readTagsFile(chooser.value());
+    load_tags(chooser.value());
 
     return;
 }
@@ -491,14 +480,38 @@ void tree_cb(Fl_Tree *, void *)
             Fl_Tree_Item *item = tree->callback_item();
             //printf("tree item %p clicked!\n", item);
             if(treeItemToInterv.find(item) == treeItemToInterv.end()) {
-                printf("not found though!\n");
+                //printf("not found though!\n");
             }
             else { 
                 Interval *ival = treeItemToInterv[item];
-                printf("interval @%p has [%016llX,%016llX]\n", 
-                    ival, ival->left, ival->right);
+                //printf("interval @%p has [%016llX,%016llX]\n", 
+                //    ival, ival->left, ival->right);
+
+                /* move upwards along the tree, coloring */
+                uint32_t palette[5] = {0xece2a5, 0xa5cebc, 0x768aa5, 0x496376, 0xa9212e};
+                vector<Fl_Tree_Item *> lineage;
+    
+                Fl_Tree_Item *curr = item;
+                while(curr) {
+                    lineage.insert(lineage.begin(), curr);
+                    curr = curr->parent();
+                }
+                
+                gui->hexView->hlClear();
+                for(int i=0; i<lineage.size(); ++i) {
+                    if(treeItemToInterv.find(lineage[i]) == treeItemToInterv.end()) {
+                        //printf("not found though!\n");
+                    }
+                    else {
+                        Interval *ival = treeItemToInterv[lineage[i]];
+                        if(ival) {
+                            gui->hexView->hlAdd(ival->left, ival->right, palette[i % 5]);
+                        }
+                    }
+                }
+
+                gui->hexView->setView((ival->left > 0x40) ? ival->left - 0x40 : 0);
                 gui->hexView->setSelection(ival->left, ival->right);
-                gui->hexView->setView(ival->left);
             }
         }
         case FL_TREE_REASON_DESELECTED: 
@@ -524,7 +537,7 @@ void tree_cb(Fl_Tree *, void *)
 /*****************************************************************************/
 
 void
-onGuiFinished(HlabGui *gui_)
+onGuiFinished(HlabGui *gui_, int argc, char **argv)
 {
     printf("%s()\n", __func__);
     int rc = -1;
@@ -567,18 +580,27 @@ onGuiFinished(HlabGui *gui_)
     
     gui->hexView->setCallback(HexView_cb);
 
-    gui->hexView->setBytes(0, (uint8_t *)initStr, strlen(initStr));
+    /* if command line parameter, open that */
+    if(argc > 1) {
+        file_load(argv[1]); 
 
-    /* test some colors */
-    gui->hexView->hlAdd(3,8,  0xFF0000);
-    gui->hexView->hlAdd(8,12, 0x0FF000);
-    gui->hexView->hlAdd(12,15,0x00FF00);
-    gui->hexView->hlAdd(20,30,0x000FF0);
-    gui->hexView->hlAdd(35,40,0x0000FF);
-    gui->hexView->hlAdd(50,90,0x880000);
-    gui->hexView->hlAdd(100,200,0x088000);
-    gui->hexView->hlEnable();
-    gui->hexView->hlRanges.print();
+        if(argc > 2) {
+            load_tags(argv[2]);
+        }
+    }
+    else {
+        gui->hexView->setBytes(0, (uint8_t *)initStr, strlen(initStr));
+
+        /* test some colors */
+        gui->hexView->hlAdd(3,8,  0xFF0000);
+        gui->hexView->hlAdd(8,12, 0x0FF000);
+        gui->hexView->hlAdd(12,15,0x00FF00);
+        gui->hexView->hlAdd(20,30,0x000FF0);
+        gui->hexView->hlAdd(35,40,0x0000FF);
+        gui->hexView->hlAdd(50,90,0x880000);
+        gui->hexView->hlAdd(100,200,0x088000);
+        gui->hexView->hlRanges.print();
+    }
 
     rc = 0;
     //cleanup:

@@ -109,6 +109,10 @@ void HexView::clearBytes(void)
 /* set the view, redraw, update variables */
 void HexView::setView(uint64_t addr)
 {
+    // filter address
+    if(addr >= nBytes) addr = nBytes - 1 - bytesPerPage;
+    if(addr % 16) addr -= (addr % 16);
+
     // capacity info
     linesPerPage = (h() - marginTop - marginBottom) / lineHeight;
     bytesPerPage = linesPerPage * bytesPerLine;
@@ -202,21 +206,16 @@ int HexView::viewAddrToAsciiXY(uint64_t addr, int *x, int *y)
 /*****************************************************************************/
 /* highlighting API */
 /*****************************************************************************/
-void HexView::hlDisable(void)
-{
-    hlEnabled = false;
-    hlRanges.clear();
-}
 
 void HexView::hlAdd(uint64_t left, uint64_t right, uint32_t color)
 {
-    hlRanges.add(left, right, color);
+    hlRanges.add(Interval(left, right, color));
+    redraw();
 }
 
-void HexView::hlEnable(void)
+void HexView::hlClear(void)
 {
-    hlRanges.searchFastPrep();
-    hlEnabled = true;
+    hlRanges.clear();
     redraw();
 }
 
@@ -263,7 +262,7 @@ void HexView::draw(void)
     uint8_t *b = bytes + (addrViewStart - addrStart);
     for(uint64_t addr=addrViewStart; addr<addrViewEnd; ++addr, ++b) {
         uint32_t color = 0xFFFFFF;
-        Interval *ival;
+        Interval ival(0,0);
         int x1,y1,x2,y2;
 
         /* 
@@ -273,8 +272,9 @@ void HexView::draw(void)
         viewAddrToAsciiXY(addr, &x2, &y2);
 
         /* highlighter? */
-        if(hlEnabled && hlRanges.searchFast(addr, &ival)) {
-            color = ival->data_u32; 
+        if(hlRanges.search(addr, ival)) {
+            // sort by size
+            color = ival.data_u32; 
             //printf("search hit for addr 0x%llx, color is: %X\n", addr, color);
             SET_PACKED_COLOR(color);
             fl_rectf(x1-1, y1+3, 3*charWidth, lineHeight);
