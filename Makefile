@@ -86,4 +86,5 @@ clean: $(TARGET) $(OBJS)
 install:
 	install ./clab /usr/local/bin
 	install ./alab /usr/local/bin
+	install ./hlab /usr/local/bin
 
