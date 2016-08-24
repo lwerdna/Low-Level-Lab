@@ -44,7 +44,7 @@ tagUint32(fp, "signature")
 # first substructure is image_file_header
 oIFH = fp.tell()
 Machine = tagUint16(fp, "Machine")
-assert Machine == pe.IMAGE_FILE_MACHINE_I386
+assert Machine == pe.IMAGE_FILE_MACHINE_AMD64
 
 NumberOfSections = tagUint16(fp, "NumberOfSections")
 tagUint32(fp, "TimeDateStamp")
@@ -57,7 +57,7 @@ print "[0x%X,0x%X) 0x0 image_file_header" % \
 # second substructure is image_optional_header
 oIOH = fp.tell()
 magic = tagUint16(fp, "Magic")
-assert magic == 0x10B;
+assert magic == 0x20B;
 tagUint8(fp, "MajorLinkerVersion")
 tagUint8(fp, "MinorLinkerVersion")
 tagUint32(fp, "SizeOfCode")
@@ -81,10 +81,10 @@ tagUint32(fp, "SizeOfHeaders")
 tagUint32(fp, "CheckSum")
 tagUint16(fp, "Subsystem")
 tagUint16(fp, "DllCharacteristics")
-tagUint32(fp, "SizeOfStackReserve")
-tagUint32(fp, "SizeOfStackCommit")
-tagUint32(fp, "SizeOfHeapReserve")
-tagUint32(fp, "SizeOfHeapCommit")
+tagUint64(fp, "SizeOfStackReserve")
+tagUint64(fp, "SizeOfStackCommit")
+tagUint64(fp, "SizeOfHeapReserve")
+tagUint64(fp, "SizeOfHeapCommit")
 tagUint32(fp, "LoaderFlags")
 tagUint32(fp, "NumberOfRvaAndSizes")
 oDD = fp.tell()
@@ -96,7 +96,7 @@ for i in range(pe.IMAGE_NUMBEROF_DIRECTORY_ENTRIES):
         (oDE, fp.tell(), pe.dataDirIdxToStr(i))
 print "[0x%X,0x%X) 0x0 DataDirectory" % \
     (oDD, fp.tell())
-print "[0x%X,0x%X) 0x0 image_optional_header" % \
+print "[0x%X,0x%X) 0x0 image_optional_header64" % \
     (oIOH, fp.tell())
 print "[0x%X,0x%X) 0x0 image_nt_headers" % \
     (e_lfanew, fp.tell())
