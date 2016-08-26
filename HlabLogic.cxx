@@ -42,7 +42,7 @@ Fl_Tree *tree = NULL;
 map<Fl_Tree_Item *, Interval *> treeItemToInterv;
 IntervalMgr intervMgr;
 
-const char *initStr = "This is the default bytes when no file is open. Here's some deadbeef: \xDE\xAD\xBE\xEF";
+const char *initStr = "This_is_the_default_bytes_when_no_file_is_open._Here's_some_deadbeef:_\xDE\xAD\xBE\xEF";
 
 int file_unload(void)
 {

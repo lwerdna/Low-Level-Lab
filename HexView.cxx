@@ -31,17 +31,25 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
 
     bytesPerLine = 16;
 
+    addrWidth32 = lineHeight = 0;
     fl_measure("DEADBEEF: ", addrWidth32, lineHeight); 
+
+    addrWidth64 = lineHeight = 0;
     fl_measure("DEADBEEFCAFEBABE: ", addrWidth64, lineHeight);
-    fl_measure("0", charWidth, lineHeight); 
-    printf("lineHeight: %d\n", lineHeight);
+
+    charWidth = lineHeight = 0;
+    fl_measure("_", charWidth, lineHeight); 
+
+    byteWidth = lineHeight = 0;
     fl_measure("00 ", byteWidth, lineHeight); 
-    printf("lineHeight: %d\n", lineHeight);
+    printf("(bytesWidth,lineHeight)=(%d,%d)\n", byteWidth, lineHeight);
+
+    bytesWidth = lineHeight = 0;
     fl_measure("00 11 22 33 44 55 66 77 88 99 AA BB CC DD EE FF  ", bytesWidth,
         lineHeight);
 
+    asciiWidth = lineHeight = 0;
     fl_measure("abcdefghijklmnop", asciiWidth, lineHeight);
-    printf("lineHeight: %d\n", lineHeight);
    
     /* set mode, calculate address width */
     addrMode = 32;
@@ -226,12 +234,13 @@ void HexView::draw(void)
 {
     char buf[256];
     int x1,y1,x2,y2;
-
+    
     if(!bytes) {
         return;
     }
 
     fl_font(FL_COURIER, FL_NORMAL_SIZE);
+    int r2c_bias_y = fl_height() - fl_descent();
 
     //dbgprintf("x0,y0,w0,h0 = (%d,%d,%d,%d)\n", x0, y0, w0, h0);
 
@@ -253,7 +262,7 @@ void HexView::draw(void)
             sprintf(buf, "%016llX: ", addr);
         }
        
-        fl_draw(buf, x1, y1+lineHeight);
+        fl_draw(buf, x1, y1+r2c_bias_y);
     }
 
     /* draw the bytes */
@@ -277,16 +286,16 @@ void HexView::draw(void)
             color = ival.data_u32; 
             //printf("search hit for addr 0x%llx, color is: %X\n", addr, color);
             SET_PACKED_COLOR(color);
-            fl_rectf(x1-1, y1+3, 3*charWidth, lineHeight);
-            fl_rectf(x2, y2+3, charWidth, lineHeight);
+            fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
+            fl_rectf(x2, y2, charWidth, lineHeight);
         }
 
         /* selection? */
         if(selActive && addr>=addrSelStart && addr<addrSelEnd) {
             color = 0xFFFF00;
             SET_PACKED_COLOR(color);
-            fl_rectf(x1-1, y1+3, 3*charWidth, lineHeight);
-            fl_rectf(x2, y2+3, charWidth, lineHeight);
+            fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
+            fl_rectf(x2, y2, charWidth, lineHeight);
         }
 
         float luma = 1 - (.299*(((color)&0xFF0000)>>16) + .587*(((color)&0xFF00)>>8) + .114*(color&0xFF))/255.0; // thx stackoverflow
@@ -299,17 +308,17 @@ void HexView::draw(void)
             SET_PACKED_COLOR(color);
         }
         sprintf(buf, "%02X", b[0]);
-        fl_draw(buf, x1, y1+lineHeight);
+        fl_draw(buf, x1, y1+r2c_bias_y);
         sprintf(buf, "%c", ((b[0])>=' ' && (b[0])<='~') ? (b[0]) : '.');
-        fl_draw(buf, x2, y2+lineHeight);
+        fl_draw(buf, x2, y2+r2c_bias_y);
     }
 
     /* draw the cursor */
     fl_color(0xff000000);
     viewAddrToBytesXY(addrViewStart + cursorOffs, &x1, &y1);
     viewAddrToAsciiXY(addrViewStart + cursorOffs, &x2, &y2);
-    fl_rect(x1-1, y1+3, charWidth*2+3, lineHeight);
-    fl_rect(x2-1, y2+3, charWidth+3, lineHeight);
+    fl_rect(x1, y1, charWidth*2, lineHeight);
+    fl_rect(x2, y2, charWidth, lineHeight);
 }
 
 int HexView::handle(int event)
@@ -321,6 +330,7 @@ int HexView::handle(int event)
     if(event == FL_FOCUS || event == FL_UNFOCUS) {
         /* To receive FL_KEYBOARD events you must also respond to the FL_FOCUS
             and FL_UNFOCUS events by returning 1. */
+        printf("I'm focused!\n");
         rc = 1;
     }
     else
