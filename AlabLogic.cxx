@@ -39,16 +39,62 @@ uint32_t crc_last_assemble = 0;
 /* configuration string */
 const char *configTriple = NULL;
 
+/*****************************************************************************/
+/* FILE HANDLING ROUTINES */
+/*****************************************************************************/
+
+/* saves the current buffer to a file
+    - path, if given (eg: for Save-As operation)
+    - current open file (eg: for Save operation)
+*/
+int file_save(const char *path)
+{
+    char *buf = NULL;
+    FILE *fp = NULL;
+    int len, rc = -1;
+
+    if(!path) {
+        if(!strlen(fileOpenPath)) {
+            printf("ERROR: missing save path\n");
+            goto cleanup;
+        }
+        path = fileOpenPath;
+    }
+
+    printf("%s(): saving %s\n", __func__, path);
+    fp = fopen(path, "w");
+    if(!fp) {
+        printf("ERROR: fopen()\n");
+        goto cleanup;
+    }
+
+    buf = gui->srcBuf->text();
+    len = strlen(buf);
+
+    printf("%s(): writing 0x%X (%d) bytes\n", __func__, len, len);
+    if(len != fwrite(buf, 1, len, fp)) {
+        printf("ERROR: fwrite()\n");
+        goto cleanup;
+    }
+    
+    rc = 0;
+    cleanup:
+    if(buf) { free(buf); buf = NULL; }
+    if(fp) { fclose(fp); fp = NULL; }
+    return rc;
+}
+
+/* unload current file
+    if path is given -> save to that path (save operation)
+    if path is not given -> just unload (close operation)
+*/
 int file_unload(void)
 {
-    int rc = -1;
-
     gui->mainWindow->label("Assembler Lab");
     strcpy(fileOpenPath, "");
     gui->srcBuf->text("");
-    rc = 0;
 
-    return rc;
+    return 0;
 }
 
 int file_load(const char *path) 
@@ -71,11 +117,12 @@ int file_load(const char *path)
         gui->srcBuf->text("");
     }
     else {
-        buf = (unsigned char *)malloc(len);
+        buf = (unsigned char *)malloc(len+1);
         if(!buf) {
             printf("ERROR: malloc()\n");
             goto cleanup;
         }
+        buf[len] = '\0';
     }
 
     if(len != fread(buf, 1, len, fp)) {
@@ -224,28 +271,53 @@ void open_cb(Fl_Widget *, void *)
     while(chooser.shown()) Fl::wait();
     if(chooser.value() == NULL) return;
     file_load(chooser.value());
-
-    return;
 }
 
-void new_cb(Fl_Widget *, void *) {
-    return;
+void new_cb(Fl_Widget *, void *) 
+{
+    /* unload any current file, clear buffer */
+    file_unload();
+
+    /* we "new" by saving the empty text area into a file */
+    Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "New");
+    chooser.show();
+    while(chooser.shown()) Fl::wait();
+    if(chooser.value() == NULL) return;
+
+    file_save(chooser.value());
+
 }
 
-void open_view(Fl_Widget *, void *) {
-    return;
+void save_cb(Fl_Widget *, void *) 
+{
+
+    /* file currently open? just write it */
+    if(strlen(fileOpenPath)) {
+        file_save(fileOpenPath);
+    }
+    /* file is not currently open, user selects a new one */
+    else {
+        Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "Save");
+        chooser.show();
+        while(chooser.shown()) Fl::wait();
+        if(chooser.value() == NULL) return;
+
+        file_save(chooser.value());
+
+        /* saved file becomes currently opened file (unlike "Save-As") */
+        strcpy(fileOpenPath, chooser.value());
+    }
 }
 
-void insert_cb(Fl_Widget *, void *) {
-    return;
-}
+void saveas_cb(Fl_Widget *, void *) 
+{
+    Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "Save As");
+    chooser.show();
+    while(chooser.shown()) Fl::wait();
+    if(chooser.value() == NULL) return;
 
-void save_cb(Fl_Widget *, void *) {
-    return;
-}
-
-void saveas_cb(Fl_Widget *, void *) {
-    return;
+    file_save(chooser.value());
+    /* saved file does NOT become currently opened file */
 }
 
 void close_cb(Fl_Widget *, void *) {
@@ -356,12 +428,12 @@ onGuiFinished(AlabGui *gui_)
 
     /* menu bar */
     static Fl_Menu_Item menuItems[] = {
-        { "&File",              0, 0, 0, FL_SUBMENU },
-//        { "&New File",        0, (Fl_Callback *)new_cb },
-        { "&Open",    FL_COMMAND + 'o', (Fl_Callback *)open_cb },
+        { "&File",            0, 0, 0, FL_SUBMENU },
+        { "&New",        0, (Fl_Callback *)new_cb },
+        { "&Open",    FL_COMMAND + 'o', (Fl_Callback *)open_cb, 0, FL_MENU_DIVIDER },
 //        { "&Insert File...",  FL_COMMAND + 'i', (Fl_Callback *)insert_cb, 0, FL_MENU_DIVIDER },
-//        { "&Save File",       FL_COMMAND + 's', (Fl_Callback *)save_cb },
-//        { "Save File &As...", FL_COMMAND + FL_SHIFT + 's', (Fl_Callback *)saveas_cb, 0, FL_MENU_DIVIDER },
+        { "&Save",       FL_COMMAND + 's', (Fl_Callback *)save_cb },
+        { "Save &As...", FL_COMMAND + FL_SHIFT + 's', (Fl_Callback *)saveas_cb, 0, FL_MENU_DIVIDER },
         { "&Close",           FL_COMMAND + 'w', (Fl_Callback *)close_cb, 0, FL_MENU_DIVIDER },
         { "E&xit",            FL_COMMAND + 'q', (Fl_Callback *)quit_cb, 0 },
         { 0 }
