@@ -330,7 +330,7 @@ int HexView::handle(int event)
     if(event == FL_FOCUS || event == FL_UNFOCUS) {
         /* To receive FL_KEYBOARD events you must also respond to the FL_FOCUS
             and FL_UNFOCUS events by returning 1. */
-        printf("I'm focused!\n");
+        //printf("I'm focused!\n");
         rc = 1;
     }
     else

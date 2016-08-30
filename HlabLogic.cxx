@@ -90,6 +90,8 @@ int file_load(const char *path)
     }
 
     gui->hexView->setBytes(0, (uint8_t *)fileOpenPtrMap, fileOpenSize);
+    
+    gui->mainWindow->label(path);
 
     rc = 0;
     cleanup:
