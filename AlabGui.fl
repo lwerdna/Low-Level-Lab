@@ -15,12 +15,16 @@ class AlabGui {open
 } {
   Function {make_window()} {open
   } {
-    Fl_Window {} {
-      label {Assembler Lab} open
-      xywh {485 290 1032 694} type Double visible
+    Fl_Window mainWindow {
+      label {Assembler Lab} open selected
+      xywh {362 283 1032 713} type Double visible
     } {
-      Fl_Text_Editor srcCode {selected
-        xywh {4 85 510 505} align 21 textfont 4
+      Fl_Menu_Bar menuBar {
+        label menu open
+        xywh {0 0 1032 20} color 29
+      } {}
+      Fl_Text_Editor srcCode {
+        xywh {4 103 510 505} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
         code2 {srcBuf->text("testes");}
@@ -28,58 +32,58 @@ class AlabGui {open
         class Fl_Text_Editor_Asm
       }
       Fl_Text_Editor asmCode {
-        xywh {517 85 508 505} labelfont 4 labelsize 10 textfont 4 textsize 12
+        xywh {517 103 510 505} labelfont 4 labelsize 10 textfont 4 textsize 12
         code0 {bytesBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(bytesBuf);}
         class Fl_Text_Editor
       }
       Fl_Group {} {
         label {Configuration String / Triple / Triplet:} open
-        xywh {276 21 749 57} box BORDER_BOX align 5
+        xywh {276 39 750 57} box BORDER_BOX align 5
       } {
         Fl_Output oArch {
           label {arch:}
-          xywh {507 48 84 24} align 5
+          xywh {507 66 84 24} align 5
         }
         Fl_Output oSubArch {
           label {subarch:}
-          xywh {593 48 84 24} align 5
+          xywh {593 66 84 24} align 5
         }
         Fl_Output oOs {
           label {os:}
-          xywh {765 48 84 24} align 5
+          xywh {765 66 84 24} align 5
         }
         Fl_Output oEnviron {
           label {environ:}
-          xywh {851 48 84 24} align 5
+          xywh {851 66 84 24} align 5
         }
         Fl_Output oFormat {
           label {format:}
-          xywh {937 48 84 24} align 5
+          xywh {937 66 84 24} align 5
         }
         Fl_Input_Choice icPresets {
           label {presets:}
           callback {onConfigSelection();} open
-          xywh {282 48 221 24} align 5
+          xywh {282 66 221 24} align 5
         } {}
         Fl_Output oVendor {
           label {vendor:}
-          xywh {679 48 84 24} align 5
+          xywh {679 66 84 24} align 5
         }
       }
       Fl_Input_Choice icExamples {
         label {examples:}
         callback {onExampleSelection();} open
-        xywh {5 21 259 24} align 5
+        xywh {5 39 259 24} align 5
       } {}
       Fl_Text_Display log {
-        xywh {4 594 1021 96}
+        xywh {4 612 1023 96}
         class Fl_Text_Display_Log
       }
       Fl_Check_Button cbAtt {
         label {at&&t syntax}
         callback {onDialectChange();}
-        xywh {176 47 28 28} down_box DOWN_BOX
+        xywh {176 65 28 28} down_box DOWN_BOX
       }
     }
     code {srcCode->linenumber_width(24);} {}

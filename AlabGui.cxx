@@ -25,11 +25,12 @@ void AlabGui::cb_cbAtt(Fl_Check_Button* o, void* v) {
 }
 
 Fl_Double_Window* AlabGui::make_window() {
-  Fl_Double_Window* w;
-  { Fl_Double_Window* o = new Fl_Double_Window(1032, 694, "Assembler Lab");
-    w = o;
-    o->user_data((void*)(this));
-    { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(4, 85, 510, 505);
+  { mainWindow = new Fl_Double_Window(1032, 713, "Assembler Lab");
+    mainWindow->user_data((void*)(this));
+    { menuBar = new Fl_Menu_Bar(0, 0, 1032, 20, "menu");
+      menuBar->color((Fl_Color)29);
+    } // Fl_Menu_Bar* menuBar
+    { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(4, 103, 510, 505);
       srcCode->box(FL_DOWN_FRAME);
       srcCode->color(FL_BACKGROUND2_COLOR);
       srcCode->selection_color(FL_SELECTION_COLOR);
@@ -45,7 +46,7 @@ Fl_Double_Window* AlabGui::make_window() {
       srcBuf->text("testes");
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor_Asm* srcCode
-    { Fl_Text_Editor* o = asmCode = new Fl_Text_Editor(517, 85, 508, 505);
+    { Fl_Text_Editor* o = asmCode = new Fl_Text_Editor(517, 103, 510, 505);
       asmCode->box(FL_DOWN_FRAME);
       asmCode->color(FL_BACKGROUND2_COLOR);
       asmCode->selection_color(FL_SELECTION_COLOR);
@@ -60,38 +61,38 @@ Fl_Double_Window* AlabGui::make_window() {
       bytesBuf = new Fl_Text_Buffer();
       o->buffer(bytesBuf);
     } // Fl_Text_Editor* asmCode
-    { Fl_Group* o = new Fl_Group(276, 21, 749, 57, "Configuration String / Triple / Triplet:");
+    { Fl_Group* o = new Fl_Group(276, 39, 750, 57, "Configuration String / Triple / Triplet:");
       o->box(FL_BORDER_BOX);
       o->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      { oArch = new Fl_Output(507, 48, 84, 24, "arch:");
+      { oArch = new Fl_Output(507, 66, 84, 24, "arch:");
         oArch->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oArch
-      { oSubArch = new Fl_Output(593, 48, 84, 24, "subarch:");
+      { oSubArch = new Fl_Output(593, 66, 84, 24, "subarch:");
         oSubArch->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oSubArch
-      { oOs = new Fl_Output(765, 48, 84, 24, "os:");
+      { oOs = new Fl_Output(765, 66, 84, 24, "os:");
         oOs->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oOs
-      { oEnviron = new Fl_Output(851, 48, 84, 24, "environ:");
+      { oEnviron = new Fl_Output(851, 66, 84, 24, "environ:");
         oEnviron->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oEnviron
-      { oFormat = new Fl_Output(937, 48, 84, 24, "format:");
+      { oFormat = new Fl_Output(937, 66, 84, 24, "format:");
         oFormat->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oFormat
-      { icPresets = new Fl_Input_Choice(282, 48, 221, 24, "presets:");
+      { icPresets = new Fl_Input_Choice(282, 66, 221, 24, "presets:");
         icPresets->callback((Fl_Callback*)cb_icPresets);
         icPresets->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Input_Choice* icPresets
-      { oVendor = new Fl_Output(679, 48, 84, 24, "vendor:");
+      { oVendor = new Fl_Output(679, 66, 84, 24, "vendor:");
         oVendor->align(Fl_Align(FL_ALIGN_TOP_LEFT));
       } // Fl_Output* oVendor
       o->end();
     } // Fl_Group* o
-    { icExamples = new Fl_Input_Choice(5, 21, 259, 24, "examples:");
+    { icExamples = new Fl_Input_Choice(5, 39, 259, 24, "examples:");
       icExamples->callback((Fl_Callback*)cb_icExamples);
       icExamples->align(Fl_Align(FL_ALIGN_TOP_LEFT));
     } // Fl_Input_Choice* icExamples
-    { log = new Fl_Text_Display_Log(4, 594, 1021, 96);
+    { log = new Fl_Text_Display_Log(4, 612, 1023, 96);
       log->box(FL_DOWN_FRAME);
       log->color(FL_BACKGROUND2_COLOR);
       log->selection_color(FL_SELECTION_COLOR);
@@ -102,14 +103,14 @@ Fl_Double_Window* AlabGui::make_window() {
       log->align(Fl_Align(FL_ALIGN_TOP));
       log->when(FL_WHEN_RELEASE);
     } // Fl_Text_Display_Log* log
-    { cbAtt = new Fl_Check_Button(176, 47, 28, 28, "at&&t syntax");
+    { cbAtt = new Fl_Check_Button(176, 65, 28, 28, "at&&t syntax");
       cbAtt->down_box(FL_DOWN_BOX);
       cbAtt->callback((Fl_Callback*)cb_cbAtt);
     } // Fl_Check_Button* cbAtt
-    o->end();
-  } // Fl_Double_Window* o
+    mainWindow->end();
+  } // Fl_Double_Window* mainWindow
   srcCode->linenumber_width(24);
-  return w;
+  return mainWindow;
 }
 
 int main(int argc, char **argv) {

@@ -16,6 +16,7 @@ using namespace std;
 #include <FL/Fl.H>
 #include <FL/Fl_Text_Buffer.H>
 #include <FL/Fl_Text_Display.H>
+#include <FL/Fl_File_Chooser.H>
 
 /* autils */
 extern "C" {
@@ -27,6 +28,7 @@ extern "C" {
 
 /* globals */
 AlabGui *gui = NULL;
+char fileOpenPath[FILENAME_MAX] = {'\0'};
 
 /* reassemble state vars */
 bool assemble_forced = false;
@@ -36,6 +38,67 @@ time_t time_last_assemble = 0;
 uint32_t crc_last_assemble = 0;
 /* configuration string */
 const char *configTriple = NULL;
+
+int file_unload(void)
+{
+    int rc = -1;
+
+    gui->mainWindow->label("Assembler Lab");
+    strcpy(fileOpenPath, "");
+    gui->srcBuf->text("");
+    rc = 0;
+
+    return rc;
+}
+
+int file_load(const char *path) 
+{
+    int rc = -1;
+    unsigned char *buf = NULL;
+    size_t len;
+
+    FILE *fp = fopen(path, "rb");
+    if(!fp) {
+        printf("ERROR: fopen()\n");
+        goto cleanup;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    len = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    if(len == 0) {
+        gui->srcBuf->text("");
+    }
+    else {
+        buf = (unsigned char *)malloc(len);
+        if(!buf) {
+            printf("ERROR: malloc()\n");
+            goto cleanup;
+        }
+    }
+
+    if(len != fread(buf, 1, len, fp)) {
+        printf("ERROR: fread()\n");
+        goto cleanup;
+    }
+
+    gui->mainWindow->label(path);
+    gui->srcBuf->text((char *)buf);
+    strcpy(fileOpenPath, path);
+    rc = 0;
+
+    cleanup:
+
+    if(rc) {
+        if(buf) {
+            free(buf);
+            buf = NULL;
+        }
+    }
+
+    return rc;
+}
 
 /*****************************************************************************/
 /* MAIN ROUTINE */
@@ -151,6 +214,51 @@ assemble()
 }
 
 /*****************************************************************************/
+/* MENU CALLBACKS */
+/*****************************************************************************/
+
+void open_cb(Fl_Widget *, void *)
+{
+    Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::SINGLE, "Open");
+    chooser.show();
+    while(chooser.shown()) Fl::wait();
+    if(chooser.value() == NULL) return;
+    file_load(chooser.value());
+
+    return;
+}
+
+void new_cb(Fl_Widget *, void *) {
+    return;
+}
+
+void open_view(Fl_Widget *, void *) {
+    return;
+}
+
+void insert_cb(Fl_Widget *, void *) {
+    return;
+}
+
+void save_cb(Fl_Widget *, void *) {
+    return;
+}
+
+void saveas_cb(Fl_Widget *, void *) {
+    return;
+}
+
+void close_cb(Fl_Widget *, void *) {
+   file_unload();
+   return;
+}
+
+void quit_cb(Fl_Widget *, void *) {
+    file_unload();
+    gui->mainWindow->hide();
+}
+
+/*****************************************************************************/
 /* GUI CALLBACK STUFF */
 /*****************************************************************************/
 
@@ -246,8 +354,22 @@ onGuiFinished(AlabGui *gui_)
 
     gui = gui_;
 
-    /* initial input choices */
+    /* menu bar */
+    static Fl_Menu_Item menuItems[] = {
+        { "&File",              0, 0, 0, FL_SUBMENU },
+//        { "&New File",        0, (Fl_Callback *)new_cb },
+        { "&Open",    FL_COMMAND + 'o', (Fl_Callback *)open_cb },
+//        { "&Insert File...",  FL_COMMAND + 'i', (Fl_Callback *)insert_cb, 0, FL_MENU_DIVIDER },
+//        { "&Save File",       FL_COMMAND + 's', (Fl_Callback *)save_cb },
+//        { "Save File &As...", FL_COMMAND + FL_SHIFT + 's', (Fl_Callback *)saveas_cb, 0, FL_MENU_DIVIDER },
+        { "&Close",           FL_COMMAND + 'w', (Fl_Callback *)close_cb, 0, FL_MENU_DIVIDER },
+        { "E&xit",            FL_COMMAND + 'q', (Fl_Callback *)quit_cb, 0 },
+        { 0 }
+    };
+    
+    gui->menuBar->copy(menuItems);
 
+    /* initial input choices */
     gui->icExamples->add("x86_intel.s");
     gui->icExamples->add("x86.s");
     gui->icExamples->add("x86_64_intel.s");

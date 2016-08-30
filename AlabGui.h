@@ -6,6 +6,7 @@
 #include "Fl_Text_Editor_Asm.h"
 #include "Fl_Text_Display_Log.h"
 #include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Menu_Bar.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Output.H>
 #include <FL/Fl_Input_Choice.H>
@@ -14,6 +15,8 @@
 class AlabGui {
 public:
   Fl_Double_Window* make_window();
+  Fl_Double_Window *mainWindow;
+  Fl_Menu_Bar *menuBar;
   Fl_Text_Editor_Asm *srcCode;
   Fl_Text_Editor *asmCode;
   Fl_Output *oArch;
