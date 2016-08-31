@@ -7,6 +7,18 @@ import binascii
 import pe
 from taglib import *
 
+# pe64 vs. pe32:
+# 1) different id in image_nt_headers.image_file_header.Machine
+# 2) image_optional_header at 0xE0 (224 bytes) is replaced by 
+#   image_optional_header64 at 0xF0 (240 bytes) with:
+#   2.1) BaseOfData is GONE, its bytes get absorbed into ImageBase, growing it
+#        from 4 bytes to 8 bytes
+#   2.2) all these fields grow from 4 to 8 bytes:
+#   - SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve, SizeOfHeapCommit
+#     all increase from 4 bytes to 8 bytes
+#
+# this should result in an Image_Optional_header that is 0xF0 bytes
+
 ###############################################################################
 # "main"
 ###############################################################################
@@ -65,8 +77,10 @@ tagUint32(fp, "SizeOfInitializedData")
 tagUint32(fp, "SizeOfUninitializedData")
 tagUint32(fp, "AddressOfEntryPoint")
 tagUint32(fp, "BaseOfCode")
-tagUint32(fp, "BaseOfData")
-tagUint32(fp, "ImageBase")
+# base of data is GONE in pe64
+#tagUint32(fp, "BaseOfData")
+# ImageBase grows from dword to qword in pe64
+tagUint64(fp, "ImageBase")
 tagUint32(fp, "SectionAlignment")
 tagUint32(fp, "FileAlignment")
 tagUint16(fp, "MajorOperatingSystemVersion")
@@ -81,6 +95,7 @@ tagUint32(fp, "SizeOfHeaders")
 tagUint32(fp, "CheckSum")
 tagUint16(fp, "Subsystem")
 tagUint16(fp, "DllCharacteristics")
+# the following "SizeOf..." members all grow to qword in pe64
 tagUint64(fp, "SizeOfStackReserve")
 tagUint64(fp, "SizeOfStackCommit")
 tagUint64(fp, "SizeOfHeapReserve")
