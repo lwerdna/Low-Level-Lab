@@ -36,7 +36,7 @@ tagUint16(fp, "e_oeminfo")
 tag(fp, 20, "e_res2");
 e_lfanew = tagUint32(fp, "e_lfanew")
 print "[0x%X,0x%X) 0x0 image_dos_header" % \
-    (oHdr, fp.tell())
+	(oHdr, fp.tell())
 
 # image_nt_headers has signature and two substructures
 fp.seek(e_lfanew)
@@ -53,7 +53,7 @@ NumberOfSymbols = tagUint32(fp, "NumberOfSymbols")
 SizeOfOptionalHeader = tagUint16(fp, "SizeOfOptionalHeader")
 tagUint16(fp, "Characteristics")
 print "[0x%X,0x%X) 0x0 image_file_header" % \
-    (oIFH, fp.tell())
+	(oIFH, fp.tell())
 # second substructure is image_optional_header
 oIOH = fp.tell()
 magic = tagUint16(fp, "Magic")
@@ -89,36 +89,44 @@ tagUint32(fp, "LoaderFlags")
 tagUint32(fp, "NumberOfRvaAndSizes")
 oDD = fp.tell()
 for i in range(pe.IMAGE_NUMBEROF_DIRECTORY_ENTRIES):
-    oDE = fp.tell()
-    tagUint32(fp, "VirtualAddress")
-    tagUint32(fp, "Size")
-    print "[0x%X,0x%X) 0x0 DataDir %s" % \
-        (oDE, fp.tell(), pe.dataDirIdxToStr(i))
+	oDE = fp.tell()
+	tagUint32(fp, "VirtualAddress")
+	tagUint32(fp, "Size")
+	print "[0x%X,0x%X) 0x0 DataDir %s" % \
+	    (oDE, fp.tell(), pe.dataDirIdxToStr(i))
 print "[0x%X,0x%X) 0x0 DataDirectory" % \
-    (oDD, fp.tell())
+	(oDD, fp.tell())
 print "[0x%X,0x%X) 0x0 image_optional_header" % \
-    (oIOH, fp.tell())
+	(oIOH, fp.tell())
 print "[0x%X,0x%X) 0x0 image_nt_headers" % \
-    (e_lfanew, fp.tell())
+	(e_lfanew, fp.tell())
 
+(oScnReloc, nScnReloc) = (None,None)
 fp.seek(oIOH + SizeOfOptionalHeader)
 for i in range(NumberOfSections):
-    oISH = fp.tell()
-    Name = tag(fp, pe.IMAGE_SIZEOF_SHORT_NAME, "Name")
-    tagUint32(fp, "VirtualSize");
-    tagUint32(fp, "VirtualAddress");
-    SizeOfRawData = tagUint32(fp, "SizeOfRawData")
-    PointerToRawData = tagUint32(fp, "PointerToRawData")
-    tagUint32(fp, "PointerToRelocations")
-    tagUint32(fp, "PointerToLineNumbers")
-    tagUint16(fp, "NumberOfRelocations")
-    tagUint16(fp, "NumberOfLineNumbers")
-    tagUint32(fp, "Characteristics")
-    print "[0x%X,0x%X) 0x0 image_section_header \"%s\"" % \
-        (oISH, fp.tell(), Name.rstrip('\0'))
-    print "[0x%X,0x%X) 0x0 section \"%s\" contents" % \
-        (PointerToRawData, PointerToRawData+SizeOfRawData, Name.rstrip('\0'))
+	oISH = fp.tell()
+	Name = tag(fp, pe.IMAGE_SIZEOF_SHORT_NAME, "Name")
+	tagUint32(fp, "VirtualSize");
+	tagUint32(fp, "VirtualAddress");
+	SizeOfRawData = tagUint32(fp, "SizeOfRawData")
+	PointerToRawData = tagUint32(fp, "PointerToRawData")
+	tagUint32(fp, "PointerToRelocations")
+	tagUint32(fp, "PointerToLineNumbers")
+	tagUint16(fp, "NumberOfRelocations")
+	tagUint16(fp, "NumberOfLineNumbers")
+	tagUint32(fp, "Characteristics")
+	print "[0x%X,0x%X) 0x0 image_section_header \"%s\"" % \
+	    (oISH, fp.tell(), Name.rstrip('\0'))
+	print "[0x%X,0x%X) 0x0 section \"%s\" contents" % \
+	    (PointerToRawData, PointerToRawData+SizeOfRawData, Name.rstrip('\0'))
 
+	if Name=='.reloc\x00\x00':
+		oScnReloc = PointerToRawData
+		nScnReloc = SizeOfRawData
+
+if(oScnReloc):
+	fp.seek(oScnReloc)
+	pe.tagReloc(fp, nScnReloc)
 
 fp.close()
 
