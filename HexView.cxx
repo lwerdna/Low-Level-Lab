@@ -7,14 +7,11 @@
 using namespace std;
 
 #include <FL/Fl.H>
-#include <FL/Fl_Input.H>
 #include <FL/Fl_Box.H>
-
+#include <FL/Fl_Input.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Toggle_Button.H>
 #include <FL/Fl_Menu_Button.H>
-#include <FL/Fl_Box.H>
-#include <FL/Fl_Input.H>
 
 #include <FL/fl_draw.H>
 
@@ -64,7 +61,6 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
     marginLeft = marginRight = 2;
     marginTop = 0;
     marginBottom = 2;
-    void setSelection(uint64_t start, uint64_t end);
 
     int width = marginLeft + addrWidth + bytesWidth + asciiWidth + marginRight;
     int height = lineHeight * 32;
@@ -292,7 +288,7 @@ void HexView::draw(void)
 
         /* selection? */
         if(selActive && addr>=addrSelStart && addr<addrSelEnd) {
-            color = 0xFFFF00;
+            color = 0xFF00ff;
             SET_PACKED_COLOR(color);
             fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
             fl_rectf(x2, y2, charWidth, lineHeight);
@@ -314,7 +310,7 @@ void HexView::draw(void)
     }
 
     /* draw the cursor */
-    fl_color(0xff000000);
+    fl_color(0xffff0000);
     viewAddrToBytesXY(addrViewStart + cursorOffs, &x1, &y1);
     viewAddrToAsciiXY(addrViewStart + cursorOffs, &x2, &y2);
     fl_rect(x1, y1, charWidth*2, lineHeight);

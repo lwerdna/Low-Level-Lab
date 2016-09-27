@@ -496,13 +496,14 @@ void tree_cb(Fl_Tree *, void *)
 
                 /* move upwards along the tree, coloring */
                 //uint32_t palette[5] = {0xece2a5, 0xa5cebc, 0x768aa5, 0x496376, 0xa9212e};
-                uint32_t palette[5] = {0xFFFF00, 0x0000FF, 0x088000, 0x880000, 0xFF0000};
+                //uint32_t palette[5] = {0xFFFF00, 0x0000FF, 0x088000, 0x880000, 0xFF0000};
+                uint32_t palette[5] = {0xff00ff, 0xbf00bf, 0x7f007f, 0x3f003f, 0x000000};
 
                 vector<Fl_Tree_Item *> lineage;
-    
+ 
                 Fl_Tree_Item *curr = item;
                 while(curr) {
-                    lineage.insert(lineage.begin(), curr);
+                    lineage.insert(lineage.end(), curr);
                     curr = curr->parent();
                 }
                 
