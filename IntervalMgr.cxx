@@ -218,7 +218,6 @@ void IntervalMgr::searchFastPrep()
             if(!leftBreak && !rightBreak && oldGuy.contains(newGuy)) {
                 /* left section */
                 if(newGuy.left > oldGuy.left) {
-                    //printf("a:\n");
                     Interval tmp = oldGuy;
                     tmp.right = newGuy.left;
                     tmpList.push_back(tmp);
@@ -226,7 +225,6 @@ void IntervalMgr::searchFastPrep()
                 
                 /* right section */
                 if(oldGuy.right > newGuy.right) {
-                    //printf("c:\n");
                     Interval tmp = oldGuy;
                     tmp.left = newGuy.right;
                     tmpList.push_back(tmp);
@@ -363,8 +361,8 @@ vector<Interval *> IntervalMgr::findParentChild()
     vector<Interval *> listRoot;
     
     for(unsigned int i=0; i<intervals.size(); ++i) {
-        printf("interval @%p ", &(intervals[i]));
-        intervals[i].print();
+        //printf("interval @%p ", &(intervals[i]));
+        //intervals[i].print();
     }
 
     for(unsigned int i=0; i<intervals.size(); ++i) {

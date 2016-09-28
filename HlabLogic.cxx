@@ -34,7 +34,7 @@ extern "C" {
 /* forward dec's */
 void tree_cb(Fl_Tree *, void *);
 
-int tags_opportunity_load(const char *fpath);
+int tags_poll_taggers(const char *fpath);
 
 /* globals */
 HlabGui *gui = NULL;
@@ -99,7 +99,7 @@ int file_load(const char *path)
     
     gui->mainWindow->label(path);
 
-	tags_opportunity_load(path);
+	tags_poll_taggers(path);
 		
     rc = 0;
     cleanup:
@@ -261,7 +261,7 @@ int tags_load_file(const char *fpath)
 
         vector<Interval *> rootsIval = intervMgr.findParentChild();
         for(int i=0; i<rootsIval.size(); ++i) {
-            rootsIval[i]->print();
+            //rootsIval[i]->print();
             tags_populate_tree(tree, rootItem, rootsIval[i]);
         }
 
@@ -293,7 +293,7 @@ int tags_load_file(const char *fpath)
     return rc;
 }
 
-int tags_opportunity_load(const char *fpath)
+int tags_poll_taggers(const char *fpath)
 {
 	int rc=-1;
 
@@ -313,14 +313,15 @@ int tags_opportunity_load(const char *fpath)
 	fclose(fpTemp);
 
 	/* access and print the interpreter's sys.path */
-
-	Py_ssize_t pySize;
-	pSysPath = PySys_GetObject((char *)"path"); // BORROWED (no decref)
-	pySize = PyList_Size(pSysPath);
-	for(Py_ssize_t i=0; i<pySize; ++i) {
-		PyObject *entry = PyList_GetItem(pSysPath, i); // BORROWED (no decref)
-		printf("sys.path[%ld] = \"%s\"\n", i, PyString_AsString(entry));
-	}	
+	if(0) {
+		Py_ssize_t pySize;
+		pSysPath = PySys_GetObject((char *)"path"); // BORROWED (no decref)
+		pySize = PyList_Size(pSysPath);
+		for(Py_ssize_t i=0; i<pySize; ++i) {
+			PyObject *entry = PyList_GetItem(pSysPath, i); // BORROWED (no decref)
+			printf("sys.path[%ld] = \"%s\"\n", i, PyString_AsString(entry));
+		}
+	}
 
 	for(int i=0; i<1; ++i) {
 		printf("seeing if %s wants to tag this file\n", taggers[i]);
@@ -333,35 +334,34 @@ int tags_opportunity_load(const char *fpath)
 			continue; 
 		}
 
-		// get the <module>.__file__ member
+		/* get the <module>.__file__ member */
 		if(pModFile) Py_DECREF(pModFile);
 		pModFile = PyObject_GetAttrString(pModule, "__file__");
 		if(!pModFile) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
 		printf("tagger is from file %s\n", PyString_AsString(pModFile));	
 	
-		// get tag()
+		/* get tag() */
 		if(pFuncTagReally) Py_DECREF(pFuncTagReally);
 		pFuncTagReally = PyObject_GetAttrString(pModule, "tagReally");
 		if(!pFuncTagReally) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
 
-		// get tagTest()
+		/* get tagTest() */
 		if(pFuncTagTest) Py_DECREF(pFuncTagTest);
 		pFuncTagTest = PyObject_GetAttrString(pModule, "tagTest");
 		if(!pFuncTagTest) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
 
-		// make a python string from our source file path
+		/* make a python string from our source file path */
 		if(pPathSrc) Py_DECREF(pPathSrc);
 		pPathSrc = PyString_FromString(fpath);
 		if(!pPathSrc) { printf("ERROR: PyString_FromString()\n"); continue; }
 
-		// construct a tuple for arguments to tagTest()
+		/* construct a tuple for arguments to tagTest() */
 		if(pArgs) Py_DECREF(pArgs);
 		pArgs = PyTuple_New(1);
 		if(!pArgs) { printf("ERROR: PyTuple_New()\n"); continue; }
-		// first tuple element (first argument) is file path
 		PyTuple_SetItem(pArgs, 0, pPathSrc);
 
-		// call tagTest()
+		/* call tagTest() */
 		if(pValue) Py_DECREF(pValue);
 		pValue = PyObject_CallObject(pFuncTagTest, pArgs);
 		if(!pValue) { 
@@ -374,20 +374,19 @@ int tags_opportunity_load(const char *fpath)
 
 		printf("tagger said yes!\n");
 
-		// make a python string from our destination file path
+		/* make a python string from our destination file path */
 		if(pPathDst) Py_DECREF(pPathDst);
 		pPathDst = PyString_FromString(pathTagsTemp);
 		if(!pPathDst) { printf("ERROR: PyString_FromString()\n"); continue; }
 
-		// construct a tuple for arguments to tag()
+		/* construct a tuple for arguments to tag() */
 		if(pArgs) Py_DECREF(pArgs);
 		pArgs = PyTuple_New(2);
 		if(!pArgs) { printf("ERROR: PyTuple_New()\n"); continue; }
-		// first tuple element (first argument) is file path
 		PyTuple_SetItem(pArgs, 0, pPathSrc);
 		PyTuple_SetItem(pArgs, 1, pPathDst);
 
-		// call tagReally()
+		/* call tagReally() */
 		if(pValue) Py_DECREF(pValue);
 		pValue = PyObject_CallObject(pFuncTagReally, pArgs);
 		if(!pValue) { 
@@ -396,14 +395,19 @@ int tags_opportunity_load(const char *fpath)
 			goto cleanup;
 		}
 
-		// load the tags from the file
 		if(tags_load_file(pathTagsTemp)) {
 			printf("ERROR: tags_load_file()\n");
 			goto cleanup;
 		}
 
-		printf("holy shit did it work?\n");
-		// delete the file?
+		if(remove(pathTagsTemp)) {
+			printf("ERROR: remove(\"%s\")\n", pathTagsTemp);
+			goto cleanup;
+		}
+
+		/* if we've made it this far, tagger worked, no need to consider
+			others */
+		break;
 	}
 
 	rc = 0;
@@ -745,7 +749,7 @@ onGuiFinished(HlabGui *gui_, int argc, char **argv)
         gui->hexView->hlAdd(35,40,0x0000FF);
         gui->hexView->hlAdd(50,90,0x880000);
         gui->hexView->hlAdd(100,200,0x088000);
-        gui->hexView->hlRanges.print();
+        //gui->hexView->hlRanges.print();
     }
 
     rc = 0;

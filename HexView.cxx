@@ -310,7 +310,7 @@ void HexView::draw(void)
     }
 
     /* draw the cursor */
-    fl_color(0xffff0000);
+    fl_color(0xff000000);
     viewAddrToBytesXY(addrViewStart + cursorOffs, &x1, &y1);
     viewAddrToAsciiXY(addrViewStart + cursorOffs, &x2, &y2);
     fl_rect(x1, y1, charWidth*2, lineHeight);
