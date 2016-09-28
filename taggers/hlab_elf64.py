@@ -134,7 +134,7 @@ def tagTest(fpathIn):
 	fp.close()
 	return result
 
-def tag(fpathIn, fpathOut):
+def tagReally(fpathIn, fpathOut):
 	fp = open(fpathIn, "rb")
 	assert(isElf64(fp))
 

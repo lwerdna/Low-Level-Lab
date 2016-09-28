@@ -28,6 +28,7 @@ using namespace std;
 /* autils */
 extern "C" {
     #include <autils/bytes.h>
+	#include <autils/filesys.h>
 }
 
 /* forward dec's */
@@ -298,13 +299,23 @@ int tags_opportunity_load(const char *fpath)
 
 	const char *taggers[1] = {"hlab_elf64"};
 
-	PyObject *pModule=NULL, *pFuncTag=NULL, *pFuncTagTest=NULL, *pPathStr=NULL;
-	PyObject *pValue=NULL, *pArgs=NULL, *pModFile=NULL;
+	PyObject *pModule=NULL, *pFuncTagTest=NULL, *pFuncTagReally=NULL;
+	PyObject *pPathSrc=NULL, *pPathDst=NULL;
+	PyObject *pValue=NULL, *pArgs=NULL, *pModFile=NULL, *pSysPath;
+
+	FILE *fpTemp;	
+	char pathTagsTemp[FILENAME_MAX];
+	if(0 != gen_tmp_file("tagsXXXXXX", pathTagsTemp, &fpTemp)) {
+		printf("ERROR: gen_tmp_file()\n");
+		goto cleanup;
+	}
+	printf("generated temporary path: %s\n", pathTagsTemp);
+	fclose(fpTemp);
 
 	/* access and print the interpreter's sys.path */
 
 	Py_ssize_t pySize;
-	PyObject *pSysPath = PySys_GetObject((char *)"path"); // BORROWED (no decref)
+	pSysPath = PySys_GetObject((char *)"path"); // BORROWED (no decref)
 	pySize = PyList_Size(pSysPath);
 	for(Py_ssize_t i=0; i<pySize; ++i) {
 		PyObject *entry = PyList_GetItem(pSysPath, i); // BORROWED (no decref)
@@ -329,26 +340,26 @@ int tags_opportunity_load(const char *fpath)
 		printf("tagger is from file %s\n", PyString_AsString(pModFile));	
 	
 		// get tag()
-		if(pFuncTag) Py_DECREF(pFuncTag);
-		pFuncTag = PyObject_GetAttrString(pModule, "tag");
-		if(!pFuncTag) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
+		if(pFuncTagReally) Py_DECREF(pFuncTagReally);
+		pFuncTagReally = PyObject_GetAttrString(pModule, "tagReally");
+		if(!pFuncTagReally) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
 
 		// get tagTest()
 		if(pFuncTagTest) Py_DECREF(pFuncTagTest);
 		pFuncTagTest = PyObject_GetAttrString(pModule, "tagTest");
 		if(!pFuncTagTest) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
 
-		// make a python string from our file path
-		if(pPathStr) Py_DECREF(pPathStr);
-		pPathStr = PyString_FromString(fpath);
-		if(!pPathStr) { printf("ERROR: PyString_FromString()\n"); continue; }
+		// make a python string from our source file path
+		if(pPathSrc) Py_DECREF(pPathSrc);
+		pPathSrc = PyString_FromString(fpath);
+		if(!pPathSrc) { printf("ERROR: PyString_FromString()\n"); continue; }
 
-		// construct a tuple for our arguments
+		// construct a tuple for arguments to tagTest()
 		if(pArgs) Py_DECREF(pArgs);
 		pArgs = PyTuple_New(1);
 		if(!pArgs) { printf("ERROR: PyTuple_New()\n"); continue; }
 		// first tuple element (first argument) is file path
-		PyTuple_SetItem(pArgs, 0, pPathStr);
+		PyTuple_SetItem(pArgs, 0, pPathSrc);
 
 		// call tagTest()
 		if(pValue) Py_DECREF(pValue);
@@ -358,22 +369,54 @@ int tags_opportunity_load(const char *fpath)
 			PyErr_Print();
 			continue;
 		}
-		
-		if(PyInt_AsLong(pValue)) {
-			printf("tagger said yes!\n");	
+	
+		if(0 == PyInt_AsLong(pValue)) { printf("tagger said no, next!\n"); continue; }
+
+		printf("tagger said yes!\n");
+
+		// make a python string from our destination file path
+		if(pPathDst) Py_DECREF(pPathDst);
+		pPathDst = PyString_FromString(pathTagsTemp);
+		if(!pPathDst) { printf("ERROR: PyString_FromString()\n"); continue; }
+
+		// construct a tuple for arguments to tag()
+		if(pArgs) Py_DECREF(pArgs);
+		pArgs = PyTuple_New(2);
+		if(!pArgs) { printf("ERROR: PyTuple_New()\n"); continue; }
+		// first tuple element (first argument) is file path
+		PyTuple_SetItem(pArgs, 0, pPathSrc);
+		PyTuple_SetItem(pArgs, 1, pPathDst);
+
+		// call tagReally()
+		if(pValue) Py_DECREF(pValue);
+		pValue = PyObject_CallObject(pFuncTagReally, pArgs);
+		if(!pValue) { 
+			printf("ERROR: PyObject_CallObject()\n"); 
+			PyErr_Print();
+			goto cleanup;
 		}
-		else {
-			printf("tagger said no, next!\n");
+
+		// load the tags from the file
+		if(tags_load_file(pathTagsTemp)) {
+			printf("ERROR: tags_load_file()\n");
+			goto cleanup;
 		}
+
+		printf("holy shit did it work?\n");
+		// delete the file?
 	}
 
+	rc = 0;
+
+	cleanup:
+
 	if(pModule) Py_DECREF(pModule);
-	if(pFuncTag) Py_DECREF(pFuncTag);
 	if(pFuncTagTest) Py_DECREF(pFuncTagTest);
-	if(pPathStr) Py_DECREF(pPathStr);
+	if(pFuncTagReally) Py_DECREF(pFuncTagReally);
+	if(pPathSrc) Py_DECREF(pPathSrc);
+	if(pPathDst) Py_DECREF(pPathDst);
 	if(pArgs) Py_DECREF(pArgs);
 	if(pValue) Py_DECREF(pValue);
-	if(pPathStr) Py_DECREF(pPathStr);
 
 	return rc;
 }
