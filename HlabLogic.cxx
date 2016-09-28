@@ -564,7 +564,7 @@ void close_cb(Fl_Widget *, void *) {
 void quit_cb(Fl_Widget *, void *) {
     file_unload();
     gui->mainWindow->hide();
-    if(winTags) winTags->hide();
+    if(winTags) { winTags->hide(); }
 }
 
 void cut_cb(Fl_Widget *, void *) {

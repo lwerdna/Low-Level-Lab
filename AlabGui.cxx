@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
   AlabGui gui;
   Fl_Double_Window *w = gui.make_window();
   onGuiFinished(&gui);
-  //Fl::add_idle(onIdle, &gui);
+  Fl::add_idle(onIdle, &gui);
   w->end();
   w->show();
   int rc = Fl::run();

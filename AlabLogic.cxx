@@ -381,17 +381,17 @@ onExampleSelection()
         gui->srcBuf->text((char *)rsrc_x86_s);
         gui->cbAtt->value(1);
     }
-    if(0==strcmp(file, "x86_intel.s")) {
+    else if(0==strcmp(file, "x86_intel.s")) {
         gui->srcBuf->text((char *)rsrc_x86_intel_s);
         gui->cbAtt->value(0);
     }
     else if(0==strcmp(file, "x86_64.s")) {
-        gui->cbAtt->value(1);
         gui->srcBuf->text((char *)rsrc_x86_64_s);
+        gui->cbAtt->value(1);
     }
     else if(0==strcmp(file, "x86_64_intel.s")) {
-        gui->cbAtt->value(0);
         gui->srcBuf->text((char *)rsrc_x86_64_intel_s);
+        gui->cbAtt->value(0);
     }
     else if(0==strcmp(file, "ppc32.s")) {
         gui->srcBuf->text((char *)rsrc_ppc_s);
@@ -407,6 +407,9 @@ onExampleSelection()
     }
     else if(0==strcmp(file, "arm64.s")) {
         gui->srcBuf->text((char *)rsrc_arm64_s);
+    }
+    else if(0==strcmp(file, "mips.s")) {
+        gui->srcBuf->text((char *)rsrc_mips_s);
     }
 }
 
@@ -451,6 +454,7 @@ onGuiFinished(AlabGui *gui_)
     gui->icExamples->add("arm.s");
     gui->icExamples->add("thumb.s");
     gui->icExamples->add("arm64.s");
+    gui->icExamples->add("mips.s");
     gui->icExamples->value(0);
     gui->cbAtt->value(0);
     onExampleSelection();
@@ -468,7 +472,7 @@ onGuiFinished(AlabGui *gui_)
     gui->icPresets->add("powerpc-none-none");
     gui->icPresets->add("powerpc64-none-none");
     gui->icPresets->add("powerpc64le-none-none");
-    gui->icPresets->add("haha-just-a-joke");
+    gui->icPresets->add("mips-pc-eabi");
     /* start it at the 0'th value */
     gui->icPresets->value(0);
     /* pretend the user did it */

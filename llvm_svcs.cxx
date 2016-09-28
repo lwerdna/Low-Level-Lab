@@ -109,6 +109,11 @@ llvm_svcs_assemble(const char *srcText, int dialect, const char *triplet,
         LLVMInitializePowerPCAsmParser();
         LLVMInitializePowerPCTargetMC();
         LLVMInitializePowerPCDisassembler();
+
+        LLVMInitializeMipsTargetInfo();
+        LLVMInitializeMipsAsmParser();
+        LLVMInitializeMipsTargetMC();
+        LLVMInitializeMipsDisassembler();
     }
 
     printf("src text is:\n%s", srcText);
@@ -196,6 +201,9 @@ llvm_svcs_assemble(const char *srcText, int dialect, const char *triplet,
     );
 
     std::string abi = "none";
+	if(0 == strncmp(triplet, "mips", 4)) {
+		abi = "eabi";
+	}
     MCTargetOptions toptions;
     toptions.MCUseDwarfDirectory = false;
     toptions.ABIName = abi;

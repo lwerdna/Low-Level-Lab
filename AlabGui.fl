@@ -17,7 +17,7 @@ class AlabGui {open
   } {
     Fl_Window mainWindow {
       label {Assembler Lab} open
-      xywh {1138 348 1032 713} type Double visible
+      xywh {888 348 1032 713} type Double visible
     } {
       Fl_Menu_Bar menuBar {
         label menu open
@@ -99,7 +99,7 @@ Function {} {open
   code {AlabGui gui;
 Fl_Double_Window *w = gui.make_window();
 onGuiFinished(&gui);
-//Fl::add_idle(onIdle, &gui);
+Fl::add_idle(onIdle, &gui);
 w->end();
 w->show();
 int rc = Fl::run();
