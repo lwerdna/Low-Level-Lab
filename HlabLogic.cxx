@@ -299,10 +299,18 @@ int tags_poll_taggers(const char *fpath)
 
 	const char *taggers[1] = {"hlab_elf64"};
 
-	PyObject *pModule=NULL, *pFuncTagTest=NULL, *pFuncTagReally=NULL;
+	PyObject *pModule=NULL;
+	/* python function references returned via PyObject_GetAttrString() */
+	PyObject *pFuncTagTest=NULL, *pFuncTagReally=NULL;
+	/* python strings returned by PyString_FromString() */
 	PyObject *pPathSrc=NULL, *pPathDst=NULL;
-	PyObject *pValue=NULL, *pArgs=NULL, *pModFile=NULL, *pSysPath;
-
+	/* python return value from PyObject_CallObject() */
+	PyObject *pValue=NULL;
+	/* python string from PyObject_GetAttrString(..., "__file__") */
+	PyObject *pModFile;
+	/* python tuple, for arguments */
+	PyObject *pArgs=NULL;
+	
 	FILE *fpTemp;	
 	char pathTagsTemp[FILENAME_MAX];
 	if(0 != gen_tmp_file("tagsXXXXXX", pathTagsTemp, &fpTemp)) {
@@ -315,7 +323,7 @@ int tags_poll_taggers(const char *fpath)
 	/* access and print the interpreter's sys.path */
 	if(0) {
 		Py_ssize_t pySize;
-		pSysPath = PySys_GetObject((char *)"path"); // BORROWED (no decref)
+		PyObject *pSysPath = PySys_GetObject((char *)"path"); // BORROWED (no decref)
 		pySize = PyList_Size(pSysPath);
 		for(Py_ssize_t i=0; i<pySize; ++i) {
 			PyObject *entry = PyList_GetItem(pSysPath, i); // BORROWED (no decref)
@@ -326,6 +334,7 @@ int tags_poll_taggers(const char *fpath)
 	for(int i=0; i<1; ++i) {
 		printf("seeing if %s wants to tag this file\n", taggers[i]);
 
+		/* if import problems, go to the next */
 		if(pModule) Py_DECREF(pModule);
 		pModule = PyImport_ImportModule(taggers[i]);
 		if(!pModule) { 
@@ -337,66 +346,64 @@ int tags_poll_taggers(const char *fpath)
 		/* get the <module>.__file__ member */
 		if(pModFile) Py_DECREF(pModFile);
 		pModFile = PyObject_GetAttrString(pModule, "__file__");
-		if(!pModFile) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
-		printf("tagger is from file %s\n", PyString_AsString(pModFile));	
+		if(!pModFile) { printf("ERROR: PyObject_GetAttrString()\n"); goto cleanup; }
+		printf("candidate tagger: %s\n", PyString_AsString(pModFile));	
 	
 		/* get tag() */
 		if(pFuncTagReally) Py_DECREF(pFuncTagReally);
 		pFuncTagReally = PyObject_GetAttrString(pModule, "tagReally");
-		if(!pFuncTagReally) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
+		if(!pFuncTagReally) { printf("ERROR: PyObject_GetAttrString()\n"); goto cleanup; }
 
 		/* get tagTest() */
 		if(pFuncTagTest) Py_DECREF(pFuncTagTest);
 		pFuncTagTest = PyObject_GetAttrString(pModule, "tagTest");
-		if(!pFuncTagTest) { printf("ERROR: PyObject_GetAttrString()\n"); continue; }
+		if(!pFuncTagTest) { printf("ERROR: PyObject_GetAttrString()\n"); goto cleanup; }
 
 		/* make a python string from our source file path */
 		if(pPathSrc) Py_DECREF(pPathSrc);
 		pPathSrc = PyString_FromString(fpath);
-		if(!pPathSrc) { printf("ERROR: PyString_FromString()\n"); continue; }
+		if(!pPathSrc) { printf("ERROR: PyString_FromString()\n"); goto cleanup; }
 
 		/* construct a tuple for arguments to tagTest() */
 		if(pArgs) Py_DECREF(pArgs);
 		pArgs = PyTuple_New(1);
-		if(!pArgs) { printf("ERROR: PyTuple_New()\n"); continue; }
+		if(!pArgs) { printf("ERROR: PyTuple_New()\n"); goto cleanup; }
 		PyTuple_SetItem(pArgs, 0, pPathSrc);
 
 		/* call tagTest() */
 		if(pValue) Py_DECREF(pValue);
 		pValue = PyObject_CallObject(pFuncTagTest, pArgs);
 		if(!pValue) { 
-			printf("ERROR: PyObject_CallObject()\n"); 
-			PyErr_Print();
+			printf("ERROR: PyObject_CallObject()\n"); goto cleanup;
 			continue;
 		}
 	
-		if(0 == PyInt_AsLong(pValue)) { printf("tagger said no, next!\n"); continue; }
+		if(0 == PyInt_AsLong(pValue)) {
+			printf("tagger rejects the task!\n");
+			continue; 
+		}
 
-		printf("tagger said yes!\n");
+		printf("tagger accepts the task!\n");
 
 		/* make a python string from our destination file path */
 		if(pPathDst) Py_DECREF(pPathDst);
 		pPathDst = PyString_FromString(pathTagsTemp);
-		if(!pPathDst) { printf("ERROR: PyString_FromString()\n"); continue; }
+		if(!pPathDst) { printf("ERROR: PyString_FromString()\n"); goto cleanup; }
 
 		/* construct a tuple for arguments to tag() */
 		if(pArgs) Py_DECREF(pArgs);
 		pArgs = PyTuple_New(2);
-		if(!pArgs) { printf("ERROR: PyTuple_New()\n"); continue; }
+		if(!pArgs) { printf("ERROR: PyTuple_New()\n"); goto cleanup; }
 		PyTuple_SetItem(pArgs, 0, pPathSrc);
 		PyTuple_SetItem(pArgs, 1, pPathDst);
 
 		/* call tagReally() */
 		if(pValue) Py_DECREF(pValue);
 		pValue = PyObject_CallObject(pFuncTagReally, pArgs);
-		if(!pValue) { 
-			printf("ERROR: PyObject_CallObject()\n"); 
-			PyErr_Print();
-			goto cleanup;
-		}
+		if(!pValue) { printf("ERROR: PyObject_CallObject()\n"); goto cleanup; }
 
-		if(tags_load_file(pathTagsTemp)) {
-			printf("ERROR: tags_load_file()\n");
+		if(tags_load_file(pathTagsTemp)) { 
+			printf("ERROR: tags_load_file()\n"); 
 			goto cleanup;
 		}
 
@@ -414,12 +421,16 @@ int tags_poll_taggers(const char *fpath)
 
 	cleanup:
 
+	if(rc) {
+		PyErr_Print();
+	}
+
 	if(pModule) Py_DECREF(pModule);
 	if(pFuncTagTest) Py_DECREF(pFuncTagTest);
 	if(pFuncTagReally) Py_DECREF(pFuncTagReally);
 	if(pPathSrc) Py_DECREF(pPathSrc);
 	if(pPathDst) Py_DECREF(pPathDst);
-	if(pArgs) Py_DECREF(pArgs);
+	//if(pArgs) Py_DECREF(pArgs);
 	if(pValue) Py_DECREF(pValue);
 
 	return rc;
@@ -771,4 +782,6 @@ onExit(void)
 
 	/* python */
 	Py_Finalize();
+
+	printf("done here\n");
 }
