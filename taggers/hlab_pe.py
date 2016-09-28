@@ -1,3 +1,4 @@
+import os
 from hlab_taglib import *
 from struct import pack, unpack
 
@@ -12,6 +13,66 @@ IMAGE_SIZEOF_ARCHIVE_MEMBER_HDR = 60
 IMAGE_FILE_MACHINE_I386 = 0x014c
 IMAGE_FILE_MACHINE_IA64 = 0x0200
 IMAGE_FILE_MACHINE_AMD64 = 0x8664
+
+# pe64 vs. pe32:
+# 1) different id in image_nt_headers.image_file_header.Machine
+# 2) image_optional_header at 0xE0 (224 bytes) is replaced by 
+#   image_optional_header64 at 0xF0 (240 bytes) with:
+#   2.1) BaseOfData is GONE, its bytes get absorbed into ImageBase, growing it
+#		from 4 bytes to 8 bytes
+#   2.2) all these fields grow from 4 to 8 bytes:
+#   - SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve, SizeOfHeapCommit
+#	 all increase from 4 bytes to 8 bytes
+#
+# this should result in an Image_Optional_header that is 0xF0 bytes
+
+def idFile(fp):
+	fpos = fp.tell()
+
+	# get file size
+	fp.seek(0, os.SEEK_END)
+	fileSize = fp.tell()
+	#print "fileSize: 0x%X (%d)" % (fileSize, fileSize)
+
+	# file large enough to hold IMAGE_DOS_HEADER ?
+	if fileSize < 0x40: 
+		#print "file too small to hold IMAGE_DOS_HEADER"
+		fp.seek(fpos)
+		return False
+
+	# is IMAGE_DOS_HEADER.e_magic == "MZ" ?
+	fp.seek(0)
+	if fp.read(2) != "MZ": 
+		#print "missing MZ identifier"
+		fp.seek(fpos)
+		return False
+
+	# get IMAGE_DOS_HEADER.e_lfanew
+	fp.seek(0x3C)
+	e_lfanew = unpack('<I', fp.read(4))[0]
+
+	# is file large enough to hold IMAGE_NT_HEADERS ?
+	if fileSize < (e_lfanew + 0x108): 
+		#print "file too small to hold IMAGE_NT_HEADERS"
+		fp.seek(fpos)
+		return False
+
+	# does IMAGE_NT_HEADERS.signature == "PE" ?
+	fp.seek(e_lfanew)
+	if fp.read(4) != "PE\x00\x00": 
+		#print "missing PE identifier"
+		fp.seek(fpos)
+		return False
+
+	#
+	result = "unknown"
+	(machine,) = unpack('<H', fp.read(2))
+	if machine==IMAGE_FILE_MACHINE_AMD64:
+		result = "pe64"
+	if machine==IMAGE_FILE_MACHINE_I386:
+		result = "pe32"
+	fp.seek(fpos)
+	return result
 
 def dataDirIdxToStr(idx):
     lookup = [ "EXPORT", "IMPORT", "RESOURCE", "EXCEPTION", 

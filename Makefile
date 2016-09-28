@@ -92,4 +92,7 @@ install:
 	install ./taggers/hlab_taglib.py /usr/local/lib/python2.7/site-packages
 	install ./taggers/hlab_elf64.py /usr/local/lib/python2.7/site-packages
 	install ./taggers/hlab_macho64.py /usr/local/lib/python2.7/site-packages
+	install ./taggers/hlab_pe.py /usr/local/lib/python2.7/site-packages
+	install ./taggers/hlab_pe32.py /usr/local/lib/python2.7/site-packages
+	install ./taggers/hlab_pe64.py /usr/local/lib/python2.7/site-packages
 

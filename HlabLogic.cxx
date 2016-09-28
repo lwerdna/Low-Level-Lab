@@ -297,8 +297,9 @@ int tags_poll_taggers(const char *fpath)
 {
 	int rc=-1;
 
-	#define TAGGERSN 2
-	const char *taggers[TAGGERSN] = {"hlab_elf64", "hlab_macho64"};
+	#define TAGGERSN (sizeof(taggers)/sizeof(*taggers))
+	const char *taggers[] = {"hlab_elf64", "hlab_macho64", "hlab_pe32",
+		"hlab_pe64"};
 
 	PyObject *pModule=NULL;
 	/* python function references returned via PyObject_GetAttrString() */
@@ -333,7 +334,7 @@ int tags_poll_taggers(const char *fpath)
 	}
 
 	for(int i=0; i<TAGGERSN; ++i) {
-		printf("candidate tagger: %s\n", taggers[i]);
+		printf("%s\n", taggers[i]);
 
 		/* if import problems, go to the next */
 		//if(pModule) Py_DECREF(pModule);
