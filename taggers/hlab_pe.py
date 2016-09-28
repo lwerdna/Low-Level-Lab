@@ -1,4 +1,4 @@
-from taglib import *
+from hlab_taglib import *
 from struct import pack, unpack
 
 IMAGE_NUMBEROF_DIRECTORY_ENTRIES = 16

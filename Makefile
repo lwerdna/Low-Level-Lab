@@ -5,6 +5,8 @@ FLAGS_FLTK = $(shell fltk-config --use-images --cxxflags )
 #LDFLAGS  = $(shell fltk-config --use-images --ldflags )
 LD_FLTK = $(shell fltk-config --use-images --ldstaticflags)
 LD_LLVM = $(shell llvm-config --ldflags) $(shell llvm-config --libs)
+PYTHON_CFLAGS = $(shell python2.7-config --cflags)
+PYTHON_LDFLAGS = $(shell python2.7-config --ldflags)
 LINK = $(CXX)
 
 # this is a pattern rule
@@ -46,7 +48,7 @@ AlabLogic.o: AlabLogic.cxx AlabLogic.h
 	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c AlabLogic.cxx
 
 HlabLogic.o: HlabLogic.cxx HlabLogic.h
-	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c HlabLogic.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(PYTHON_CFLAGS) $(FLAGS_DEBUG) -c HlabLogic.cxx
 
 # OTHER objects
 llvm_svcs.o: llvm_svcs.cxx llvm_svcs.h
@@ -74,7 +76,7 @@ alab: rsrc.o AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Disp
 	$(LINK) AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_log.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
 
 hlab: HlabGui.o HlabLogic.o HexView.o IntervalMgr.o Makefile
-	$(LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o -o hlab $(LD_FLTK) -lautils
+	$(LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o -o hlab $(LD_FLTK) $(PYTHON_LDFLAGS) -lautils
 
 # OTHER targets
 #
@@ -87,4 +89,6 @@ install:
 	install ./clab /usr/local/bin
 	install ./alab /usr/local/bin
 	install ./hlab /usr/local/bin
+	install ./taggers/hlab_taglib.py /usr/local/lib/python2.7/site-packages
+	install ./taggers/hlab_elf64.py /usr/local/lib/python2.7/site-packages
 

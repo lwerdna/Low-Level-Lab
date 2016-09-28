@@ -3,7 +3,7 @@
 import sys
 import binascii
 from struct import unpack;
-from taglib import *
+from hlab_taglib import *
 
 # Constants for the cmd field of all load commands, the type
 LC_REQ_DYLD = 0x80000000
