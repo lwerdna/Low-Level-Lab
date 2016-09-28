@@ -125,7 +125,7 @@ def isElf64(fp):
 	return True
 
 ###############################################################################
-# API that taggers must public
+# API that taggers must implement
 ###############################################################################
 
 def tagTest(fpathIn):
@@ -236,7 +236,7 @@ if __name__ == '__main__':
 	if sys.argv[2:]:
 		fpathOut = sys.argv[2]
 
-	tag(fpathIn, fpathOut)
+	tagReally(fpathIn, fpathOut)
 
 
 
