@@ -1,12 +1,12 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0303 
-header_name {.h} 
+version 1.0304
+header_name {.h}
 code_name {.cxx}
 decl {\#include "HlabLogic.h"} {private global
-} 
+}
 
 decl {\#include "HexView.h"} {public global
-} 
+}
 
 class HlabGui {open
 } {
@@ -29,18 +29,19 @@ class HlabGui {open
       }
     }
   }
-} 
+}
 
 Function {} {open
 } {
   code {HlabGui gui;
 Fl_Double_Window *w = gui.make_window();
 onGuiFinished(&gui, argc, argv);
-Fl::add_idle(onIdle, &gui);
+//Fl::add_idle(onIdle, &gui);
 w->end();
 w->show();
 int rc = Fl::run();
 onExit();
 return rc;
-/* fluid will insert Fl::run() here... */} {}
-} 
+/* fluid will insert Fl::run() here... */} {selected
+  }
+}

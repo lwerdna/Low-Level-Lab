@@ -756,7 +756,8 @@ onGuiFinished(HlabGui *gui_, int argc, char **argv)
 void
 onIdle(void *data)
 {
-    
+	static int i=0;
+	printf("idle! %d\n", i++);    
 }
 
 void

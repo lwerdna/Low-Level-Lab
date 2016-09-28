@@ -1,18 +1,18 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0303 
-header_name {.h} 
+version 1.0304
+header_name {.h}
 code_name {.cxx}
 decl {\#include "ClabLogic.h"} {private global
-} 
+}
 
 decl {\#include "Fl_Text_Editor_C.h"} {public global
-} 
+}
 
 decl {\#include "Fl_Text_Editor_Asm.h"} {public global
-} 
+}
 
 class UserInterfaceBlah {open
-} {} 
+} {}
 
 class ClabGui {open
 } {
@@ -45,7 +45,7 @@ class ClabGui {open
       } {
         Fl_Group clangGroup {
           label clang open
-          xywh {6 25 369 105}
+          xywh {6 25 369 105} hide
         } {
           Fl_Input_Choice icOptimization {
             label {optimization:}
@@ -84,7 +84,7 @@ class ClabGui {open
         } {}
         Fl_Group {} {
           label {visual studio} open
-          xywh {9 35 236 85} hide
+          xywh {9 35 236 85}
         } {}
       }
       Fl_Text_Display compilerCommandLine {
@@ -139,14 +139,14 @@ class ClabGui {open
   }
   decl {Fl_Text_Buffer *clBuf;} {public local
   }
-} 
+}
 
 Function {} {open
 } {
   code {ClabGui gui;
 Fl_Double_Window *w = gui.make_window();
 onGuiFinished(&gui);
-Fl::add_idle(onIdle, &gui);
+//Fl::add_idle(onIdle, &gui);
 w->end();
 w->show();
 int rc = Fl::run();
@@ -154,4 +154,4 @@ onExit();
 return rc;
 /* fluid will insert Fl::run() here... */} {selected
   }
-} 
+}
