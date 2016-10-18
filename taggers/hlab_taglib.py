@@ -190,15 +190,15 @@ def UINT64(FP, peek=0):
     value = unpack('>Q', FP.read(8))[0]
     if peek: FP.seek(-8,1)
     return value
-# strings
+# strings (eats trailing nulls)
 def string(FP, length, peek=0):
     value = unpack('%ds' % length, FP.read(length))[0]
-    while(value[-1]=='\x00'):
+    while(value and value[-1]=='\x00'):
         value = value[0:-1]
     if peek: FP.seek(-1*length, 1)
     return value
 def tagString(FP, length, comment, peek=0):
     pos = FP.tell()
     val = string(FP, length, peek)
-    print '[0x%X,0x%X) 0x0 %s \"%s\"' % (pos, pos+length, comment, val)
+    print '[0x%X,0x%X) 0x0 %s=\"%s\"' % (pos, pos+length, comment, val)
     return val
