@@ -27,6 +27,79 @@ SHT_HIPROC = 0x7fffffff
 SHT_LOUSER = 0x80000000
 SHT_HIUSER = 0xffffffff
 
+SHT_NULL = 0
+SHT_PROGBITS = 1
+SHT_SYMTAB = 2
+SHT_STRTAB = 3
+SHT_RELA = 4
+SHT_HASH = 5
+SHT_DYNAMIC = 6
+SHT_NOTE = 7
+SHT_NOBITS = 8
+SHT_REL = 9
+SHT_SHLIB = 10
+SHT_DYNSYM = 11
+SHT_INIT_ARRAY = 14
+SHT_FINI_ARRAY = 15
+SHT_PREINIT_ARRAY = 16
+SHT_GROUP = 17
+SHT_SYMTAB_SHNDX = 18
+SHT_NUM = 19
+SHT_GNU_ATTRIBUTES = 0x6ffffff5
+SHT_GNU_HASH = 0x6ffffff6
+SHT_GNU_LIBLIST = 0x6ffffff7
+SHT_CHECKSUM = 0x6ffffff8
+SHT_SUNW_move = 0x6ffffffa
+SHT_SUNW_COMDAT = 0x6ffffffb
+SHT_SUNW_syminfo = 0x6ffffffc
+SHT_GNU_verdef = 0x6ffffffd
+SHT_GNU_verneed = 0x6ffffffe
+SHT_GNU_versym = 0x6fffffff
+def sh_type_tostr(a):
+	lookup = { 
+		SHT_NULL:'NULL', SHT_PROGBITS:'PROGBITS', SHT_SYMTAB:'SYMTAB',
+		SHT_STRTAB:'STRTAB', SHT_RELA:'RELA', SHT_HASH:'HASH',
+		SHT_DYNAMIC:'DYNAMIC', SHT_NOTE:'NOTE', SHT_NOBITS:'NOBITS',
+		SHT_REL:'REL', SHT_SHLIB:'SHLIB', SHT_DYNSYM:'DYNSYM',
+		SHT_INIT_ARRAY:'INIT_ARRAY', SHT_FINI_ARRAY:'FINI_ARRAY', SHT_PREINIT_ARRAY:'PREINIT_ARRAY',
+		SHT_GROUP:'GROUP', SHT_SYMTAB_SHNDX:'SYMTAB_SHNDX', SHT_NUM:'NUM',
+		SHT_GNU_ATTRIBUTES:'GNU_ATTRIBUTES', SHT_GNU_HASH:'GNU_HASH', SHT_GNU_LIBLIST:'GNU_LIBLIST',
+		SHT_CHECKSUM:'CHECKSUM', SHT_SUNW_move:'SUNW_move', SHT_SUNW_COMDAT:'SUNW_COMDAT',
+		SHT_SUNW_syminfo:'SUNW_syminfo', SHT_GNU_verdef:'GNU_verdef', SHT_GNU_verneed:'GNU_verneed',
+		SHT_GNU_versym:'GNU_versym'
+	}
+	if a in lookup:
+		return lookup[a]
+	return 'UNKNOWN'
+
+SHF_WRITE = (1 << 0)
+SHF_ALLOC = (1 << 1)
+SHF_EXECINSTR = (1 << 2)
+SHF_MERGE = (1 << 4)
+SHF_STRINGS = (1 << 5)
+SHF_INFO_LINK = (1 << 6)
+SHF_LINK_ORDER = (1 << 7)
+SHF_OS_NONCONFORMING = (1 << 8)
+SHF_GROUP = (1 << 9)
+SHF_TLS = (1 << 10)
+def sh_flags_tostr(a):
+	lookup = {
+		SHF_WRITE:'WRITE', SHF_ALLOC:'ALLOC', SHF_EXECINSTR:'EXECINSTR',
+		SHF_MERGE:'MERGE', SHF_STRINGS:'STRINGS', SHF_INFO_LINK:'INFO_LINK',
+		SHF_LINK_ORDER:'LINK_ORDER', SHF_OS_NONCONFORMING:'OS_NONCONFORMING',
+		SHF_GROUP:'GROUP', SHF_TLS:'TLS'
+	}
+	result = []
+	for bit in lookup.keys():
+		if a & bit:
+			result.append(lookup[bit])
+	if not result:
+		if a==0:
+			result = ['0']
+		else:
+			result = 'UNKNOWN'
+	return '|'.join(result)
+
 PT_NULL = 0
 PT_LOAD = 1
 PT_DYNAMIC = 2
@@ -178,8 +251,12 @@ def tagReally(fpathIn, fpathOut):
 	for i in range(e_shnum):
 		oHdr = fp.tell()
 		sh_name = tagUint32(fp, "sh_name")
-		sh_type = tagUint32(fp, "sh_type")
-		tagUint64(fp, "sh_flags")
+		sh_type = uint32(fp, 1)
+		tag(fp, 4, "sh_type=0x%X (%s)" % \
+			(sh_type, sh_type_tostr(sh_type)))
+		sh_flags = uint64(fp, 1)
+		tag(fp, 8, "sh_flags=0x%X (%s)" % \
+			(sh_flags, sh_flags_tostr(sh_flags)))
 		tagUint64(fp, "sh_addr")
 		sh_offset = tagUint64(fp, "sh_offset")
 		sh_size = tagUint64(fp, "sh_size")

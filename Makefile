@@ -1,5 +1,6 @@
 CFLAGS = -std=c++11
 FLAGS_DEBUG = -g -O0
+FLAGS_LINK = -L/usr/local/lib
 FLAGS_LLVM = $(shell llvm-config --cxxflags)
 FLAGS_FLTK = $(shell fltk-config --use-images --cxxflags )
 #LDFLAGS  = $(shell fltk-config --use-images --ldflags )
@@ -70,13 +71,13 @@ rsrc.o: rsrc.c rsrc.h
 # LINK
 #
 clab: ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o Makefile
-	$(LINK) ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o -o clab $(LD_FLTK) -lautils
+	$(LINK) $(FLAGS_LINK) ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o -o clab $(LD_FLTK) -lautils
 
 alab: rsrc.o AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_Log.o Makefile
-	$(LINK) AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_log.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
+	$(LINK)  $(FLAGS_LINK) AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_log.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM)
 
 hlab: HlabGui.o HlabLogic.o HexView.o IntervalMgr.o Makefile
-	$(LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o -o hlab $(LD_FLTK) $(PYTHON_LDFLAGS) -lautils
+	$(LINK)  $(FLAGS_LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o -o hlab $(LD_FLTK) $(PYTHON_LDFLAGS) -lautils
 
 # OTHER targets
 #
