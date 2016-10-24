@@ -21,24 +21,6 @@ SHT_NOBITS = 8
 SHT_REL = 9
 SHT_SHLIB = 10
 SHT_DYNSYM = 11
-SHT_NUM = 12
-SHT_LOPROC = 0x70000000
-SHT_HIPROC = 0x7fffffff
-SHT_LOUSER = 0x80000000
-SHT_HIUSER = 0xffffffff
-
-SHT_NULL = 0
-SHT_PROGBITS = 1
-SHT_SYMTAB = 2
-SHT_STRTAB = 3
-SHT_RELA = 4
-SHT_HASH = 5
-SHT_DYNAMIC = 6
-SHT_NOTE = 7
-SHT_NOBITS = 8
-SHT_REL = 9
-SHT_SHLIB = 10
-SHT_DYNSYM = 11
 SHT_INIT_ARRAY = 14
 SHT_FINI_ARRAY = 15
 SHT_PREINIT_ARRAY = 16
@@ -55,6 +37,12 @@ SHT_SUNW_syminfo = 0x6ffffffc
 SHT_GNU_verdef = 0x6ffffffd
 SHT_GNU_verneed = 0x6ffffffe
 SHT_GNU_versym = 0x6fffffff
+SHT_LOOS = 0x60000000
+SHT_HIOS = 0x6fffffff
+SHT_LOPROC = 0x70000000
+SHT_HIPROC = 0x7FFFFFFF
+SHT_LOUSER = 0x80000000
+SHT_HIUSER = 0xFFFFFFFF
 def sh_type_tostr(a):
 	lookup = { 
 		SHT_NULL:'NULL', SHT_PROGBITS:'PROGBITS', SHT_SYMTAB:'SYMTAB',
@@ -70,6 +58,12 @@ def sh_type_tostr(a):
 	}
 	if a in lookup:
 		return lookup[a]
+	if sh_type >= SHT_LOOS and sh_type <= SHT_HIOS:
+		return 'OS'
+	if sh_type >= SHT_LOPROC and sh_type <= SHT_HIPROC:
+		return 'PROC'
+	if sh_type >= SHT_LOUSER and sh_type <= SHT_HIUSER:
+		return 'USER'
 	return 'UNKNOWN'
 
 SHF_WRITE = (1 << 0)
@@ -113,40 +107,75 @@ PT_HIOS = 0x6fffffff
 PT_LOPROC = 0x70000000
 PT_HIPROC = 0x7fffffff
 PT_GNU_EH_FRAME = 0x6474e550
+def phdr_type_tostr(x):
+	lookup = {PT_NULL:"PT_NULL", PT_LOAD:"PT_LOAD", PT_DYNAMIC:"PT_DYNAMIC",
+		PT_INTERP:"PT_INTERP", PT_NOTE:"PT_NOTE", PT_SHLIB:"PT_SHLIB",
+		PT_PHDR:"PT_PHDR", PT_TLS:"PT_TLS"
+	}
+	if x in lookup:
+		return lookup[x]
+	if x >= PT_LOOS and x <= PT_HIOS:
+		return 'OS'
+	if x >= SHT_LOPROC and x <= SHT_HIPROC:
+		strType = 'PROC'
+	return 'UNKNOWN'
+
+DT_NULL = 0
+DT_NEEDED = 1
+DT_PLTRELSZ = 2
+DT_PLTGOT = 3
+DT_HASH = 4
+DT_STRTAB = 5
+DT_SYMTAB = 6
+DT_RELA = 7
+DT_RELASZ = 8
+DT_RELAENT = 9
+DT_STRSZ = 10
+DT_SYMENT = 11
+DT_INIT = 12
+DT_FINI = 13
+DT_SONAME = 14
+DT_RPATH = 15
+DT_SYMBOLIC = 16
+DT_REL = 17
+DT_RELSZ = 18
+DT_RELENT = 19
+DT_PLTREL = 20
+DT_DEBUG = 21
+DT_TEXTREL = 22
+DT_JMPREL = 23
+DT_BIND_NOW = 24
+DT_INIT_ARRAY = 25
+DT_FINI_ARRAY = 26
+DT_INIT_ARRAYSZ = 27
+DT_FINI_ARRAYSZ = 28
+DT_LOOS = 0x60000000
+DT_HIOS = 0x6FFFFFFF
+DT_LOPROC = 0x70000000
+DT_HIPROC = 0x7FFFFFFF
+def dynamic_type_tostr(x):
+	lookup = { DT_NULL:"NULL", DT_NEEDED:"NEEDED", DT_PLTRELSZ:"PLTRELSZ",
+		DT_PLTGOT:"PLTGOT", DT_HASH:"HASH", DT_STRTAB:"STRTAB", 
+		DT_SYMTAB:"SYMTAB", DT_RELA:"RELA", DT_RELASZ:"RELASZ",
+		DT_RELAENT:"RELAENT", DT_STRSZ:"STRSZ", DT_SYMENT:"SYMENT",
+		DT_INIT:"INIT", DT_FINI:"FINI", DT_SONAME:"SONAME",
+		DT_RPATH:"RPATH", DT_SYMBOLIC:"SYMBOLIC", DT_REL:"REL",
+		DT_RELSZ:"RELSZ", DT_RELENT:"RELENT", DT_PLTREL:"PLTREL",
+		DT_DEBUG:"DEBUG", DT_TEXTREL:"TEXTREL", DT_JMPREL:"JMPREL",
+		DT_BIND_NOW:"BIND_NOW", DT_INIT_ARRAY:"INIT_ARRAY", DT_FINI_ARRAY:"FINI_ARRAY",
+		DT_INIT_ARRAYSZ:"INIT_ARRAYSZ", DT_FINI_ARRAYSZ:"FINI_ARRAYSZ"
+	}
+	if x in lookup:
+		return lookup[x]
+	if x >= DT_LOOS and x <= DT_HIOS:
+		return "OS"
+	if x >= DT_LOPROC and x <= DT_HIPROC:
+		return "PROC"
+	return 'UNKNOWN'
 
 ###############################################################################
 # helper classes
 ###############################################################################
-
-def scnTypeToStr(sh_type):
-	strType = 'UNKNOWN'
-
-	if sh_type < 13:
-		strType = ['NULL','PROGBITS','SYMTAB','STRTAB','RELA', \
-		'HASH','DYNAMIC','NOTE','NOBITS','REL','SHLIB', \
-		'DYNSYM','NUM'][sh_type]
-	elif sh_type >= SHT_LOPROC and sh_type <= SHT_HIPROC:
-		strType = 'PROC'
-	elif sh_type >= SHT_LOUSER and sh_type <= SHT_HIUSER:
-		strType = 'USER'
-
-	return strType
-
-def phdrTypeToStr(p_type):
-	strType = 'UNKNOWN'
-
-	lookup = ['NULL','LOAD','DYNAMIC','INTERP','NOTE', \
-		'SHLIB','PHDR','TLS']
-
-	if p_type < len(lookup):
-		strType = lookup[p_type]
-	elif p_type >= PT_LOOS and p_type <= PT_HIOS:
-		strType = 'OS'
-	elif p_type >= SHT_LOPROC and p_type <= SHT_HIPROC:
-		strType = 'PROC'
-
-	return strType
-
 class StringTable:
 	def __init__(self, FP, size):
 		self.offset = FP.tell()
@@ -247,6 +276,7 @@ def tagReally(fpathIn, fpathOut):
 	stringTable = StringTable(fp, sh_size)
 	
 	# read all section headers
+	dynamic = None
 	fp.seek(e_shoff)
 	for i in range(e_shnum):
 		oHdr = fp.tell()
@@ -265,15 +295,37 @@ def tagReally(fpathIn, fpathOut):
 		tagUint64(fp, "sh_addralign")
 		tagUint64(fp, "sh_entsize")
 	
-		strType = scnTypeToStr(sh_type)
+		strType = sh_type_tostr(sh_type)
+		strName = stringTable[sh_name]
 	
+		# store info on special sections
+		if strName == '.dynamic':
+			dynamic = [sh_offset, sh_size]
+
 		print '[0x%X,0x%X) 0x0 elf64_shdr "%s" %s' % \
 			(oHdr, fp.tell(), stringTable[sh_name], strType)
 	
 		if(not sh_type in [SHT_NULL, SHT_NOBITS]):
 			print '[0x%X,0x%X) 0x0 section "%s" contents' % \
 				(sh_offset, sh_offset+sh_size, stringTable[sh_name])
-	
+
+	# certain sections we analyze deeper...
+	if dynamic:
+		# .dynamic is just an array of Elf64_Dyn entries
+		[offs,size] = dynamic
+		fp.seek(offs)
+		while fp.tell() < (offs + size):
+			tmp = fp.tell()
+			d_tag = uint64(fp, 1)
+			tagStr = dynamic_type_tostr(d_tag)
+			tag(fp, 8, "d_tag:0x%X (%s)" % (d_tag, tagStr))
+			tagUint64(fp, "val_ptr")
+			fp.seek(tmp)
+			tag(fp, 16, "Elf64_Dyn (%s)" % tagStr)		
+
+			if d_tag == DT_NULL:
+				break
+
 	# read program headers
 	fp.seek(e_phoff)
 	for i in range(e_phnum):
@@ -287,7 +339,7 @@ def tagReally(fpathIn, fpathOut):
 		tagUint64(fp, "p_memsz")
 		tagUint64(fp, "p_align")
 	
-		strType = phdrTypeToStr(p_type)
+		strType = phdr_type_tostr(p_type)
 	
 		print '[0x%X,0x%X) 0x0 elf64_phdr %d %s' % \
 			(oHdr, fp.tell(), i, strType)
