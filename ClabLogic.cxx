@@ -49,7 +49,7 @@ void outLogScrollToEnd(void)
 void
 compile()
 {
-    //printf("%s()\n", __func__);
+    printf("%s()\n", __func__);
 
     int rc = -1, rc_child, i;
     int n_args;

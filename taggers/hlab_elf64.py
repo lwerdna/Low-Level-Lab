@@ -173,6 +173,42 @@ def dynamic_type_tostr(x):
 		return "PROC"
 	return 'UNKNOWN'
 
+# symbol bindings
+STB_LOCAL = 0 
+STB_GLOBAL = 1 
+STB_WEAK = 2 
+STB_LOPROC = 13
+STB_HIPROC = 15
+def symbol_binding_tostr(x):
+	lookup = { STB_LOCAL:"LOCAL", STB_GLOBAL:"GLOBAL",
+		STB_WEAK:"WEAK"
+	}
+	if x in lookup:
+		return lookup[x]
+	if x >= STB_LOPROC and x <= STB_HIPROC:
+		return "PROC"
+	return 'UNKNOWN'
+
+# symbol types
+STT_NOTYPE = 0 
+STT_OBJECT = 1 
+STT_FUNC = 2 
+STT_SECTION = 3 
+STT_FILE = 4 
+STT_COMMON = 5 
+STT_TLS = 6 
+STT_LOPROC = 13
+STT_HIPROC = 15
+def symbol_type_tostr(x):
+	lookup = { STT_NOTYPE:"NOTYPE", STT_OBJECT:"OBJECT",
+		STT_FUNC:"FUNC", STT_SECTION:"SECTION", STT_FILE:"FILE",
+		STT_COMMON:"COMMON", STT_TLS:"TLS"}
+	if x in lookup:
+		return lookup[x]
+	if x >= STT_LOPROC and x <= STT_HIPROC:
+		return "PROC"
+	return 'UNKNOWN'
+
 ###############################################################################
 # helper classes
 ###############################################################################
@@ -273,10 +309,12 @@ def tagReally(fpathIn, fpathOut):
 	tmp = fp.tell()
 	(a,b,c,d,sh_offset,sh_size) = struct.unpack('<IIQQQQ', fp.read(40));
 	fp.seek(sh_offset)
-	stringTable = StringTable(fp, sh_size)
+	scnStrTab = StringTable(fp, sh_size)
 	
 	# read all section headers
 	dynamic = None
+	symtab = None
+	strtab = None
 	fp.seek(e_shoff)
 	for i in range(e_shnum):
 		oHdr = fp.tell()
@@ -296,20 +334,29 @@ def tagReally(fpathIn, fpathOut):
 		tagUint64(fp, "sh_entsize")
 	
 		strType = sh_type_tostr(sh_type)
-		strName = stringTable[sh_name]
+		strName = scnStrTab[sh_name]
 	
 		# store info on special sections
 		if strName == '.dynamic':
 			dynamic = [sh_offset, sh_size]
+		if strName == '.symtab':
+			symtab = [sh_offset, sh_size]
+		if strName == '.strtab':
+			strtab = [sh_offset, sh_size]
 
 		print '[0x%X,0x%X) 0x0 elf64_shdr "%s" %s' % \
-			(oHdr, fp.tell(), stringTable[sh_name], strType)
+			(oHdr, fp.tell(), scnStrTab[sh_name], strType)
 	
 		if(not sh_type in [SHT_NULL, SHT_NOBITS]):
 			print '[0x%X,0x%X) 0x0 section "%s" contents' % \
-				(sh_offset, sh_offset+sh_size, stringTable[sh_name])
+				(sh_offset, sh_offset+sh_size, scnStrTab[sh_name])
 
 	# certain sections we analyze deeper...
+	if strtab:
+		[offs,size] = strtab
+		fp.seek(offs)
+		strTab = StringTable(fp, size)
+
 	if dynamic:
 		# .dynamic is just an array of Elf64_Dyn entries
 		[offs,size] = dynamic
@@ -325,6 +372,27 @@ def tagReally(fpathIn, fpathOut):
 
 			if d_tag == DT_NULL:
 				break
+
+	if symtab:
+		# .symbtab is an array of Elf64_Sym entries
+		[offs,size] = symtab
+		fp.seek(offs)
+		while fp.tell() < (offs + size):
+			tmp = fp.tell()
+			st_name = uint32(fp, 1)
+			nameStr = strTab[st_name]
+			tag(fp, 4, "st_name=0x%X \"%s\"" % (st_name,nameStr))
+			st_info = uint8(fp, 1)
+			bindingStr = symbol_binding_tostr(st_info >> 4)
+			typeStr = symbol_type_tostr(st_info & 0xF)
+			tag(fp, 1, "st_info bind:%d(%s) type:%d(%s)" % \
+				(st_info>>4, bindingStr, st_info&0xF, typeStr))
+			st_other = tagUint8(fp, "st_other")
+			st_shndx = tagUint16(fp, "st_shndx")
+			st_value = tagUint64(fp, "st_value")
+			st_size = tagUint64(fp, "st_size")
+			fp.seek(tmp)
+			tag(fp, 24, "Elf64_Sym \"%s\"" % nameStr)
 
 	# read program headers
 	fp.seek(e_phoff)
