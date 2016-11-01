@@ -30,11 +30,7 @@ def tagToStr(tag):
 ###############################################################################
 
 def tagTest(fpathIn):
-	fp = open(fpathIn, "rb")
-	result = isElf64(fp)
-	fp.close()
-
-	return result
+	return True
 
 def tagReally(fpathIn, fpathOut):
 	fp = open(fpathIn, "rb")
@@ -45,71 +41,80 @@ def tagReally(fpathIn, fpathOut):
 		stdoutOld = sys.stdout
 		sys.stdout = open(fpathOut, "w")
 
-	while 1:
-		# test EOF
-		tmp = fp.read(1)
-		if tmp == "": 
-			break
-		fp.seek(-1, os.SEEK_CUR)
-
+	# for each packet
+	while not IsEof(fp):
 		hdrLen = 0
-		offs = fp.tell()
-		tmp = uint8(fp)
-		fmt = None
-		print "read byte 0x%02X" % tmp
-		assert(tmp & 0x80)
-		if tmp & 0x40:
+		oPacket = fp.tell()
+
+		tagByte = tagUint8(fp, "tag byte")
+		assert(tagByte & 0x80)
+
+		tagId = None
+
+		if tagByte & 0x40:
 			# new format
-			fmt = 'new'
-			tag = 0x3F & tmp
-			octet1 = uint8(fp)
-			print "octet1: 0x%X" % octet1
-			if octet1 <= 191:
-				hdrLen = 2
-				bodyLen = octet1
-			elif octet1 > 192 and octet1 <= 223:
-				hdrLen = 3
-				bodyLen = (octet1 - 192)*256 + uint8(fp) + 192
-			elif octet1 > 223 and octet1 < 255:
-				hdrLen = 2
-				bodyLen = bodyLen = 1 << (octet1 & 0x1f)
-			else:
-				assert(octet1==255)
-				hdrLen = 6
-				bodyLen = uint32(fp)
+			tagId = 0x3F & tagByte
+			
+			while 1:
+				oLen = fp.tell()
+				octet1 = uint8(fp)
+				octet2 = uint8(fp)
+				fp.seek(-2, os.SEEK_CUR) 
+
+				partial = False
+				bodyLen = 0
+				if octet1 <= 191:
+					bodyLen = octet1
+					tag(fp, 1, "length (direct): 0x%X" % bodyLen)
+				elif octet1 >= 192 and octet1 <= 223:
+					bodyLen = (octet1 - 192)*256 + octet2 + 192
+					tag(fp, 2, "length (calculated): 0x%X" % bodyLen)
+				elif octet1 >= 224 and octet1 <= 254:
+					bodyLen = 1 << (octet1 & 0x1f)
+					tag(fp, 1, "length (partial): 0x%X" % bodyLen)
+					partial = True
+				else:
+					bodyLen = tagUint32(fp, "len")
+					tag(fp, 1, "length (direct): 0x%X" % bodyLen)
+					
+				tag(fp, bodyLen, "body")
+
+				if IsEof(fp) or not partial: 
+					break
 		else:
 			# old format
-			fmt = 'old'
-			length_type = tmp & 3
-			tagId = (0x3C & tmp) >> 2
+
+			length_type = tagByte & 3
+			tagId = (0x3C & tagByte) >> 2
+			bodyLen = 0
+
 			if length_type == 0:
 				# one-octet length
 				hdrLen = 2
-				bodyLen = uint8(fp)
+				bodyLen = tagUint8(fp, "len")
 			elif length_type == 1:
 				hdrLen = 3
-				bodyLen = uint16(fp)
+				bodyLen = tagUint16(fp, "len")
 			elif length_type == 2:
 				hdrLen = 5
-				bodyLen = uint32(fp)
+				bodyLen = tagUint32(fp, "len")
 			elif length_type == 3:
 				hdrLen = 1
 				fp.seek(0, os.SEEK_END)
-				bodyLen = fp.tell()
+				bodyLen = fp.tell() - oPacket + 1
+
+			tag(fp, bodyLen, "body")
 
 		# header
-		print "[0x%X,0x%X) 0x0 hdr %s \"%s\"" % \
-			(offs, offs+hdrLen, fmt, tagToStr(tagId))
-		# header 1/2 is tag byte
-		print "[0x%X,0x%X) 0x0 tag=%d" % (offs, offs+1, tagId)
-		# header 2/2 is length bytes (optional)
-		if hdrLen > 1:
-			print "[0x%X,0x%X) 0x0 length=0x%X" % (offs+1, offs+hdrLen-1, bodyLen)
-		# body
-		print "[0x%X,0x%X) 0x0 body" % (offs+hdrLen, offs+hdrLen+bodyLen)
+		print "[0x%X,0x%X) 0x0 %s packet" % \
+			(oPacket, fp.tell(), tagToStr(tagId))
 
-		# seek to next packet
-		fp.seek(offs + hdrLen + bodyLen)
+	fp.close()
+
+	# undo our output redirection
+	if stdoutOld:
+		sys.stdout.close()
+		sys.stdout = stdoutOld
 
 ###############################################################################
 # "main"
