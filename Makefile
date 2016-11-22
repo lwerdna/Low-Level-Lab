@@ -91,6 +91,8 @@ install:
 	install ./alab /usr/local/bin
 	install ./hlab /usr/local/bin
 	install ./taggers/hlab_taglib.py /usr/local/lib/python2.7/site-packages
+	install ./taggers/hlab_elf.py /usr/local/lib/python2.7/site-packages
+	install ./taggers/hlab_elf32.py /usr/local/lib/python2.7/site-packages
 	install ./taggers/hlab_elf64.py /usr/local/lib/python2.7/site-packages
 	install ./taggers/hlab_macho64.py /usr/local/lib/python2.7/site-packages
 	install ./taggers/hlab_pe.py /usr/local/lib/python2.7/site-packages

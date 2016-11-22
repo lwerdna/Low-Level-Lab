@@ -6,22 +6,43 @@ import struct
 import binascii
 from hlab_taglib import *
 
+TAG_RESERVED = 0
+TAG_PUB_KEY_ENCR_SESS_KEY = 1
+TAG_SIGNATURE = 2
+TAG_SYMKEY_ENCR_SESS_KEY = 3
+TAG_ONE_PASS_SIG = 4
+TAG_SECRET_KEY = 5
+TAG_PUB_KEY = 6
+TAG_SECRET_SUBKEY = 7
+TAG_COMPR_DATA = 8
+TAG_SYMM_ENCR_DATA = 9
+TAG_MARKER = 10
+TAG_LITERAL_DATA = 11
+TAG_TRUST = 12
+TAG_USER_ID = 13
+TAG_PUB_SUBKEY = 14
+TAG_USER_ATTR = 17
+TAG_SYMM_ENCR_INTEGRITY_PROT_DATA = 18
+TAG_MODIF_DETECT_CODE = 19
+TAG_PRIVATE_EXPERIMENTAL_0 = 0
+TAG_PRIVATE_EXPERIMENTAL_1 = 1
+TAG_PRIVATE_EXPERIMENTAL_2 = 2
+TAG_PRIVATE_EXPERIMENTAL_3 = 3
+
 def tagToStr(tag):
-	lookup = {0:"reserved", 1:'public-key encr session key',
-		2:'signature', 3:'symmetric-key encr session key',
-		4:'one-pass signature', 5:'secret-key', 6:'public-key',
-		7:'secret-subkey', 8:'compressed data', 9:'symmetric encr data',
-		10:'marker', 11:'literal data', 12:'trust', 13:'user id',
-		14:'public-subkey', 17:'user attribute', 
-		18:'symmetric encrypted and integrity protected data',
-		19:'modification detection code'
+	lookup = {TAG_RESERVED:"reserved", TAG_PUB_KEY_ENCR_SESS_KEY:'public-key encr session key',
+		TAG_SIGNATURE:'signature', TAG_SYMKEY_ENCR_SESS_KEY:'symmetric-key encr session key',
+		TAG_ONE_PASS_SIG:'one-pass signature', TAG_SECRET_KEY:'secret-key', TAG_PUB_KEY:'public-key',
+		TAG_SECRET_SUBKEY:'secret-subkey', TAG_COMPR_DATA:'compressed data', 
+		TAG_SYMM_ENCR_DATA:'symmetric encr data', TAG_MARKER:'marker', 
+		TAG_LITERAL_DATA:'literal data', TAG_TRUST:'trust', TAG_USER_ID:'user id',
+		TAG_PUB_SUBKEY:'public-subkey', TAG_USER_ATTR:'user attribute', 
+		TAG_SYMM_ENCR_INTEGRITY_PROT_DATA:'symmetric encrypted and integrity protected data',
+		TAG_MODIF_DETECT_CODE:'modification detection code'
 	}
 
 	if tag in lookup:
 		return lookup[tag]
-
-	if tag in [60,61,62,63]:
-		return 'private/experimental'
 
 	return 'unknown'
 
@@ -49,7 +70,8 @@ def tagReally(fpathIn, fpathOut):
 		tagByte = tagUint8(fp, "tag byte")
 		assert(tagByte & 0x80)
 
-		tagId = None
+		tagId = 0
+		body = ''
 
 		if tagByte & 0x40:
 			# new format
@@ -77,13 +99,12 @@ def tagReally(fpathIn, fpathOut):
 					bodyLen = tagUint32(fp, "len")
 					tag(fp, 1, "length (direct): 0x%X" % bodyLen)
 					
-				tag(fp, bodyLen, "body")
+				body += fp.read(bodyLen)
 
 				if IsEof(fp) or not partial: 
 					break
 		else:
 			# old format
-
 			length_type = tagByte & 3
 			tagId = (0x3C & tagByte) >> 2
 			bodyLen = 0
@@ -103,11 +124,16 @@ def tagReally(fpathIn, fpathOut):
 				fp.seek(0, os.SEEK_END)
 				bodyLen = fp.tell() - oPacket + 1
 
-			tag(fp, bodyLen, "body")
+			body = fp.read(bodyLen)
 
-		# header
+		# mark the whole packet
 		print "[0x%X,0x%X) 0x0 %s packet" % \
 			(oPacket, fp.tell(), tagToStr(tagId))
+
+		# certain packets we go deeper
+		if tagId == TAG_SYMKEY_ENCR_SESS_KEY:
+
+		else:
 
 	fp.close()
 

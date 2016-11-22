@@ -298,7 +298,7 @@ int tags_poll_taggers(const char *fpath)
 	int rc=-1;
 
 	#define TAGGERSN (sizeof(taggers)/sizeof(*taggers))
-	const char *taggers[] = {"hlab_elf64", "hlab_macho64", "hlab_pe32",
+	const char *taggers[] = {"hlab_elf32", "hlab_elf64", "hlab_macho64", "hlab_pe32",
 		"hlab_pe64", "hlab_gpg"};
 
 	PyObject *pModule=NULL;

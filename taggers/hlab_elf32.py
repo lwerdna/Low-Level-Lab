@@ -13,13 +13,13 @@ from hlab_taglib import *
 
 def tagTest(fpathIn):
 	fp = open(fpathIn, "rb")
-	result = isElf64(fp)
+	result = isElf32(fp)
 	fp.close()
 	return result
 
 def tagReally(fpathIn, fpathOut):
 	fp = open(fpathIn, "rb")
-	assert(isElf64(fp))
+	assert(isElf32(fp))
 
 	# we want to be keep the convenience of writing tags to stdout with print()
 	stdoutOld = None
@@ -27,9 +27,9 @@ def tagReally(fpathIn, fpathOut):
 		stdoutOld = sys.stdout
 		sys.stdout = open(fpathOut, "w")
 
-	tag(fp, SIZE_ELF64_HDR, "elf64_hdr", 1)
+	tag(fp, SIZE_ELF32_HDR, "elf32_hdr", 1)
 	tmp = tag(fp, 4, "e_ident[0..4)")
-	tmp = tagUint8(fp, "e_ident[EI_CLASS] (64-bit)")
+	tmp = tagUint8(fp, "e_ident[EI_CLASS] (32-bit)")
 	tmp = tagUint8(fp, "e_ident[EI_DATA] (little-end)")
 	tmp = tagUint8(fp, "e_ident[EI_VERSION] (little-end)")
 	tmp = tagUint8(fp, "e_ident[EI_OSABI]");
@@ -38,21 +38,23 @@ def tagReally(fpathIn, fpathOut):
 	tagUint16(fp, "e_type")
 	tagUint16(fp, "e_machine")
 	tagUint32(fp, "e_version")
-	tagUint64(fp, "e_entry")
-	e_phoff = tagUint64(fp, "e_phoff")
-	e_shoff = tagUint64(fp, "e_shoff")
+	tagUint32(fp, "e_entry")
+	e_phoff = tagUint32(fp, "e_phoff")
+	e_shoff = tagUint32(fp, "e_shoff")
 	tagUint32(fp, "e_flags")
-	tagUint16(fp, "e_ehsize")
+	e_ehsize = tagUint16(fp, "e_ehsize")
+	assert(e_ehsize == SIZE_ELF32_HDR)
 	tagUint16(fp, "e_phentsize")
 	e_phnum = tagUint16(fp, "e_phnum")
-	tagUint16(fp, "e_shentsize")
+	e_shentsize = tagUint16(fp, "e_shentsize")
+	assert(e_shentsize == SIZE_ELF32_SHDR)
 	e_shnum = tagUint16(fp, "e_shnum")
 	e_shstrndx = tagUint16(fp, "e_shstrndx")
 	
 	# read the string table
-	fp.seek(e_shoff + e_shstrndx*SIZE_ELF64_SHDR)
+	fp.seek(e_shoff + e_shstrndx*SIZE_ELF32_SHDR)
 	tmp = fp.tell()
-	(a,b,c,d,sh_offset,sh_size) = struct.unpack('<IIQQQQ', fp.read(40));
+	(a,b,c,d,sh_offset,sh_size) = struct.unpack('<IIIIII', fp.read(24));
 	fp.seek(sh_offset)
 	scnStrTab = StringTable(fp, sh_size)
 	
@@ -67,16 +69,16 @@ def tagReally(fpathIn, fpathOut):
 		sh_type = uint32(fp, 1)
 		tag(fp, 4, "sh_type=0x%X (%s)" % \
 			(sh_type, sh_type_tostr(sh_type)))
-		sh_flags = uint64(fp, 1)
-		tag(fp, 8, "sh_flags=0x%X (%s)" % \
+		sh_flags = uint32(fp, 1)
+		tag(fp, 4, "sh_flags=0x%X (%s)" % \
 			(sh_flags, sh_flags_tostr(sh_flags)))
-		tagUint64(fp, "sh_addr")
-		sh_offset = tagUint64(fp, "sh_offset")
-		sh_size = tagUint64(fp, "sh_size")
+		tagUint32(fp, "sh_addr")
+		sh_offset = tagUint32(fp, "sh_offset")
+		sh_size = tagUint32(fp, "sh_size")
 		tagUint32(fp, "sh_link")
 		tagUint32(fp, "sh_info")
-		tagUint64(fp, "sh_addralign")
-		tagUint64(fp, "sh_entsize")
+		tagUint32(fp, "sh_addralign")
+		tagUint32(fp, "sh_entsize")
 	
 		strType = sh_type_tostr(sh_type)
 		strName = scnStrTab[sh_name]
@@ -89,7 +91,7 @@ def tagReally(fpathIn, fpathOut):
 		if strName == '.strtab':
 			strtab = [sh_offset, sh_size]
 
-		print '[0x%X,0x%X) 0x0 elf64_shdr "%s" %s' % \
+		print '[0x%X,0x%X) 0x0 elf32_shdr "%s" %s' % \
 			(oHdr, fp.tell(), scnStrTab[sh_name], strType)
 	
 		if(not sh_type in [SHT_NULL, SHT_NOBITS]):
@@ -103,42 +105,47 @@ def tagReally(fpathIn, fpathOut):
 		strTab = StringTable(fp, size)
 
 	if dynamic:
-		# .dynamic is just an array of Elf64_Dyn entries
+		# .dynamic is just an array of Elf32_Dyn entries
 		[offs,size] = dynamic
 		fp.seek(offs)
 		while fp.tell() < (offs + size):
 			tmp = fp.tell()
-			d_tag = uint64(fp, 1)
+			d_tag = uint32(fp, 1)
 			tagStr = dynamic_type_tostr(d_tag)
-			tag(fp, 8, "d_tag:0x%X (%s)" % (d_tag, tagStr))
-			tagUint64(fp, "val_ptr")
+			tag(fp, 4, "d_tag:0x%X (%s)" % (d_tag, tagStr))
+			tagUint32(fp, "val_ptr")
 			fp.seek(tmp)
-			tag(fp, SIZE_ELF64_DYN, "Elf64_Dyn (%s)" % tagStr)		
+			tag(fp, SIZE_ELF32_DYN, "Elf32_Dyn (%s)" % tagStr)		
 
 			if d_tag == DT_NULL:
 				break
 
 	if symtab:
-		# .symbtab is an array of Elf64_Sym entries
-		# note that Elf64_Sym differs from Elf32_Sym beyond field sizes
+		# .symbtab is an array of Elf32_Sym entries
 		[offs,size] = symtab
 		fp.seek(offs)
 		while fp.tell() < (offs + size):
 			tmp = fp.tell()
+
 			st_name = uint32(fp, 1)
 			nameStr = strTab[st_name]
 			tag(fp, 4, "st_name=0x%X \"%s\"" % (st_name,nameStr))
+
+			st_value = tagUint32(fp, "st_value")
+
+			st_size = tagUint32(fp, "st_size")
+
 			st_info = uint8(fp, 1)
 			bindingStr = symbol_binding_tostr(st_info >> 4)
 			typeStr = symbol_type_tostr(st_info & 0xF)
 			tag(fp, 1, "st_info bind:%d(%s) type:%d(%s)" % \
 				(st_info>>4, bindingStr, st_info&0xF, typeStr))
+
 			st_other = tagUint8(fp, "st_other")
+
 			st_shndx = tagUint16(fp, "st_shndx")
-			st_value = tagUint64(fp, "st_value")
-			st_size = tagUint64(fp, "st_size")
 			fp.seek(tmp)
-			tag(fp, SIZE_ELF64_SYM, "Elf64_Sym \"%s\"" % nameStr)
+			tag(fp, SIZE_ELF32_SYM, "Elf32_Sym \"%s\"" % nameStr)
 
 	# read program headers
 	fp.seek(e_phoff)
@@ -146,16 +153,16 @@ def tagReally(fpathIn, fpathOut):
 		oHdr = fp.tell()
 		p_type = tagUint32(fp, "p_type")
 		tagUint32(fp, "p_flags")
-		tagUint64(fp, "p_offset")
-		tagUint64(fp, "p_vaddr")
-		tagUint64(fp, "p_paddr")
-		tagUint64(fp, "p_filesz")
-		tagUint64(fp, "p_memsz")
-		tagUint64(fp, "p_align")
+		tagUint32(fp, "p_offset")
+		tagUint32(fp, "p_vaddr")
+		tagUint32(fp, "p_paddr")
+		tagUint32(fp, "p_filesz")
+		tagUint32(fp, "p_memsz")
+		tagUint32(fp, "p_align")
 	
 		strType = phdr_type_tostr(p_type)
 	
-		print '[0x%X,0x%X) 0x0 elf64_phdr %d %s' % \
+		print '[0x%X,0x%X) 0x0 elf32_phdr %d %s' % \
 			(oHdr, fp.tell(), i, strType)
 	
 	fp.close()
@@ -180,9 +187,4 @@ if __name__ == '__main__':
 		fpathOut = sys.argv[2]
 
 	tagReally(fpathIn, fpathOut)
-
-
-
-
-
 
