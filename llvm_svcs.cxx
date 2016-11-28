@@ -40,11 +40,18 @@ using namespace std;
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/ToolOutputFile.h>
 
+/* autils */
+extern "C" {
+#include <autils/output.h>
+}
+
 /* local includes */
 #include "llvm_svcs.h"
 
 /* source manager diagnostics handler
 	(instead of printing to stderr) */
+/* we set LLVM's callback to this thunk which then calls the user
+	requested callback, hiding LLVM details */
 static 
 void
 diag_cb(const SMDiagnostic &diag, void *param)
@@ -153,14 +160,51 @@ asm_output_to_instr_counts(const char *asmText, vector<int> &result)
 }
 
 int
-invoke_llvm_parsers(const Target *TheTarget, SourceMgr &SrcMgr, MCContext &Ctx, 
+obj_output_to_bytes(const char *data, string &result)
+{
+	int rc = -1;
+
+	int codeOffset=0, codeSize = 0;
+	if(*(uint32_t *)data == 0xFEEDFACF) {
+		unsigned int idx = 0;
+		idx += 0x20; /* skip mach_header_64 to first command */
+		idx += 0x48; /* advance into segment_command_64 to first section */
+		idx += 0x28; /* advance into section_64 to size */
+		uint64_t scn_size = *(uint64_t *)(data + idx);
+		idx += 0x8; /* advance into section_64 to offset */
+		uint64_t scn_offset = *(uint64_t *)(data + idx);
+		codeOffset = scn_offset;
+		codeSize = scn_size;
+	}
+	else if(0==memcmp(data, "\x7F" "ELF\x01\x01\x01\x00", 8)) {
+		/* assume four sections: NULL, .strtab, .text, .symtab */
+		uint32_t e_shoff = *(uint32_t *)(data + 0x20);
+		uint32_t sh_offset = *(uint32_t *)(data + e_shoff + 2*0x28 + 0x10); /* second shdr */
+		uint32_t sh_size = *(uint32_t *)(data + e_shoff + 2*0x28 + 0x14); /* second shdr */
+		codeOffset = sh_offset;
+		codeSize = sh_size;
+	}
+	else {
+		printf("ERROR: couldn't identify type of output file\n");
+		goto cleanup;
+	}
+
+	result.assign(reinterpret_cast<char const *>(data+codeOffset), codeSize);
+
+	rc = 0;
+	cleanup:
+	return rc;
+}
+
+int
+invoke_llvm_parsers(const Target *TheTarget, SourceMgr *SrcMgr, MCContext &context, 
 	MCStreamer &Str, MCAsmInfo &MAI, MCSubtargetInfo &STI, MCInstrInfo &MCII, 
 	MCTargetOptions &MCOptions, int dialect)
 {
 	int rc = -1;
 
 	/* create a vanilla (non-target) AsmParser (lib/MC/MCParser/AsmParser.cpp) */
-	std::unique_ptr<MCAsmParser> Parser(createMCAsmParser(SrcMgr, Ctx, Str, MAI));
+	std::unique_ptr<MCAsmParser> Parser(createMCAsmParser(*SrcMgr, context, Str, MAI));
 
 	/* set the dialect (otherwise it defaults to assemblerInfo's dialect) */
 	switch(dialect) {
@@ -178,7 +222,7 @@ invoke_llvm_parsers(const Target *TheTarget, SourceMgr &SrcMgr, MCContext &Ctx,
   	std::unique_ptr<MCTargetAsmParser> TAP(TheTarget->createMCAsmParser(STI, *Parser, MCII, MCOptions));
 
   	if (!TAP) {
-		//printf "ERROR: createMCAsmParser() (does target support assembly parsing?)\n";
+		printf("ERROR: createMCAsmParser() (does target support assembly parsing?)\n");
 		goto cleanup;
 	}
 
@@ -188,6 +232,7 @@ invoke_llvm_parsers(const Target *TheTarget, SourceMgr &SrcMgr, MCContext &Ctx,
   	/* first param is NoInitialTextSection
 	   by supplying false -> YES initial text section and obviate ".text" in asm source */
   	rc = Parser->Run(false);
+	printf("Parser->Run() returned %d\n", rc);
 
 	cleanup:
   	return rc;
@@ -215,12 +260,24 @@ llvm_svcs_assemble(
 	llvm_svcs_assemble_cb_type callback,
 
 	/* out parameters */
-	string &outBytes, 			/* output bytes */
+	string &instrBytes,			/* output bytes */
 	vector<int> &instrLengths,	/* instruction lengths */
 	string &strErr				/* error string */
 )
 {
 	int rc = -1;
+
+	/* output for asm->obj */
+	SmallString<1024> smallString;
+    raw_svector_ostream rsvo(smallString);
+	
+	/* source code vars */
+	std::string strSrc(srcText);
+	std::unique_ptr<MemoryBuffer> mbSrc;
+	SourceMgr *srcMgr;
+
+	/* misc */
+	MCContext *context;
 
 	llvm::InitializeAllTargetInfos();
 	llvm::InitializeAllTargetMCs();
@@ -252,8 +309,9 @@ llvm_svcs_assemble(
 	std::unique_ptr<MCRegisterInfo> regInfo(target->createMCRegInfo(machSpec));
 	std::unique_ptr<MCAsmInfo> asmInfo(target->createMCAsmInfo(*regInfo, machSpec));
 	std::unique_ptr<MCInstrInfo> instrInfo(target->createMCInstrInfo()); /* describes target instruction set */
-	std::unique_ptr<MCSubtargetInfo> subTargetInfo(target->createMCSubtargetInfo(machSpec, "", "")); /* subtarget instr set */
-	std::unique_ptr<MCAsmBackend> asmBackend(target->createMCAsmBackend(*regInfo, machSpec, /* specific CPU */ ""));
+	MCSubtargetInfo *subTargetInfo = target->createMCSubtargetInfo(machSpec, "", ""); /* subtarget instr set */
+	/* fixups, relaxations, objs, elfs */
+	MCAsmBackend *asmBackend = target->createMCAsmBackend(*regInfo, machSpec, /* specific CPU */ "");
 	MCInstPrinter *instrPrinter =  target->createMCInstPrinter(Triple(machSpec), /*variant*/0, *asmInfo, *instrInfo, *regInfo);
 
 	/*************************************************************************/
@@ -262,18 +320,10 @@ llvm_svcs_assemble(
 
 	// llvm::SourceMgr (include/llvm/Support/SourceMgr.h) that holds assembler source
 	// has vector of llvm::SrcBuffer encaps (Support/MemoryBuffer.h) and vector of include dirs
-	SourceMgr SrcMgr;
-	std::string asmSrc(srcText);
-	std::unique_ptr<MemoryBuffer> memBuf = MemoryBuffer::getMemBuffer(asmSrc);
-	SrcMgr.AddNewSourceBuffer(std::move(memBuf), SMLoc());
-	if(callback) {
-		/* we set LLVM's callback to our thunk which then calls the user
-			requested callback, hiding LLVM details */
-		#ifdef __GNUC__
-		__extension__
-		#endif
-		SrcMgr.setDiagHandler(diag_cb, (void *)callback);
-	}
+	srcMgr = new SourceMgr();
+	mbSrc = MemoryBuffer::getMemBuffer(strSrc);
+	srcMgr->AddNewSourceBuffer(std::move(mbSrc), SMLoc());
+	if(callback) srcMgr->setDiagHandler(diag_cb, (void *)callback);
 
 	/*************************************************************************/
 	/* MC context, object file, code emitter, target options */
@@ -283,7 +333,7 @@ llvm_svcs_assemble(
 	MCObjectFileInfo objFileInfo;
 
 	/* MC/MCContext.h */ 
-	MCContext Ctx(asmInfo.get(), regInfo.get(), &objFileInfo, &SrcMgr);
+	context = new MCContext(asmInfo.get(), regInfo.get(), &objFileInfo, srcMgr);
 
 	/* yes, this is circular (MCContext requiring MCObjectFileInfo and visa
 		versa, and is marked "FIXME" in llvm-mc.cpp */
@@ -295,7 +345,7 @@ llvm_svcs_assemble(
 		TheTriple, 
 		map_reloc_mode(relocMode),
 		map_code_model(codeModel),
-		Ctx
+		*context
 	);
 
 	/* code emitter llvm/MC/MCCodeEmitter.h
@@ -303,7 +353,7 @@ llvm_svcs_assemble(
 
 		target returns with X86MCCodeEmitter, ARMMCCodeEmitter, etc.
 	*/
-	MCCodeEmitter *codeEmitter = target->createMCCodeEmitter(*instrInfo, *regInfo, Ctx);
+	MCCodeEmitter *codeEmitter = target->createMCCodeEmitter(*instrInfo, *regInfo, *context);
 
 	/* target opts */
 	MCTargetOptions targetOpts;
@@ -327,17 +377,17 @@ llvm_svcs_assemble(
 	// -remembers current section
 	// -implementations that write a .s, or .o in various formats
 	MCStreamer *streamer = target->createAsmStreamer(
-		Ctx, /* the MC context */
+		*context, /* the MC context */
 		std::move(pfro), /* output stream (type: std::unique_ptr<formatted_raw_ostream> from Support/FormattedStream.h) */
 		true, /* isVerboseAsm */
 		false, /* useDwarfDirectory */
 		instrPrinter, /* if given, the instruction printer to use (else, MCInstr representation is used) */
 		codeEmitter, /* if given, a code emitter used to show instruction encoding inline with the asm */
-		asmBackend.get(),  /* the AsmBackend, (fixups, relaxation, objs and elfs) */
+		asmBackend,  /* the AsmBackend, (fixups, relaxation, objs and elfs) */
 		true /* ShowInst (show encoding) */
 	);
 
-	rc = invoke_llvm_parsers(target, SrcMgr, Ctx, *streamer, *asmInfo, 
+	rc = invoke_llvm_parsers(target, srcMgr, *context, *streamer, *asmInfo, 
 		*subTargetInfo, *instrInfo, targetOpts, dialect);
 
 	if(rc) {
@@ -352,7 +402,6 @@ llvm_svcs_assemble(
 
 	rc = asm_output_to_instr_counts(asmOut.c_str(), instrLengths);
 	if(rc != 0) {
-		printf("fuck\n");
 		strErr = "couldn't parse instruction lengths\n";
 		goto cleanup;
 	}
@@ -362,28 +411,52 @@ llvm_svcs_assemble(
 	}
 
 	/*************************************************************************/
-	/* assemble to object */
+	/* assemble to object by creating a new streamer */
 	/*************************************************************************/
-//	SmallString<1024> smallString;
-//    raw_svector_ostream rso(smallString);
-//
-//	codeEmitter.reset();
-//
-//    MCStreamer *as = TheTarget->createMCObjectStreamer(
-//		TheTriple, /* Triple */	
-//        Ctx, /* the MCContext */
-//        *MAB,  /* the AsmBackend, (fixups, relaxation, objs and elfs) */
-//        rso, /* output stream raw_pwrite_stream */
-//        CE, /* code emitter */
-//		*STI, /* subtarget info */
-//		true, /* relax all fixups */
-//		true, /* incremental linker compatible */ 
-//        false /* DWARFMustBeAtTheEnd */
-//    );
 
+	/* have tried various "reset" behaviors here, like codeEmitter->reset(),
+		and re-initializing the source manager, but ultimately settled for
+		a full context re-initialization */
 
-	cleanup:
+	context = new MCContext(asmInfo.get(), regInfo.get(), &objFileInfo, srcMgr);
+	objFileInfo.InitMCObjectFileInfo(TheTriple, map_reloc_mode(relocMode), map_code_model(codeModel), *context);
+	codeEmitter = target->createMCCodeEmitter(*instrInfo, *regInfo, *context);
+
+    streamer = target->createMCObjectStreamer(
+		TheTriple,
+        *context,
+        *asmBackend,  /* (fixups, relaxation, objs and elfs) */
+        rsvo, /* output stream raw_pwrite_stream */
+        codeEmitter,
+		*subTargetInfo,
+		true, /* relax all fixups */
+		true, /* incremental linker compatible */ 
+        false /* DWARFMustBeAtTheEnd */
+    );
+
+	rc = invoke_llvm_parsers(target, srcMgr, *context, *streamer, *asmInfo, 
+		*subTargetInfo, *instrInfo, targetOpts, dialect);
+
+	if(rc) {
+		strErr = "invoking llvm parsers\n";
+		goto cleanup;
+	}
+
+	if(obj_output_to_bytes(smallString.data(), instrBytes)) {
+		strErr = "parsing bytes from LLVM obj\n";
+		goto cleanup;
+	}
+	
+	/* dump to file for debugging */
+	FILE *fp;
+	fp = fopen("out.bin", "wb");
+	fwrite(smallString.data(), 1, smallString.size(), fp);
+	fclose(fp);
+
+	dump_bytes((unsigned char *)(instrBytes.c_str()), instrBytes.size(), 0);
+
 	rc = 0;
+	cleanup:
 	return rc;
 }
 
