@@ -240,16 +240,26 @@ assemble()
         dialect = LLVM_SVCS_DIALECT_ATT;
     else    
         dialect = LLVM_SVCS_DIALECT_INTEL;
+
     string assembledText, assembledBytes, assembledErr;
-    if(0 != llvm_svcs_assemble(srcText, dialect, configTriple, assembledText, 
-      assembledBytes, assembledErr, assemble_cb)) {
+
+	string abi = "none";
+	if(configTriple && strstr(configTriple, "mips")) {
+		abi = "eabi";
+	}
+
+	vector<int> instrLengths;
+
+    if(0 != llvm_svcs_assemble(srcText, dialect, configTriple, abi, 
+		LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_DEFAULT, assemble_cb,
+		assembledBytes, instrLengths, assembledErr)) {
         printf("ERROR: llvm_svcs_assemble()\n");
         printf("%s\n", assembledErr.c_str());
         return;
     }
 
     /* output */
-    bytesBuf->text(assembledText.c_str());
+    //bytesBuf->text(assembledText.c_str());
 
     rc = 0;
     //cleanup:
