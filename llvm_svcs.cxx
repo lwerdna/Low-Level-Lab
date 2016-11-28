@@ -448,12 +448,12 @@ llvm_svcs_assemble(
 	}
 	
 	/* dump to file for debugging */
-	FILE *fp;
-	fp = fopen("out.bin", "wb");
-	fwrite(smallString.data(), 1, smallString.size(), fp);
-	fclose(fp);
+	//FILE *fp;
+	//fp = fopen("out.bin", "wb");
+	//fwrite(smallString.data(), 1, smallString.size(), fp);
+	//fclose(fp);
 
-	dump_bytes((unsigned char *)(instrBytes.c_str()), instrBytes.size(), 0);
+	//dump_bytes((unsigned char *)(instrBytes.c_str()), instrBytes.size(), 0);
 
 	rc = 0;
 	cleanup:

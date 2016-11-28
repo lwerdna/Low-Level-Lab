@@ -3,6 +3,7 @@
 #ifndef AlabGui_h
 #define AlabGui_h
 #include <FL/Fl.H>
+#include "HexView.h"
 #include "Fl_Text_Editor_Asm.h"
 #include "Fl_Text_Display_Log.h"
 #include <FL/Fl_Double_Window.H>
@@ -18,7 +19,6 @@ public:
   Fl_Double_Window *mainWindow;
   Fl_Menu_Bar *menuBar;
   Fl_Text_Editor_Asm *srcCode;
-  Fl_Text_Editor *asmCode;
   Fl_Output *oArch;
   Fl_Output *oSubArch;
   Fl_Output *oOs;
@@ -41,7 +41,7 @@ private:
   inline void cb_cbAtt_i(Fl_Check_Button*, void*);
   static void cb_cbAtt(Fl_Check_Button*, void*);
 public:
+  HexView *hexView;
   Fl_Text_Buffer *srcBuf; 
-  Fl_Text_Buffer *bytesBuf; 
 };
 #endif

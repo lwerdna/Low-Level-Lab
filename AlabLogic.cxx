@@ -38,6 +38,7 @@ time_t time_last_assemble = 0;
 uint32_t crc_last_assemble = 0;
 /* configuration string */
 const char *configTriple = NULL;
+string assembledBytes;
 
 /*****************************************************************************/
 /* FILE HANDLING ROUTINES */
@@ -191,7 +192,6 @@ assemble()
     uint32_t crc_now = 0;
 
     Fl_Text_Buffer *srcBuf = gui->srcBuf;
-    Fl_Text_Buffer *bytesBuf = gui->bytesBuf;
 
     srcText = srcBuf->text();
 
@@ -230,8 +230,6 @@ assemble()
     if(time_now) time_last_assemble = time_now;
     if(length_now) length_last_assemble = length_now;
     
-    /* clear the output text */
-    bytesBuf->text("");
     /* clear the log output */
     gui->log->clear(); 
 
@@ -241,7 +239,7 @@ assemble()
     else    
         dialect = LLVM_SVCS_DIALECT_INTEL;
 
-    string assembledText, assembledBytes, assembledErr;
+    string assembledText, assembledErr;
 
 	string abi = "none";
 	if(configTriple && strstr(configTriple, "mips")) {
@@ -259,7 +257,7 @@ assemble()
     }
 
     /* output */
-    //bytesBuf->text(assembledText.c_str());
+	gui->hexView->setBytes(0, (uint8_t *)(assembledBytes.c_str()), assembledBytes.size());	
 
     rc = 0;
     //cleanup:

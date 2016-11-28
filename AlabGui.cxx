@@ -46,21 +46,6 @@ Fl_Double_Window* AlabGui::make_window() {
       srcBuf->text("testes");
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor_Asm* srcCode
-    { Fl_Text_Editor* o = asmCode = new Fl_Text_Editor(517, 103, 510, 505);
-      asmCode->box(FL_DOWN_FRAME);
-      asmCode->color(FL_BACKGROUND2_COLOR);
-      asmCode->selection_color(FL_SELECTION_COLOR);
-      asmCode->labeltype(FL_NORMAL_LABEL);
-      asmCode->labelfont(4);
-      asmCode->labelsize(10);
-      asmCode->labelcolor(FL_FOREGROUND_COLOR);
-      asmCode->textfont(4);
-      asmCode->textsize(12);
-      asmCode->align(Fl_Align(FL_ALIGN_TOP));
-      asmCode->when(FL_WHEN_RELEASE);
-      bytesBuf = new Fl_Text_Buffer();
-      o->buffer(bytesBuf);
-    } // Fl_Text_Editor* asmCode
     { Fl_Group* o = new Fl_Group(276, 39, 750, 57, "Configuration String / Triple / Triplet:");
       o->box(FL_BORDER_BOX);
       o->align(Fl_Align(FL_ALIGN_TOP_LEFT));
@@ -107,6 +92,17 @@ Fl_Double_Window* AlabGui::make_window() {
       cbAtt->down_box(FL_DOWN_BOX);
       cbAtt->callback((Fl_Callback*)cb_cbAtt);
     } // Fl_Check_Button* cbAtt
+    { hexView = new HexView(519, 104, 506, 504);
+      hexView->box(FL_BORDER_BOX);
+      hexView->color(FL_BACKGROUND2_COLOR);
+      hexView->selection_color(FL_BACKGROUND_COLOR);
+      hexView->labeltype(FL_NO_LABEL);
+      hexView->labelfont(0);
+      hexView->labelsize(14);
+      hexView->labelcolor(FL_FOREGROUND_COLOR);
+      hexView->align(Fl_Align(FL_ALIGN_CENTER));
+      hexView->when(FL_WHEN_RELEASE);
+    } // HexView* hexView
     mainWindow->end();
   } // Fl_Double_Window* mainWindow
   srcCode->linenumber_width(24);

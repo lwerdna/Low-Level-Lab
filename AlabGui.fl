@@ -5,19 +5,22 @@ code_name {.cxx}
 decl {\#include "AlabLogic.h"} {private global
 }
 
+decl {\#include "HexView.h"} {public global
+}
+
 decl {\#include "Fl_Text_Editor_Asm.h"} {public global
 }
 
 decl {\#include "Fl_Text_Display_Log.h"} {public global
 }
 
-class AlabGui {open
+class AlabGui {open selected
 } {
   Function {make_window()} {open
   } {
     Fl_Window mainWindow {
       label {Assembler Lab} open
-      xywh {888 348 1032 713} type Double visible
+      xywh {323 441 1032 713} type Double visible
     } {
       Fl_Menu_Bar menuBar {
         label menu open
@@ -30,12 +33,6 @@ class AlabGui {open
         code2 {srcBuf->text("testes");}
         code3 {srcBuf->add_modify_callback(onSourceModified, this);}
         class Fl_Text_Editor_Asm
-      }
-      Fl_Text_Editor asmCode {
-        xywh {517 103 510 505} labelfont 4 labelsize 10 textfont 4 textsize 12
-        code0 {bytesBuf = new Fl_Text_Buffer();}
-        code1 {o->buffer(bytesBuf);}
-        class Fl_Text_Editor
       }
       Fl_Group {} {
         label {Configuration String / Triple / Triplet:} open
@@ -85,12 +82,14 @@ class AlabGui {open
         callback {onDialectChange();}
         xywh {176 65 28 28} down_box DOWN_BOX
       }
+      Fl_Box hexView {
+        xywh {519 104 506 504} box BORDER_BOX color 7 labeltype NO_LABEL
+        class HexView
+      }
     }
     code {srcCode->linenumber_width(24);} {}
   }
   decl {Fl_Text_Buffer *srcBuf;} {public local
-  }
-  decl {Fl_Text_Buffer *bytesBuf;} {public local
   }
 }
 
@@ -105,6 +104,5 @@ w->show();
 int rc = Fl::run();
 onExit();
 return rc;
-/* fluid will insert Fl::run() here... */} {selected
-  }
+/* fluid will insert Fl::run() here... */} {}
 }

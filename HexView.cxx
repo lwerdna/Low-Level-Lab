@@ -230,7 +230,10 @@ void HexView::draw(void)
 {
     char buf[256];
     int x1,y1,x2,y2;
-    
+   
+	int wgtX = x();
+	int wgtY = y();
+ 
     if(!bytes) {
         return;
     }
@@ -244,7 +247,7 @@ void HexView::draw(void)
         left corner, but is on text's bottom left corner (which is why we have
         (line+1) */
 
-    fl_draw_box(FL_FLAT_BOX, x(), y(), w(), h(), fl_rgb_color(255, 255, 255));
+    fl_draw_box(FL_FLAT_BOX, wgtX, wgtY, w(), h(), fl_rgb_color(255, 255, 255));
 
     /* draw the addresses */
     fl_color(0x00640000);
@@ -258,7 +261,7 @@ void HexView::draw(void)
             sprintf(buf, "%016llX: ", addr);
         }
        
-        fl_draw(buf, x1, y1+r2c_bias_y);
+        fl_draw(buf, wgtX+x1, wgtY+y1+r2c_bias_y);
     }
 
     /* draw the bytes */
@@ -268,7 +271,6 @@ void HexView::draw(void)
     for(uint64_t addr=addrViewStart; addr<addrViewEnd; ++addr, ++b) {
         uint32_t color = 0xFFFFFF;
         Interval ival(0,0);
-        int x1,y1,x2,y2;
 
         /* 
             draw the byte
@@ -282,16 +284,16 @@ void HexView::draw(void)
             color = ival.data_u32; 
             //printf("search hit for addr 0x%llx, color is: %X\n", addr, color);
             SET_PACKED_COLOR(color);
-            fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
-            fl_rectf(x2, y2, charWidth, lineHeight);
+            fl_rectf(wgtX+x1, wgtY+y1-1, 3*charWidth, lineHeight);
+            fl_rectf(wgtX+x2, wgtY+y2, charWidth, lineHeight);
         }
 
         /* selection? */
         if(selActive && addr>=addrSelStart && addr<addrSelEnd) {
             color = 0xFF00ff;
             SET_PACKED_COLOR(color);
-            fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
-            fl_rectf(x2, y2, charWidth, lineHeight);
+            fl_rectf(wgtX+x1, y1-1, 3*charWidth, lineHeight);
+            fl_rectf(wgtY+x2, y2, charWidth, lineHeight);
         }
 
         float luma = 1 - (.299*(((color)&0xFF0000)>>16) + .587*(((color)&0xFF00)>>8) + .114*(color&0xFF))/255.0; // thx stackoverflow
@@ -304,17 +306,17 @@ void HexView::draw(void)
             SET_PACKED_COLOR(color);
         }
         sprintf(buf, "%02X", b[0]);
-        fl_draw(buf, x1, y1+r2c_bias_y);
+        fl_draw(buf, wgtX+x1, wgtY+y1+r2c_bias_y);
         sprintf(buf, "%c", ((b[0])>=' ' && (b[0])<='~') ? (b[0]) : '.');
-        fl_draw(buf, x2, y2+r2c_bias_y);
+        fl_draw(buf, wgtX+x2, wgtY+y2+r2c_bias_y);
     }
 
     /* draw the cursor */
     fl_color(0xff000000);
     viewAddrToBytesXY(addrViewStart + cursorOffs, &x1, &y1);
     viewAddrToAsciiXY(addrViewStart + cursorOffs, &x2, &y2);
-    fl_rect(x1, y1, charWidth*2, lineHeight);
-    fl_rect(x2, y2, charWidth, lineHeight);
+    fl_rect(wgtX+x1, wgtY+y1, charWidth*2, lineHeight);
+    fl_rect(wgtX+x2, wgtY+y2, charWidth, lineHeight);
 }
 
 int HexView::handle(int event)
