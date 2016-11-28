@@ -92,7 +92,7 @@ Fl_Double_Window* AlabGui::make_window() {
       cbAtt->down_box(FL_DOWN_BOX);
       cbAtt->callback((Fl_Callback*)cb_cbAtt);
     } // Fl_Check_Button* cbAtt
-    { hexView = new HexView(519, 104, 506, 504);
+    { hexView = new HexView(519, 103, 506, 505);
       hexView->box(FL_BORDER_BOX);
       hexView->color(FL_BACKGROUND2_COLOR);
       hexView->selection_color(FL_BACKGROUND_COLOR);

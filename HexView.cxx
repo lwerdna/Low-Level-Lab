@@ -59,7 +59,7 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
 
     /* margins */
     marginLeft = marginRight = 2;
-    marginTop = 0;
+    marginTop = 2;
     marginBottom = 2;
 
     int width = marginLeft + addrWidth + bytesWidth + asciiWidth + marginRight;
@@ -166,20 +166,20 @@ void HexView::setSelection(uint64_t start, uint64_t end)
 /*****************************************************************************/
 /* drawing helpers */
 /*****************************************************************************/
-int HexView::viewAddrToAddressesXY(uint64_t addr, int *x, int *y)
+int HexView::viewAddrToAddressesXY(uint64_t addr, int *ax, int *ay)
 {
     if(addr < addrViewStart || addr >= addrViewEnd) return -1;
 
     int offs = addr - addrViewStart;
     int lineNum = offs / 16;
 
-    *x = Fl::x() + marginLeft;
-    *y = Fl::y() + marginTop + lineNum*lineHeight;
+    *ax = x() + marginLeft;
+    *ay = y() + marginTop + lineNum*lineHeight;
 
     return 0;
 }
 
-int HexView::viewAddrToBytesXY(uint64_t addr, int *x, int *y)
+int HexView::viewAddrToBytesXY(uint64_t addr, int *ax, int *ay)
 {
     if(addr < addrViewStart || addr >= addrViewEnd) return -1;
 
@@ -187,13 +187,13 @@ int HexView::viewAddrToBytesXY(uint64_t addr, int *x, int *y)
     int lineNum = offs / 16;
     int colNum = offs % 16;
 
-    *x = Fl::x() + marginLeft + addrWidth + colNum*byteWidth;
-    *y = Fl::y() + marginTop + lineNum*lineHeight;
+    *ax = x() + marginLeft + addrWidth + colNum*byteWidth;
+    *ay = y() + marginTop + lineNum*lineHeight;
 
     return 0;
 }
 
-int HexView::viewAddrToAsciiXY(uint64_t addr, int *x, int *y)
+int HexView::viewAddrToAsciiXY(uint64_t addr, int *ax, int *ay)
 {
     if(addr < addrViewStart || addr >= addrViewEnd) return -1;
 
@@ -201,8 +201,8 @@ int HexView::viewAddrToAsciiXY(uint64_t addr, int *x, int *y)
     int lineNum = offs / 16;
     int colNum = offs % 16;
 
-    *x = Fl::x() + marginLeft + addrWidth + bytesWidth + colNum*charWidth;
-    *y = Fl::y() + marginTop + lineNum*lineHeight;
+    *ax = x() + marginLeft + addrWidth + bytesWidth + colNum*charWidth;
+    *ay = y() + marginTop + lineNum*lineHeight;
 
     return 0;
 }
@@ -231,9 +231,6 @@ void HexView::draw(void)
     char buf[256];
     int x1,y1,x2,y2;
    
-	int wgtX = x();
-	int wgtY = y();
- 
     if(!bytes) {
         return;
     }
@@ -241,14 +238,12 @@ void HexView::draw(void)
     fl_font(FL_COURIER, FL_NORMAL_SIZE);
     int r2c_bias_y = fl_height() - fl_descent();
 
-    //dbgprintf("x0,y0,w0,h0 = (%d,%d,%d,%d)\n", x0, y0, w0, h0);
-
     /* note that the point you specify to draw at (x,y) is 0,0 on screen's top
         left corner, but is on text's bottom left corner (which is why we have
         (line+1) */
 
-    fl_draw_box(FL_FLAT_BOX, wgtX, wgtY, w(), h(), fl_rgb_color(255, 255, 255));
-
+    fl_draw_box(FL_BORDER_BOX, x(), y(), w(), h(), fl_rgb_color(255, 255, 255));
+   
     /* draw the addresses */
     fl_color(0x00640000);
 
@@ -261,7 +256,7 @@ void HexView::draw(void)
             sprintf(buf, "%016llX: ", addr);
         }
        
-        fl_draw(buf, wgtX+x1, wgtY+y1+r2c_bias_y);
+        fl_draw(buf, x1, y1+r2c_bias_y);
     }
 
     /* draw the bytes */
@@ -284,16 +279,16 @@ void HexView::draw(void)
             color = ival.data_u32; 
             //printf("search hit for addr 0x%llx, color is: %X\n", addr, color);
             SET_PACKED_COLOR(color);
-            fl_rectf(wgtX+x1, wgtY+y1-1, 3*charWidth, lineHeight);
-            fl_rectf(wgtX+x2, wgtY+y2, charWidth, lineHeight);
+            fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
+            fl_rectf(x2, y2, charWidth, lineHeight);
         }
 
         /* selection? */
         if(selActive && addr>=addrSelStart && addr<addrSelEnd) {
             color = 0xFF00ff;
             SET_PACKED_COLOR(color);
-            fl_rectf(wgtX+x1, y1-1, 3*charWidth, lineHeight);
-            fl_rectf(wgtY+x2, y2, charWidth, lineHeight);
+            fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
+            fl_rectf(x2, y2, charWidth, lineHeight);
         }
 
         float luma = 1 - (.299*(((color)&0xFF0000)>>16) + .587*(((color)&0xFF00)>>8) + .114*(color&0xFF))/255.0; // thx stackoverflow
@@ -306,17 +301,19 @@ void HexView::draw(void)
             SET_PACKED_COLOR(color);
         }
         sprintf(buf, "%02X", b[0]);
-        fl_draw(buf, wgtX+x1, wgtY+y1+r2c_bias_y);
+        fl_draw(buf, x1, y1+r2c_bias_y);
         sprintf(buf, "%c", ((b[0])>=' ' && (b[0])<='~') ? (b[0]) : '.');
-        fl_draw(buf, wgtX+x2, wgtY+y2+r2c_bias_y);
+        fl_draw(buf, x2, y2+r2c_bias_y);
     }
 
     /* draw the cursor */
-    fl_color(0xff000000);
-    viewAddrToBytesXY(addrViewStart + cursorOffs, &x1, &y1);
-    viewAddrToAsciiXY(addrViewStart + cursorOffs, &x2, &y2);
-    fl_rect(wgtX+x1, wgtY+y1, charWidth*2, lineHeight);
-    fl_rect(wgtX+x2, wgtY+y2, charWidth, lineHeight);
+	if(Fl::focus() == this) { 
+    	fl_color(0xff000000);
+	    viewAddrToBytesXY(addrViewStart + cursorOffs, &x1, &y1);
+	    viewAddrToAsciiXY(addrViewStart + cursorOffs, &x2, &y2);
+	    fl_rect(x1, y1, charWidth*2, lineHeight);
+	    fl_rect(x2, y2, charWidth, lineHeight);
+	}
 }
 
 int HexView::handle(int event)
@@ -324,15 +321,26 @@ int HexView::handle(int event)
     int x, y;
     int rc = 0; /* 0 if not used or understood, 1 if event was used and can be deleted */
 
-
-    if(event == FL_FOCUS || event == FL_UNFOCUS) {
+    if(event == FL_FOCUS) {
+		//printf("FL_FOCUS %d\n", cnt);
+		rc = 1;
+	}
+	else if(event == FL_UNFOCUS) {
         /* To receive FL_KEYBOARD events you must also respond to the FL_FOCUS
             and FL_UNFOCUS events by returning 1. */
-        //printf("I'm focused!\n");
+        //printf("FL_UNFOCUS %d\n", cnt);
+		redraw();
         rc = 1;
     }
-    else
-    if(event == FL_KEYDOWN) {
+    else if(event == FL_ENTER) {
+		//printf("FL_ENTER %d!\n", cnt);
+	}
+	else if(event == FL_LEAVE) {
+		//printf("FL_LEAVE %d!\n", cnt);
+	}
+    else if(event == FL_KEYDOWN) {
+		//printf("FL_KEYDOWN %d!\n", cnt);
+
         uint64_t sampleAddrView = addrViewStart;
         int sampleCursorOffs = cursorOffs;
 
@@ -473,6 +481,7 @@ int HexView::handle(int event)
     }
     else
     if(event == FL_KEYUP) {
+		//printf("FL_KEYUP\n");
         int keyCode = Fl::event_key();
 
         switch(keyCode) {
@@ -485,6 +494,20 @@ int HexView::handle(int event)
                 break;
         }
     }
+	else
+	if(event == FL_PUSH) {
+		//printf("FL_PUSH!\n");
+		Fl::focus(this);
+		redraw();
+		rc = 1;
+	}
+	else
+	if(event == FL_RELEASE) {
+		//printf("FL_RELEASE\n");
+	}
+	else {
+		printf("unrecognized event: %d\n", event);
+	}
 
     return rc;
 }

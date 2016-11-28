@@ -14,7 +14,7 @@ decl {\#include "Fl_Text_Editor_Asm.h"} {public global
 decl {\#include "Fl_Text_Display_Log.h"} {public global
 }
 
-class AlabGui {open selected
+class AlabGui {open
 } {
   Function {make_window()} {open
   } {
@@ -82,8 +82,8 @@ class AlabGui {open selected
         callback {onDialectChange();}
         xywh {176 65 28 28} down_box DOWN_BOX
       }
-      Fl_Box hexView {
-        xywh {519 104 506 504} box BORDER_BOX color 7 labeltype NO_LABEL
+      Fl_Box hexView {selected
+        xywh {519 103 506 505} box BORDER_BOX color 7 labeltype NO_LABEL
         class HexView
       }
     }
