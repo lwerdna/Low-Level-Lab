@@ -84,7 +84,6 @@ void HexView::clrCallback(void)
 
 void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
 {
-
     printf("setBytes(addr=%016llX, data=<ptr>, len=0x%X)\n", addr, len);
     //dump_bytes(data, len, (uintptr_t)0);
 
@@ -97,7 +96,10 @@ void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
     addrStart = addr;
     addrEnd = addr + len; // non-inclusive ')' endpoint
     nBytes = addrEnd - addrStart;
-    bytes = data;
+
+	bytes = (uint8_t *)malloc(len);
+	memcpy(bytes, data, len);
+
     setView(addr);
     
     if(callback) callback(HV_CB_NEW_BYTES, 0);
@@ -106,7 +108,10 @@ void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
 void HexView::clearBytes(void)
 {
     addrStart = addrEnd = 0;
+
+	if(bytes) free(bytes);
     bytes = NULL;
+
     setView(0);
 }
 
@@ -210,7 +215,6 @@ int HexView::viewAddrToAsciiXY(uint64_t addr, int *ax, int *ay)
 /*****************************************************************************/
 /* highlighting API */
 /*****************************************************************************/
-
 void HexView::hlAdd(uint64_t left, uint64_t right, uint32_t color)
 {
     hlRanges.add(Interval(left, right, color));
@@ -260,7 +264,7 @@ void HexView::draw(void)
     }
 
     /* draw the bytes */
-    //#define SET_PACKED_COLOR(p) fl_rgb_color(((p)&0xFF0000)>>16, ((p)&0xFF00)>>8, (p&0xFF))
+    #define TO_RGB_COLOR(p) fl_rgb_color(((p)&0xFF0000)>>16, ((p)&0xFF00)>>8, (p&0xFF))
     #define SET_PACKED_COLOR(p) fl_color((p)<<8)
     uint8_t *b = bytes + (addrViewStart - addrStart);
     for(uint64_t addr=addrViewStart; addr<addrViewEnd; ++addr, ++b) {
@@ -280,7 +284,9 @@ void HexView::draw(void)
             //printf("search hit for addr 0x%llx, color is: %X\n", addr, color);
             SET_PACKED_COLOR(color);
             fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
+    		//fl_draw_box(FL_ROUNDED_BOX, x1, y1-1, 3*charWidth, lineHeight, TO_RGB_COLOR(color));
             fl_rectf(x2, y2, charWidth, lineHeight);
+    		//fl_draw_box(FL_ROUNDED_BOX, x2, y2, charWidth, lineHeight, TO_RGB_COLOR(color));
         }
 
         /* selection? */
@@ -506,7 +512,7 @@ int HexView::handle(int event)
 		//printf("FL_RELEASE\n");
 	}
 	else {
-		printf("unrecognized event: %d\n", event);
+		//printf("unrecognized event: %d\n", event);
 	}
 
     return rc;
