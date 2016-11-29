@@ -265,7 +265,6 @@ invoke_llvm_parsers(const Target *TheTarget, SourceMgr *SrcMgr, MCContext &conte
   	/* first param is NoInitialTextSection
 	   by supplying false -> YES initial text section and obviate ".text" in asm source */
   	rc = Parser->Run(false);
-	printf("Parser->Run() returned %d\n", rc);
 
 	cleanup:
   	return rc;
@@ -429,17 +428,17 @@ llvm_svcs_assemble(
 	/* flush the FRO (formatted raw ostream) */
 	fro.flush();
 
-	printf("got back:\n%s", asmOut.c_str());
+	//printf("got back:\n%s", asmOut.c_str());
 
 	if(asm_output_to_instr_counts(asmOut.c_str(), instrLengths)) {
 		strErr = "couldn't parse instruction lengths\n";
 		goto cleanup;
 	}
 
-	printf("here're the instruciton lengths:\n");
-	for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
-		printf("%d\n", *i);
-	}	
+	//printf("here're the instruction lengths:\n");
+	//for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
+	//	printf("%d\n", *i);
+	//}	
 
 	/*************************************************************************/
 	/* assemble to object by creating a new streamer */
@@ -484,13 +483,12 @@ llvm_svcs_assemble(
 	
 	rc = 0;
 	cleanup:
-	printf("%s() returns %d\n", __func__, rc);
 	return rc;
 }
 
 void
-llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &vendor,
-	string &os, string &environ, string &objFormat)
+llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
+	string &vendor, string &os, string &environ, string &objFormat)
 {
 	//spec = llvm::sys::getDefaultTargetTriple();
 	//std::string machSpec = "x86_64-apple-darwin14.5.0";
@@ -499,11 +497,43 @@ llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &vendor,
 	//std::string machSpec = "x86_64-unknown-linux-gnu";
 	Triple trip(triplet);
 
+	/* FIRST component is <arch><subarch> */
 	arch = trip.getArchName();
-	//string subarch = Triple::SubArchType(
+
+	/* sub architecture (see llvm/ADT/Triple.h) */
+	switch(trip.getSubArch()) {
+		case llvm::Triple::NoSubArch: subarch=""; break;
+   		case llvm::Triple::ARMSubArch_v8_2a: subarch="v8_2a"; break;
+		case llvm::Triple::ARMSubArch_v8_1a: subarch="v8_1a"; break;
+		case llvm::Triple::ARMSubArch_v8: subarch="v8"; break;
+		case llvm::Triple::ARMSubArch_v7: subarch="v7"; break;
+		case llvm::Triple::ARMSubArch_v7em: subarch="v7em"; break;
+		case llvm::Triple::ARMSubArch_v7m: subarch="v7m"; break;
+		case llvm::Triple::ARMSubArch_v7s: subarch="v7s"; break;
+		case llvm::Triple::ARMSubArch_v7k: subarch="v7k"; break;
+		case llvm::Triple::ARMSubArch_v6: subarch="v6"; break;
+		case llvm::Triple::ARMSubArch_v6m: subarch="v6m"; break;
+		case llvm::Triple::ARMSubArch_v6k: subarch="v6k"; break;
+		case llvm::Triple::ARMSubArch_v6t2: subarch="v6t2"; break;
+		case llvm::Triple::ARMSubArch_v5: subarch="v5"; break;
+		case llvm::Triple::ARMSubArch_v5te: subarch="v5te"; break;
+		case llvm::Triple::ARMSubArch_v4t: subarch="v4t"; break;
+		case llvm::Triple::KalimbaSubArch_v3: subarch="v3"; break;
+		case llvm::Triple::KalimbaSubArch_v4: subarch="v4"; break;
+		case llvm::Triple::KalimbaSubArch_v5: subarch="v5"; break;
+	}
+
+	/* SECOND component is <vendor> */
 	vendor = trip.getVendorName();
+
+	/* THIRD component is <sys> or <os> */
 	os = trip.getOSName();
+
+	/* FOURTH component is <environment> or <abi> */
 	environ = trip.getEnvironmentName();
+
+	/* this is not part of the triplet, just trivia about what object format
+		will be used to contain the code */
 	Triple::ObjectFormatType oft = trip.getObjectFormat();
 
 	switch(oft) {

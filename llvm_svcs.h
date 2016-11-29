@@ -28,4 +28,5 @@ int llvm_svcs_assemble(const char *src, int dialect, const char *triplet,
 	vector<int> &instrLengths, string &err);
 
 void llvm_svcs_triplet_decompose(const char *triplet, string &arch,
-    string &vendor, string &os, string &environ, string &objFormat);
+    string &subArch, string &vendor, string &os, string &environ, 
+	string &objFormat);

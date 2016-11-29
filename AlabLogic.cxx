@@ -37,7 +37,6 @@ int length_last_assemble = 0;
 time_t time_last_assemble = 0;
 uint32_t crc_last_assemble = 0;
 /* configuration string */
-const char *configTriple = NULL;
 string assembledBytes;
 
 /*****************************************************************************/
@@ -155,7 +154,7 @@ int file_load(const char *path)
 void logNote(const char *msg)
 {
 	gui->log->setColor(FL_GREEN);
-   	gui->log->append("NOTE ");
+   	gui->log->append("NOTE: ");
 	gui->log->setColor(FL_WHITE);
 	gui->log->append(msg);
 	gui->log->append("\n");
@@ -164,7 +163,7 @@ void logNote(const char *msg)
 void logWarning(const char *msg)
 {
 	gui->log->setColor(FL_YELLOW);
-   	gui->log->append("WARN ");
+   	gui->log->append("WARN: ");
 	gui->log->setColor(FL_WHITE);
 	gui->log->append(msg);
 	gui->log->append("\n");
@@ -173,7 +172,7 @@ void logWarning(const char *msg)
 void logError(const char *msg)
 {
 	gui->log->setColor(FL_RED);
-   	gui->log->append("ERROR ");
+   	gui->log->append("ERROR: ");
 	gui->log->setColor(FL_WHITE);
 	gui->log->append(msg);
 	gui->log->append("\n");
@@ -184,7 +183,7 @@ void assemble_cb(int type, const char *fileName, int lineNum,
 {
 	char buf[128];
 	
-	sprintf(buf, "line %d: ", lineNum);
+	sprintf(buf, "line %d: %s", lineNum, message);
 
 	switch(type) {
 	    case LLVM_SVCS_CB_NOTE:
@@ -251,25 +250,47 @@ assemble()
 	gui->log->clear(); 
 	/* keep the bytes from previous assemble in case this fails */
 
+	/* dialect */
 	int dialect = LLVM_SVCS_DIALECT_UNSPEC;
 	if(gui->cbAtt->value()) 
 	    dialect = LLVM_SVCS_DIALECT_ATT;
 	else    
 	    dialect = LLVM_SVCS_DIALECT_INTEL;
 
-	string assembledText, assembledErr;
+	/* triplet */
+	char triplet[128] = {'\0'};
+	strcat(triplet, gui->iArch->value());
+	if(gui->iSubArch->size()) {
+		strcat(triplet, gui->iSubArch->value());
+	}
+	if(gui->iVendor->size()) {
+		strcat(triplet, "-");
+		strcat(triplet, gui->iVendor->value());
+	}
+	if(gui->iOs->size()) {
+		strcat(triplet, "-");
+		strcat(triplet, gui->iOs->value());
+	}
+	if(gui->iEnviron->size()) {
+		strcat(triplet, "-");
+		strcat(triplet, gui->iEnviron->value());
+	}
+	
+	logNote(triplet);
 
+	/* abi parameter */
 	string abi = "none";
-	if(configTriple && strstr(configTriple, "mips")) {
+	if(strstr(triplet, "mips")) {
 		logNote("using MCTargetOptions.abi \"eabi\" for mips");
 		abi = "eabi";
 	}
 		
-	logNote(configTriple);
+	/* start */	
+	string assembledText, assembledErr;
 
 	vector<int> instrLengths;
 
-	if(0 != llvm_svcs_assemble(srcText, dialect, configTriple, abi, 
+	if(0 != llvm_svcs_assemble(srcText, dialect, triplet, abi, 
 		LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_DEFAULT, assemble_cb,
 		assembledBytes, instrLengths, assembledErr)) {
 	    logError("llvm_svcs_assemble()\n");
@@ -282,7 +303,7 @@ assemble()
 
 	int offs = 0;
 	for(auto i=instrLengths.begin(); i!=instrLengths.end(); ++i) {
-		printf("hlAdd( [%d,%d) (%d bytes) )\n", offs, offs+*i, *i);
+		//printf("hlAdd( [%d,%d) (%d bytes) )\n", offs, offs+*i, *i);
 		gui->hexView->hlAdd(offs, offs+*i);
 		offs += *i;
 	}
@@ -383,7 +404,6 @@ void
 onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 	const char * deletedText, void *cbArg)
 {
-	printf("%s()\n", __func__);
 	assemble_requested = true;
 }
 
@@ -391,63 +411,65 @@ void
 onExampleSelection()
 {
 	const char *eg = gui->icExamples->value();
+	const char *triplet;
 
 	if(0==strcmp(eg, "i386 (at&t)")) {
 	    gui->srcBuf->text((char *)rsrc_x86_s);
 	    gui->cbAtt->value(1);
-		configTriple = "i386-none-none";
+		triplet = "i386-none-none";
 	}
 	else if(0==strcmp(eg, "i386 (intel)")) {
 	    gui->srcBuf->text((char *)rsrc_x86_intel_s);
 	    gui->cbAtt->value(0);
-		configTriple = "i386-none-none";
+		triplet = "i386-none-none";
 	}
 	else if(0==strcmp(eg, "x86_64 (at&t)")) {
 	    gui->srcBuf->text((char *)rsrc_x86_64_s);
 	    gui->cbAtt->value(1);
-		configTriple = "x86_64-none-none";
+		triplet = "x86_64-none-none";
 	}
 	else if(0==strcmp(eg, "x86_64 (intel)")) {
 	    gui->srcBuf->text((char *)rsrc_x86_64_intel_s);
 	    gui->cbAtt->value(0);
-		configTriple = "x86_64-none-none";
+		triplet = "x86_64-none-none";
 	}
 	else if(0==strcmp(eg, "powerpc")) {
 	    gui->srcBuf->text((char *)rsrc_ppc_s);
-		configTriple = "powerpc-none-none";
+		triplet = "powerpc-none-none";
 	}
 	else if(0==strcmp(eg, "powerpc64")) {
 	    gui->srcBuf->text((char *)rsrc_ppc64_s);
-		configTriple = "powerpc64-none-none";
+		triplet = "powerpc64-none-none";
 	}
 	else if(0==strcmp(eg, "powerpc64le")) {
 	    gui->srcBuf->text((char *)rsrc_ppc64_s);
-		configTriple = "powerpc64le-none-none";
+		triplet = "powerpc64le-none-none";
 	}
 	else if(0==strcmp(eg, "arm")) {
 	    gui->srcBuf->text((char *)rsrc_arm_s);
-		configTriple = "arm-none-none-eabi";
+		triplet = "arm-none-none-eabi";
 	}
 	else if(0==strcmp(eg, "thumb")) {
 	    gui->srcBuf->text((char *)rsrc_thumb_s);
-		configTriple = "thumb-none-none";
+		triplet = "thumb-none-none";
 	}
 	else if(0==strcmp(eg, "aarch64")) {
 	    gui->srcBuf->text((char *)rsrc_arm64_s);
-		configTriple = "aarch64-none-none-eabi";
+		triplet = "aarch64-none-none-eabi";
 	}
 	else if(0==strcmp(eg, "mips")) {
 	    gui->srcBuf->text((char *)rsrc_mips_s);
-		configTriple = "mips-pc-eabi";
+		triplet = "mips-pc-eabi";
 	}
 
-	string arch, vendor, os, environ, objFormat;
-	llvm_svcs_triplet_decompose(configTriple, arch, vendor, os, environ,
+	string arch, subarch, vendor, os, environ, objFormat;
+	llvm_svcs_triplet_decompose(triplet, arch, subarch, vendor, os, environ,
 	    objFormat);
-	gui->oArch->value(arch.c_str());
-	gui->oVendor->value(vendor.c_str());
-	gui->oOs->value(os.c_str());
-	gui->oEnviron->value(environ.c_str());
+	gui->iArch->value(arch.c_str());
+	gui->iSubArch->value(subarch.c_str());
+	gui->iVendor->value(vendor.c_str());
+	gui->iOs->value(os.c_str());
+	gui->iEnviron->value(environ.c_str());
 	gui->oFormat->value(objFormat.c_str());
 
 	assemble_forced = true;

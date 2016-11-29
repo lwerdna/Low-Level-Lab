@@ -8,6 +8,7 @@
 #include "Fl_Text_Display_Log.h"
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Menu_Bar.H>
+#include <FL/Fl_Input.H>
 #include <FL/Fl_Output.H>
 #include <FL/Fl_Input_Choice.H>
 #include <FL/Fl_Check_Button.H>
@@ -19,12 +20,12 @@ public:
   Fl_Double_Window *mainWindow;
   Fl_Menu_Bar *menuBar;
   Fl_Text_Editor_Asm *srcCode;
-  Fl_Output *oArch;
-  Fl_Output *oSubArch;
-  Fl_Output *oOs;
-  Fl_Output *oEnviron;
+  Fl_Input *iArch;
+  Fl_Input *iSubArch;
+  Fl_Input *iOs;
+  Fl_Input *iEnviron;
   Fl_Output *oFormat;
-  Fl_Output *oVendor;
+  Fl_Input *iVendor;
   Fl_Input_Choice *icExamples;
 private:
   inline void cb_icExamples_i(Fl_Input_Choice*, void*);
