@@ -398,7 +398,7 @@ llvm_svcs_assemble(
 	/* flush the FRO (formatted raw ostream) */
 	fro.flush();
 
-	printf("got back:\n%s", asmOut.c_str());
+	//printf("got back:\n%s", asmOut.c_str());
 
 	rc = asm_output_to_instr_counts(asmOut.c_str(), instrLengths);
 	if(rc != 0) {
@@ -406,9 +406,9 @@ llvm_svcs_assemble(
 		goto cleanup;
 	}
 
-	for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
-		printf("%d\n", *i);
-	}
+	//for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
+	//	printf("%d\n", *i);
+	//}
 
 	/*************************************************************************/
 	/* assemble to object by creating a new streamer */

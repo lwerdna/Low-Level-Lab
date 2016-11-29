@@ -50,7 +50,14 @@ class HexView : public Fl_Widget {
     int viewAddrToAsciiXY(uint64_t addr, int *x, int *y);
     int viewAddrToAddressesXY(uint64_t addr, int *x, int *y);
 
+	/* highlighting stuff */
+	uint32_t autoPalette[16] = { 
+		0xffd966,0xd9ff66,0x8cff66,0x66cf8c,0xff8c66,0xffc929,0xebb000,0x66ffd9,
+		0xff668c,0x003beb,0x295eff,0x66d9ff,0xff66d9,0xd966ff,0x8c66ff,0x668cff
+	};
+	int autoPaletteIdx = 0;
     void hlAdd(uint64_t left, uint64_t right, uint32_t color);
+    void hlAdd(uint64_t left, uint64_t right);
     void hlClear(void);
 
     /* GUI geometry */

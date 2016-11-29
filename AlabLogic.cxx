@@ -259,6 +259,12 @@ assemble()
     /* output */
 	gui->hexView->setBytes(0, (uint8_t *)(assembledBytes.c_str()), assembledBytes.size());	
 
+	int offs = 0;
+	for(auto i=instrLengths.begin(); i!=instrLengths.end(); ++i) {
+		gui->hexView->hlAdd(offs, offs+*i);
+		offs += *i;
+	}
+
     rc = 0;
     //cleanup:
     if(srcText) {

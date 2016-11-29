@@ -25,12 +25,12 @@ void AlabGui::cb_cbAtt(Fl_Check_Button* o, void* v) {
 }
 
 Fl_Double_Window* AlabGui::make_window() {
-  { mainWindow = new Fl_Double_Window(1032, 713, "Assembler Lab");
+  { mainWindow = new Fl_Double_Window(1071, 713, "Assembler Lab");
     mainWindow->user_data((void*)(this));
-    { menuBar = new Fl_Menu_Bar(0, 0, 1032, 20, "menu");
+    { menuBar = new Fl_Menu_Bar(0, 0, 1071, 20, "menu");
       menuBar->color((Fl_Color)29);
     } // Fl_Menu_Bar* menuBar
-    { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(4, 103, 510, 505);
+    { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(4, 103, 462, 505);
       srcCode->box(FL_DOWN_FRAME);
       srcCode->color(FL_BACKGROUND2_COLOR);
       srcCode->selection_color(FL_SELECTION_COLOR);
@@ -77,7 +77,7 @@ Fl_Double_Window* AlabGui::make_window() {
       icExamples->callback((Fl_Callback*)cb_icExamples);
       icExamples->align(Fl_Align(FL_ALIGN_TOP_LEFT));
     } // Fl_Input_Choice* icExamples
-    { log = new Fl_Text_Display_Log(4, 612, 1023, 96);
+    { log = new Fl_Text_Display_Log(4, 612, 1063, 96);
       log->box(FL_DOWN_FRAME);
       log->color(FL_BACKGROUND2_COLOR);
       log->selection_color(FL_SELECTION_COLOR);
@@ -92,7 +92,7 @@ Fl_Double_Window* AlabGui::make_window() {
       cbAtt->down_box(FL_DOWN_BOX);
       cbAtt->callback((Fl_Callback*)cb_cbAtt);
     } // Fl_Check_Button* cbAtt
-    { hexView = new HexView(519, 103, 506, 505);
+    { hexView = new HexView(471, 103, 596, 505);
       hexView->box(FL_BORDER_BOX);
       hexView->color(FL_BACKGROUND2_COLOR);
       hexView->selection_color(FL_BACKGROUND_COLOR);

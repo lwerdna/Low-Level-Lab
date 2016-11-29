@@ -208,6 +208,13 @@ void HexView::hlAdd(uint64_t left, uint64_t right, uint32_t color)
     redraw();
 }
 
+void HexView::hlAdd(uint64_t left, uint64_t right)
+{
+    hlRanges.add(Interval(left, right, autoPalette[autoPaletteIdx]));
+	autoPaletteIdx = (autoPaletteIdx+1) % 16;
+    redraw();
+}
+
 void HexView::hlClear(void)
 {
     hlRanges.clear();
@@ -261,7 +268,7 @@ void HexView::draw(void)
             color = ival.data_u32; 
             //printf("search hit for addr 0x%llx, color is: %X\n", addr, color);
             SET_PACKED_COLOR(color);
-            fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
+            fl_rectf(x1-charWidth/2, y1-1, 3*charWidth, lineHeight);
     		//fl_draw_box(FL_ROUNDED_BOX, x1, y1-1, 3*charWidth, lineHeight, TO_RGB_COLOR(color));
             fl_rectf(x2, y2, charWidth, lineHeight);
     		//fl_draw_box(FL_ROUNDED_BOX, x2, y2, charWidth, lineHeight, TO_RGB_COLOR(color));

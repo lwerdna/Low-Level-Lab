@@ -20,14 +20,14 @@ class AlabGui {open
   } {
     Fl_Window mainWindow {
       label {Assembler Lab} open
-      xywh {323 441 1032 713} type Double visible
+      xywh {297 378 1071 713} type Double visible
     } {
       Fl_Menu_Bar menuBar {
         label menu open
-        xywh {0 0 1032 20} color 29
+        xywh {0 0 1071 20} color 29
       } {}
       Fl_Text_Editor srcCode {
-        xywh {4 103 510 505} align 21 textfont 4
+        xywh {4 103 462 505} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
         code2 {srcBuf->text("testes");}
@@ -35,7 +35,7 @@ class AlabGui {open
         class Fl_Text_Editor_Asm
       }
       Fl_Group {} {
-        label {Configuration String / Triple / Triplet:} open
+        label {Configuration String / Triple / Triplet:} open selected
         xywh {276 39 750 57} box BORDER_BOX align 5
       } {
         Fl_Output oArch {
@@ -74,7 +74,7 @@ class AlabGui {open
         xywh {5 39 259 24} align 5
       } {}
       Fl_Text_Display log {
-        xywh {4 612 1023 96}
+        xywh {4 612 1063 96}
         class Fl_Text_Display_Log
       }
       Fl_Check_Button cbAtt {
@@ -82,8 +82,8 @@ class AlabGui {open
         callback {onDialectChange();}
         xywh {176 65 28 28} down_box DOWN_BOX
       }
-      Fl_Box hexView {selected
-        xywh {519 103 506 505} box BORDER_BOX color 7 labeltype NO_LABEL
+      Fl_Box hexView {
+        xywh {471 103 596 505} box BORDER_BOX color 7 labeltype NO_LABEL
         class HexView
       }
     }
