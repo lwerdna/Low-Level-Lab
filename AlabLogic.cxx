@@ -249,8 +249,7 @@ assemble()
 	
 	/* clear the log */
 	gui->log->clear(); 
-	/* keep bytes from previous success */
-	//gui->hexView->clearBytes();
+	/* keep the bytes from previous assemble in case this fails */
 
 	int dialect = LLVM_SVCS_DIALECT_UNSPEC;
 	if(gui->cbAtt->value()) 
@@ -278,6 +277,7 @@ assemble()
 	}
 
 	/* output */
+	gui->hexView->clearBytes();
 	gui->hexView->setBytes(0, (uint8_t *)(assembledBytes.c_str()), assembledBytes.size());	
 
 	int offs = 0;

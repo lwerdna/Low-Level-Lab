@@ -166,6 +166,9 @@ obj_output_to_bytes(const char *data, string &result)
 
 	int codeOffset=0, codeSize = 0;
 
+	/* it's assumed that in all ELF files, the .text section is third, usually
+		the layout is NULL, .strtab, .text, ... */
+
 	/* Mach-O */
 	if(*(uint32_t *)data == 0xFEEDFACF) {
 		unsigned int idx = 0;
@@ -187,12 +190,30 @@ obj_output_to_bytes(const char *data, string &result)
 		codeOffset = sh_offset;
 		codeSize = sh_size;
 	}
+	/* 32-bit ELF (big-end) */
+	else if(0==memcmp(data, "\x7F" "ELF\x01\x02\x01\x00", 8)) {
+		/* assume four sections: NULL, .strtab, .text, .symtab */
+		uint32_t e_shoff = __builtin_bswap32(*(uint32_t *)(data + 0x20));
+		uint32_t sh_offset = __builtin_bswap32(*(uint32_t *)(data + e_shoff + 2*0x28 + 0x10)); /* second shdr */
+		uint32_t sh_size = __builtin_bswap32(*(uint32_t *)(data + e_shoff + 2*0x28 + 0x14)); /* second shdr */
+		codeOffset = sh_offset;
+		codeSize = sh_size;
+	}
 	/* 64-bit ELF */
 	else if(0==memcmp(data, "\x7F" "ELF\x02\x01\x01\x00", 8)) {
 		/* assume text is third section (eg: NULL, .strtab, .text) */
 		uint64_t e_shoff = *(uint64_t *)(data + 0x28);
 		uint64_t sh_offset = *(uint64_t *)(data + e_shoff + 2*0x40 + 0x18); /* second shdr */
 		uint64_t sh_size = *(uint64_t *)(data + e_shoff + 2*0x40 + 0x20); /* second shdr */
+		codeOffset = sh_offset;
+		codeSize = sh_size;
+	}
+	/* 64-bit ELF (big-end) */
+	else if(0==memcmp(data, "\x7F" "ELF\x02\x02\x01\x00", 8)) {
+		/* assume text is third section (eg: NULL, .strtab, .text) */
+		uint64_t e_shoff = __builtin_bswap64(*(uint64_t *)(data + 0x28));
+		uint64_t sh_offset = __builtin_bswap64(*(uint64_t *)(data + e_shoff + 2*0x40 + 0x18)); /* second shdr */
+		uint64_t sh_size = __builtin_bswap64(*(uint64_t *)(data + e_shoff + 2*0x40 + 0x20)); /* second shdr */
 		codeOffset = sh_offset;
 		codeSize = sh_size;
 	}
