@@ -72,6 +72,9 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
     cursorOffs = 0;
 }
 
+/*****************************************************************************/
+/* main API */
+/*****************************************************************************/
 void HexView::setCallback(HexView_callback cb)
 {
     callback = cb;
@@ -95,7 +98,7 @@ void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
 
     addrStart = addr;
     addrEnd = addr + len; // non-inclusive ')' endpoint
-    nBytes = addrEnd - addrStart;
+    nBytes = len;
 
 	bytes = (uint8_t *)malloc(len);
 	memcpy(bytes, data, len);
@@ -107,11 +110,15 @@ void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
 
 void HexView::clearBytes(void)
 {
+	hlClear();
+
     addrStart = addrEnd = 0;
+	addrViewStart = addrViewEnd = 0;
 
 	if(bytes) free(bytes);
     bytes = NULL;
-
+	nBytes = 0;
+	
     setView(0);
 }
 
@@ -119,7 +126,7 @@ void HexView::clearBytes(void)
 void HexView::setView(uint64_t addr)
 {
     // filter address
-    if(addr >= nBytes) addr = nBytes - 1 - bytesPerPage;
+    if(addr > addrViewEnd) addr = addrViewEnd;
     if(addr % 16) addr -= (addr % 16);
 
     // capacity info
@@ -168,6 +175,18 @@ void HexView::setSelection(uint64_t start, uint64_t end)
     }
 }
 
+void HexView::setShowAddress(bool b)
+{
+	showAddress = b;
+	redraw();
+}
+
+void HexView::setShowAscii(bool b)
+{
+	showAscii = b;
+	redraw();
+}
+
 /*****************************************************************************/
 /* drawing helpers */
 /*****************************************************************************/
@@ -179,8 +198,10 @@ int HexView::viewAddrToBytesXY(uint64_t addr, int *ax, int *ay)
     int lineNum = offs / 16;
     int colNum = offs % 16;
 
-    *ax = x() + marginLeft + addrWidth + colNum*byteWidth;
+    *ax = x() + marginLeft + colNum*byteWidth;
     *ay = y() + marginTop + lineNum*lineHeight;
+
+	if(showAddress) *ax += addrWidth;
 
     return 0;
 }
@@ -193,8 +214,10 @@ int HexView::viewAddrToAsciiXY(uint64_t addr, int *ax, int *ay)
     int lineNum = offs / 16;
     int colNum = offs % 16;
 
-    *ax = x() + marginLeft + addrWidth + bytesWidth + colNum*charWidth;
+    *ax = x() + marginLeft + bytesWidth + colNum*charWidth;
     *ay = y() + marginTop + lineNum*lineHeight;
+
+	if(showAddress) *ax += addrWidth;
 
     return 0;
 }
@@ -218,6 +241,7 @@ void HexView::hlAdd(uint64_t left, uint64_t right)
 void HexView::hlClear(void)
 {
     hlRanges.clear();
+	autoPaletteIdx = 0;
     redraw();
 }
 
@@ -229,10 +253,6 @@ void HexView::draw(void)
     char buf[256];
     int i,x1,y1,x2,y2;
    
-    if(!bytes) {
-        return;
-    }
-
     fl_font(FL_COURIER, FL_NORMAL_SIZE);
     int r2c_bias_y = fl_height() - fl_descent();
 
@@ -240,13 +260,20 @@ void HexView::draw(void)
         left corner, but is on text's bottom left corner (which is why we have
         (line+1) */
     fl_draw_box(FL_BORDER_BOX, x(), y(), w(), h(), fl_rgb_color(255, 255, 255));
-   
     /* draw the addresses */
-    fl_color(0x00640000);
-	for(i=0; i<linesPerPage; ++i) {
-        sprintf(buf, (addrMode==32) ? "%08llX ":"%016llX ", addrViewStart+i*16);
-		fl_draw(buf, x()+marginLeft, y()+marginTop+i*lineHeight+r2c_bias_y);
-	}	
+	if(showAddress) { 
+    	fl_color(0x00640000);
+		for(i=0; i<linesPerPage; ++i) {
+	        if(addrMode==32) {
+	        	sprintf(buf, "%08llX ", addrViewStart+i*16);
+			}
+	        if(addrMode==64) {
+	        	sprintf(buf, "%16llX ", addrViewStart+i*16);
+			}
+
+			fl_draw(buf, x()+marginLeft, y()+marginTop+i*lineHeight+r2c_bias_y);
+		}
+	}
 
     /* draw the bytes */
     #define TO_RGB_COLOR(p) fl_rgb_color(((p)&0xFF0000)>>16, ((p)&0xFF00)>>8, (p&0xFF))
@@ -269,9 +296,9 @@ void HexView::draw(void)
             //printf("search hit for addr 0x%llx, color is: %X\n", addr, color);
             SET_PACKED_COLOR(color);
             fl_rectf(x1-charWidth/2, y1-1, 3*charWidth, lineHeight);
-    		//fl_draw_box(FL_ROUNDED_BOX, x1, y1-1, 3*charWidth, lineHeight, TO_RGB_COLOR(color));
-            fl_rectf(x2, y2, charWidth, lineHeight);
-    		//fl_draw_box(FL_ROUNDED_BOX, x2, y2, charWidth, lineHeight, TO_RGB_COLOR(color));
+			if(showAscii) {
+	            fl_rectf(x2, y2, charWidth, lineHeight);
+			}
         }
 
         /* selection? */
@@ -279,7 +306,9 @@ void HexView::draw(void)
             color = 0xFF00ff;
             SET_PACKED_COLOR(color);
             fl_rectf(x1, y1-1, 3*charWidth, lineHeight);
-            fl_rectf(x2, y2, charWidth, lineHeight);
+			if(showAscii) {
+	            fl_rectf(x2, y2, charWidth, lineHeight);
+			}
         }
 
         float luma = 1 - (.299*(((color)&0xFF0000)>>16) + .587*(((color)&0xFF00)>>8) + .114*(color&0xFF))/255.0; // thx stackoverflow
@@ -293,8 +322,11 @@ void HexView::draw(void)
         }
         sprintf(buf, "%02X", b[0]);
         fl_draw(buf, x1, y1+r2c_bias_y);
-        sprintf(buf, "%c", ((b[0])>=' ' && (b[0])<='~') ? (b[0]) : '.');
-        fl_draw(buf, x2, y2+r2c_bias_y);
+
+		if(showAscii) {
+	        sprintf(buf, "%c", ((b[0])>=' ' && (b[0])<='~') ? (b[0]) : '.');
+	        fl_draw(buf, x2, y2+r2c_bias_y);
+		}
     }
 
     /* draw the cursor */

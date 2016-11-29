@@ -131,9 +131,8 @@ def tagReally(fpathIn, fpathOut):
 			(oPacket, fp.tell(), tagToStr(tagId))
 
 		# certain packets we go deeper
-		if tagId == TAG_SYMKEY_ENCR_SESS_KEY:
-
-		else:
+		#if tagId == TAG_SYMKEY_ENCR_SESS_KEY:
+		#else:
 
 	fp.close()
 

@@ -45,233 +45,255 @@ string assembledBytes;
 /*****************************************************************************/
 
 /* saves the current buffer to a file
-    - path, if given (eg: for Save-As operation)
-    - current open file (eg: for Save operation)
+	- path, if given (eg: for Save-As operation)
+	- current open file (eg: for Save operation)
 */
 int file_save(const char *path)
 {
-    char *buf = NULL;
-    FILE *fp = NULL;
-    int len, rc = -1;
+	char *buf = NULL;
+	FILE *fp = NULL;
+	int len, rc = -1;
 
-    if(!path) {
-        if(!strlen(fileOpenPath)) {
-            printf("ERROR: missing save path\n");
-            goto cleanup;
-        }
-        path = fileOpenPath;
-    }
+	if(!path) {
+	    if(!strlen(fileOpenPath)) {
+	        printf("ERROR: missing save path\n");
+	        goto cleanup;
+	    }
+	    path = fileOpenPath;
+	}
 
-    printf("%s(): saving %s\n", __func__, path);
-    fp = fopen(path, "w");
-    if(!fp) {
-        printf("ERROR: fopen()\n");
-        goto cleanup;
-    }
+	printf("%s(): saving %s\n", __func__, path);
+	fp = fopen(path, "w");
+	if(!fp) {
+	    printf("ERROR: fopen()\n");
+	    goto cleanup;
+	}
 
-    buf = gui->srcBuf->text();
-    len = strlen(buf);
+	buf = gui->srcBuf->text();
+	len = strlen(buf);
 
-    printf("%s(): writing 0x%X (%d) bytes\n", __func__, len, len);
-    if(len != fwrite(buf, 1, len, fp)) {
-        printf("ERROR: fwrite()\n");
-        goto cleanup;
-    }
-    
-    rc = 0;
-    cleanup:
-    if(buf) { free(buf); buf = NULL; }
-    if(fp) { fclose(fp); fp = NULL; }
-    return rc;
+	printf("%s(): writing 0x%X (%d) bytes\n", __func__, len, len);
+	if(len != fwrite(buf, 1, len, fp)) {
+	    printf("ERROR: fwrite()\n");
+	    goto cleanup;
+	}
+	
+	rc = 0;
+	cleanup:
+	if(buf) { free(buf); buf = NULL; }
+	if(fp) { fclose(fp); fp = NULL; }
+	return rc;
 }
 
 /* unload current file
-    if path is given -> save to that path (save operation)
-    if path is not given -> just unload (close operation)
+	if path is given -> save to that path (save operation)
+	if path is not given -> just unload (close operation)
 */
 int file_unload(void)
 {
-    gui->mainWindow->label("Assembler Lab");
-    strcpy(fileOpenPath, "");
-    gui->srcBuf->text("");
+	gui->mainWindow->label("Assembler Lab");
+	strcpy(fileOpenPath, "");
+	gui->srcBuf->text("");
 
-    return 0;
+	return 0;
 }
 
 int file_load(const char *path) 
 {
-    int rc = -1;
-    unsigned char *buf = NULL;
-    size_t len;
+	int rc = -1;
+	unsigned char *buf = NULL;
+	size_t len;
 
-    FILE *fp = fopen(path, "rb");
-    if(!fp) {
-        printf("ERROR: fopen()\n");
-        goto cleanup;
-    }
+	FILE *fp = fopen(path, "rb");
+	if(!fp) {
+	    printf("ERROR: fopen()\n");
+	    goto cleanup;
+	}
 
-    fseek(fp, 0, SEEK_END);
-    len = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+	fseek(fp, 0, SEEK_END);
+	len = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
 
-    if(len == 0) {
-        gui->srcBuf->text("");
-    }
-    else {
-        buf = (unsigned char *)malloc(len+1);
-        if(!buf) {
-            printf("ERROR: malloc()\n");
-            goto cleanup;
-        }
-        buf[len] = '\0';
-    }
+	if(len == 0) {
+	    gui->srcBuf->text("");
+	}
+	else {
+	    buf = (unsigned char *)malloc(len+1);
+	    if(!buf) {
+	        printf("ERROR: malloc()\n");
+	        goto cleanup;
+	    }
+	    buf[len] = '\0';
+	}
 
-    if(len != fread(buf, 1, len, fp)) {
-        printf("ERROR: fread()\n");
-        goto cleanup;
-    }
+	if(len != fread(buf, 1, len, fp)) {
+	    printf("ERROR: fread()\n");
+	    goto cleanup;
+	}
 
-    gui->mainWindow->label(path);
-    gui->srcBuf->text((char *)buf);
-    strcpy(fileOpenPath, path);
-    rc = 0;
+	gui->mainWindow->label(path);
+	gui->srcBuf->text((char *)buf);
+	strcpy(fileOpenPath, path);
+	rc = 0;
 
-    cleanup:
+	cleanup:
 
-    if(rc) {
-        if(buf) {
-            free(buf);
-            buf = NULL;
-        }
-    }
+	if(rc) {
+	    if(buf) {
+	        free(buf);
+	        buf = NULL;
+	    }
+	}
 
-    return rc;
+	return rc;
 }
 
 /*****************************************************************************/
 /* MAIN ROUTINE */
 /*****************************************************************************/
 
-void assemble_cb(int type, const char *fileName, int lineNum, 
-    const char *message)
+void logNote(const char *msg)
 {
-    char buf[32];
+	gui->log->setColor(FL_GREEN);
+   	gui->log->append("NOTE ");
+	gui->log->setColor(FL_WHITE);
+	gui->log->append(msg);
+	gui->log->append("\n");
+}
 
-    switch(type) {
-        case LLVM_SVCS_CB_NOTE:
-            gui->log->setColor(FL_GREEN);
-            gui->log->append("NOTE ");
-            break;
-        case LLVM_SVCS_CB_WARNING:
-            gui->log->setColor(FL_YELLOW);
-            gui->log->append("WARN ");
-            break;
-        case LLVM_SVCS_CB_ERROR:
-            gui->log->setColor(FL_RED);
-            gui->log->append("ERROR ");
-            break;
-    }
+void logWarning(const char *msg)
+{
+	gui->log->setColor(FL_YELLOW);
+   	gui->log->append("WARN ");
+	gui->log->setColor(FL_WHITE);
+	gui->log->append(msg);
+	gui->log->append("\n");
+}
 
-    gui->log->setColor(FL_WHITE);
-    sprintf(buf, "line %d: ", lineNum);
-    gui->log->append(buf);
-    gui->log->append(message);
-    sprintf(buf, "\n");
-    gui->log->append(buf);
+void logError(const char *msg)
+{
+	gui->log->setColor(FL_RED);
+   	gui->log->append("ERROR ");
+	gui->log->setColor(FL_WHITE);
+	gui->log->append(msg);
+	gui->log->append("\n");
+}
+
+void assemble_cb(int type, const char *fileName, int lineNum, 
+	const char *message)
+{
+	char buf[128];
+	
+	sprintf(buf, "line %d: ", lineNum);
+
+	switch(type) {
+	    case LLVM_SVCS_CB_NOTE:
+	        logNote(buf); break;
+	    case LLVM_SVCS_CB_WARNING:
+	        logWarning(buf); break;
+	    case LLVM_SVCS_CB_ERROR:
+		default:
+	        logError(buf); break;
+	}
 }
 
 void
 assemble()
 {
-    int rc = -1;
-    char *srcText = NULL;
+	int rc = -1;
+	char *srcText = NULL;
 
-    /* assemble timing vars */
-    time_t time_now = 0;
-    int length_now = 0;
-    uint32_t crc_now = 0;
+	/* assemble timing vars */
+	time_t time_now = 0;
+	int length_now = 0;
+	uint32_t crc_now = 0;
 
-    Fl_Text_Buffer *srcBuf = gui->srcBuf;
+	Fl_Text_Buffer *srcBuf = gui->srcBuf;
 
-    srcText = srcBuf->text();
+	srcText = srcBuf->text();
 
-    if(!assemble_forced && !assemble_requested) {
-        //printf("skipping assemble, neither forced nor requested\n");
-        return;
-    }
-    
-    if(!assemble_forced && assemble_requested) {
-        /* skip if we assembled within the last second */
-        time(&time_now);
-        float delta = difftime(time_now, time_last_assemble);
-        if(delta >= 0 && delta < 1) {
-            /* just too soon, remain requested */
-            //printf("skipping assemble, too soon (now,last,diff)=(%ld,%ld,%f)\n",
-            //    time_now, time_last_assemble, difftime(time_now, time_last_assemble));
-            return;
-        }
-        else {
-            /* skip if the text is unchanged */
-            length_now = srcBuf->length();
-            if(length_last_assemble == length_now) {
-                crc_now = crc32(0, srcText, srcBuf->length());
-                if(crc_now == crc_last_assemble) {
-                    //printf("skipping assemble, buffer unchanged\n");
-                    assemble_requested = false;
-                    return;
-                }
-            }
-        }
-    }
+	if(!assemble_forced && !assemble_requested) {
+	    //printf("skipping assemble, neither forced nor requested\n");
+	    return;
+	}
+	
+	if(!assemble_forced && assemble_requested) {
+	    /* skip if we assembled within the last second */
+	    time(&time_now);
+	    float delta = difftime(time_now, time_last_assemble);
+	    if(delta >= 0 && delta < 1) {
+	        /* just too soon, remain requested */
+	        //printf("skipping assemble, too soon (now,last,diff)=(%ld,%ld,%f)\n",
+	        //    time_now, time_last_assemble, difftime(time_now, time_last_assemble));
+	        return;
+	    }
+	    else {
+	        /* skip if the text is unchanged */
+	        length_now = srcBuf->length();
+	        if(length_last_assemble == length_now) {
+	            crc_now = crc32(0, srcText, srcBuf->length());
+	            if(crc_now == crc_last_assemble) {
+	                //printf("skipping assemble, buffer unchanged\n");
+	                assemble_requested = false;
+	                return;
+	            }
+	        }
+	    }
+	}
 
-    assemble_forced = false;
-    assemble_requested = false;
-    if(crc_now) crc_last_assemble = crc_now;
-    if(time_now) time_last_assemble = time_now;
-    if(length_now) length_last_assemble = length_now;
-    
-    /* clear the log output */
-    gui->log->clear(); 
+	assemble_forced = false;
+	assemble_requested = false;
+	if(crc_now) crc_last_assemble = crc_now;
+	if(time_now) time_last_assemble = time_now;
+	if(length_now) length_last_assemble = length_now;
+	
+	/* clear the log */
+	gui->log->clear(); 
+	/* keep bytes from previous success */
+	//gui->hexView->clearBytes();
 
-    int dialect = LLVM_SVCS_DIALECT_UNSPEC;
-    if(gui->cbAtt->value()) 
-        dialect = LLVM_SVCS_DIALECT_ATT;
-    else    
-        dialect = LLVM_SVCS_DIALECT_INTEL;
+	int dialect = LLVM_SVCS_DIALECT_UNSPEC;
+	if(gui->cbAtt->value()) 
+	    dialect = LLVM_SVCS_DIALECT_ATT;
+	else    
+	    dialect = LLVM_SVCS_DIALECT_INTEL;
 
-    string assembledText, assembledErr;
+	string assembledText, assembledErr;
 
 	string abi = "none";
 	if(configTriple && strstr(configTriple, "mips")) {
+		logNote("using MCTargetOptions.abi \"eabi\" for mips");
 		abi = "eabi";
 	}
+		
+	logNote(configTriple);
 
 	vector<int> instrLengths;
 
-    if(0 != llvm_svcs_assemble(srcText, dialect, configTriple, abi, 
+	if(0 != llvm_svcs_assemble(srcText, dialect, configTriple, abi, 
 		LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_DEFAULT, assemble_cb,
 		assembledBytes, instrLengths, assembledErr)) {
-        printf("ERROR: llvm_svcs_assemble()\n");
-        printf("%s\n", assembledErr.c_str());
-        return;
-    }
+	    logError("llvm_svcs_assemble()\n");
+	    return;
+	}
 
-    /* output */
+	/* output */
 	gui->hexView->setBytes(0, (uint8_t *)(assembledBytes.c_str()), assembledBytes.size());	
 
 	int offs = 0;
 	for(auto i=instrLengths.begin(); i!=instrLengths.end(); ++i) {
+		printf("hlAdd( [%d,%d) (%d bytes) )\n", offs, offs+*i, *i);
 		gui->hexView->hlAdd(offs, offs+*i);
 		offs += *i;
 	}
 
-    rc = 0;
-    //cleanup:
-    if(srcText) {
-        free(srcText);
-        srcText = NULL;
-    }
-    return;
+	rc = 0;
+	//cleanup:
+	if(srcText) {
+	    free(srcText);
+	    srcText = NULL;
+	}
+	return;
 }
 
 /*****************************************************************************/
@@ -280,58 +302,57 @@ assemble()
 
 void open_cb(Fl_Widget *, void *)
 {
-    Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::SINGLE, "Open");
-    chooser.show();
-    while(chooser.shown()) Fl::wait();
-    if(chooser.value() == NULL) return;
-    file_load(chooser.value());
+	Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::SINGLE, "Open");
+	chooser.show();
+	while(chooser.shown()) Fl::wait();
+	if(chooser.value() == NULL) return;
+	file_load(chooser.value());
 }
 
 void new_cb(Fl_Widget *, void *) 
 {
-    /* unload any current file, clear buffer */
-    file_unload();
+	/* unload any current file, clear buffer */
+	file_unload();
 
-    /* we "new" by saving the empty text area into a file */
-    Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "New");
-    chooser.show();
-    while(chooser.shown()) Fl::wait();
-    if(chooser.value() == NULL) return;
+	/* we "new" by saving the empty text area into a file */
+	Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "New");
+	chooser.show();
+	while(chooser.shown()) Fl::wait();
+	if(chooser.value() == NULL) return;
 
-    file_save(chooser.value());
+	file_save(chooser.value());
 
 }
 
 void save_cb(Fl_Widget *, void *) 
 {
+	/* file currently open? just write it */
+	if(strlen(fileOpenPath)) {
+	    file_save(fileOpenPath);
+	}
+	/* file is not currently open, user selects a new one */
+	else {
+	    Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "Save");
+	    chooser.show();
+	    while(chooser.shown()) Fl::wait();
+	    if(chooser.value() == NULL) return;
 
-    /* file currently open? just write it */
-    if(strlen(fileOpenPath)) {
-        file_save(fileOpenPath);
-    }
-    /* file is not currently open, user selects a new one */
-    else {
-        Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "Save");
-        chooser.show();
-        while(chooser.shown()) Fl::wait();
-        if(chooser.value() == NULL) return;
+	    file_save(chooser.value());
 
-        file_save(chooser.value());
-
-        /* saved file becomes currently opened file (unlike "Save-As") */
-        strcpy(fileOpenPath, chooser.value());
-    }
+	    /* saved file becomes currently opened file (unlike "Save-As") */
+	    strcpy(fileOpenPath, chooser.value());
+	}
 }
 
 void saveas_cb(Fl_Widget *, void *) 
 {
-    Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "Save As");
-    chooser.show();
-    while(chooser.shown()) Fl::wait();
-    if(chooser.value() == NULL) return;
+	Fl_File_Chooser chooser(".", "Assembler Files (*.{s,asm})", Fl_File_Chooser::CREATE, "Save As");
+	chooser.show();
+	while(chooser.shown()) Fl::wait();
+	if(chooser.value() == NULL) return;
 
-    file_save(chooser.value());
-    /* saved file does NOT become currently opened file */
+	file_save(chooser.value());
+	/* saved file does NOT become currently opened file */
 }
 
 void close_cb(Fl_Widget *, void *) {
@@ -340,8 +361,8 @@ void close_cb(Fl_Widget *, void *) {
 }
 
 void quit_cb(Fl_Widget *, void *) {
-    file_unload();
-    gui->mainWindow->hide();
+	file_unload();
+	gui->mainWindow->hide();
 }
 
 /*****************************************************************************/
@@ -352,161 +373,151 @@ void quit_cb(Fl_Widget *, void *) {
 void
 reassemble(void)
 {
-    printf("reassemble request\n");
-    assemble_forced = true;
+	printf("reassemble request\n");
+	assemble_forced = true;
 }
 
 /* callback when the source code is changed
-    (normal callback won't trigger during text change) */
+	(normal callback won't trigger during text change) */
 void
 onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
-    const char * deletedText, void *cbArg)
+	const char * deletedText, void *cbArg)
 {
-    printf("%s()\n", __func__);
-    assemble_requested = true;
-}
-
-void
-onConfigSelection()
-{
-    configTriple = gui->icPresets->value();
-    printf("you selected: %s\n", configTriple);
-
-    string arch, vendor, os, environ, objFormat;
-    llvm_svcs_triplet_decompose(configTriple, arch, vendor, os, environ,
-        objFormat);
-
-    gui->oArch->value(arch.c_str());
-    gui->oVendor->value(vendor.c_str());
-    gui->oOs->value(os.c_str());
-    gui->oEnviron->value(environ.c_str());
-    gui->oFormat->value(objFormat.c_str());
-
-    /* with new choice, reassemble */
-    assemble_forced = true;
+	printf("%s()\n", __func__);
+	assemble_requested = true;
 }
 
 void
 onExampleSelection()
 {
-    const char *file = gui->icExamples->value();
+	const char *eg = gui->icExamples->value();
 
-    if(0==strcmp(file, "x86.s")) {
-        gui->srcBuf->text((char *)rsrc_x86_s);
-        gui->cbAtt->value(1);
-    }
-    else if(0==strcmp(file, "x86_intel.s")) {
-        gui->srcBuf->text((char *)rsrc_x86_intel_s);
-        gui->cbAtt->value(0);
-    }
-    else if(0==strcmp(file, "x86_64.s")) {
-        gui->srcBuf->text((char *)rsrc_x86_64_s);
-        gui->cbAtt->value(1);
-    }
-    else if(0==strcmp(file, "x86_64_intel.s")) {
-        gui->srcBuf->text((char *)rsrc_x86_64_intel_s);
-        gui->cbAtt->value(0);
-    }
-    else if(0==strcmp(file, "ppc32.s")) {
-        gui->srcBuf->text((char *)rsrc_ppc_s);
-    }
-    else if(0==strcmp(file, "ppc64.s")) {
-        gui->srcBuf->text((char *)rsrc_ppc64_s);
-    }
-    else if(0==strcmp(file, "arm.s")) {
-        gui->srcBuf->text((char *)rsrc_arm_s);
-    }
-    else if(0==strcmp(file, "thumb.s")) {
-        gui->srcBuf->text((char *)rsrc_thumb_s);
-    }
-    else if(0==strcmp(file, "arm64.s")) {
-        gui->srcBuf->text((char *)rsrc_arm64_s);
-    }
-    else if(0==strcmp(file, "mips.s")) {
-        gui->srcBuf->text((char *)rsrc_mips_s);
-    }
+	if(0==strcmp(eg, "i386 (at&t)")) {
+	    gui->srcBuf->text((char *)rsrc_x86_s);
+	    gui->cbAtt->value(1);
+		configTriple = "i386-none-none";
+	}
+	else if(0==strcmp(eg, "i386 (intel)")) {
+	    gui->srcBuf->text((char *)rsrc_x86_intel_s);
+	    gui->cbAtt->value(0);
+		configTriple = "i386-none-none";
+	}
+	else if(0==strcmp(eg, "x86_64 (at&t)")) {
+	    gui->srcBuf->text((char *)rsrc_x86_64_s);
+	    gui->cbAtt->value(1);
+		configTriple = "x86_64-none-none";
+	}
+	else if(0==strcmp(eg, "x86_64 (intel)")) {
+	    gui->srcBuf->text((char *)rsrc_x86_64_intel_s);
+	    gui->cbAtt->value(0);
+		configTriple = "x86_64-none-none";
+	}
+	else if(0==strcmp(eg, "powerpc")) {
+	    gui->srcBuf->text((char *)rsrc_ppc_s);
+		configTriple = "powerpc-none-none";
+	}
+	else if(0==strcmp(eg, "powerpc64")) {
+	    gui->srcBuf->text((char *)rsrc_ppc64_s);
+		configTriple = "powerpc64-none-none";
+	}
+	else if(0==strcmp(eg, "powerpc64le")) {
+	    gui->srcBuf->text((char *)rsrc_ppc64_s);
+		configTriple = "powerpc64le-none-none";
+	}
+	else if(0==strcmp(eg, "arm")) {
+	    gui->srcBuf->text((char *)rsrc_arm_s);
+		configTriple = "arm-none-none-eabi";
+	}
+	else if(0==strcmp(eg, "thumb")) {
+	    gui->srcBuf->text((char *)rsrc_thumb_s);
+		configTriple = "thumb-none-none";
+	}
+	else if(0==strcmp(eg, "aarch64")) {
+	    gui->srcBuf->text((char *)rsrc_arm64_s);
+		configTriple = "aarch64-none-none-eabi";
+	}
+	else if(0==strcmp(eg, "mips")) {
+	    gui->srcBuf->text((char *)rsrc_mips_s);
+		configTriple = "mips-pc-eabi";
+	}
+
+	string arch, vendor, os, environ, objFormat;
+	llvm_svcs_triplet_decompose(configTriple, arch, vendor, os, environ,
+	    objFormat);
+	gui->oArch->value(arch.c_str());
+	gui->oVendor->value(vendor.c_str());
+	gui->oOs->value(os.c_str());
+	gui->oEnviron->value(environ.c_str());
+	gui->oFormat->value(objFormat.c_str());
+
+	assemble_forced = true;
 }
 
 void
 onDialectChange()
 {
-    int state = gui->cbAtt->value();
-    printf("new at&t check state: %d\n", state);
-    assemble_forced = true;
+	int state = gui->cbAtt->value();
+	printf("new at&t check state: %d\n", state);
+	assemble_forced = true;
 }
 
 void
 onGuiFinished(AlabGui *gui_)
 {
-    printf("%s()\n", __func__);
-    int rc = -1;
+	printf("%s()\n", __func__);
+	int rc = -1;
 
-    gui = gui_;
+	gui = gui_;
 
-    /* menu bar */
-    static Fl_Menu_Item menuItems[] = {
-        { "&File",            0, 0, 0, FL_SUBMENU },
-        { "&New",        0, (Fl_Callback *)new_cb },
-        { "&Open",    FL_COMMAND + 'o', (Fl_Callback *)open_cb, 0, FL_MENU_DIVIDER },
+	/* menu bar */
+	static Fl_Menu_Item menuItems[] = {
+	    { "&File",            0, 0, 0, FL_SUBMENU },
+	    { "&New",        0, (Fl_Callback *)new_cb },
+	    { "&Open",    FL_COMMAND + 'o', (Fl_Callback *)open_cb, 0, FL_MENU_DIVIDER },
 //        { "&Insert File...",  FL_COMMAND + 'i', (Fl_Callback *)insert_cb, 0, FL_MENU_DIVIDER },
-        { "&Save",       FL_COMMAND + 's', (Fl_Callback *)save_cb },
-        { "Save &As...", FL_COMMAND + FL_SHIFT + 's', (Fl_Callback *)saveas_cb, 0, FL_MENU_DIVIDER },
-        { "&Close",           FL_COMMAND + 'w', (Fl_Callback *)close_cb, 0, FL_MENU_DIVIDER },
-        { "E&xit",            FL_COMMAND + 'q', (Fl_Callback *)quit_cb, 0 },
-        { 0 }
-    };
-    
-    gui->menuBar->copy(menuItems);
+	    { "&Save",       FL_COMMAND + 's', (Fl_Callback *)save_cb },
+	    { "Save &As...", FL_COMMAND + FL_SHIFT + 's', (Fl_Callback *)saveas_cb, 0, FL_MENU_DIVIDER },
+	    { "&Close",           FL_COMMAND + 'w', (Fl_Callback *)close_cb, 0, FL_MENU_DIVIDER },
+	    { "E&xit",            FL_COMMAND + 'q', (Fl_Callback *)quit_cb, 0 },
+	    { 0 }
+	};
+	
+	gui->menuBar->copy(menuItems);
 
-    /* initial input choices */
-    gui->icExamples->add("x86_intel.s");
-    gui->icExamples->add("x86.s");
-    gui->icExamples->add("x86_64_intel.s");
-    gui->icExamples->add("x86_64.s");
-    gui->icExamples->add("ppc32.s");
-    gui->icExamples->add("ppc64.s");
-    gui->icExamples->add("arm.s");
-    gui->icExamples->add("thumb.s");
-    gui->icExamples->add("arm64.s");
-    gui->icExamples->add("mips.s");
-    gui->icExamples->value(0);
-    gui->cbAtt->value(0);
-    onExampleSelection();
+	// can test triples with:
+	// clang -S -c -target ppc32le-apple-darwin hello.c
+	// see also lib/Support/Triple.cpp in llvm source
+	// see also http://clang.llvm.org/docs/CrossCompilation.html
+	// TODO: add the default machine config */
+	const char *examples[11] = { "i386 (at&t)", "i386 (intel)", "x86_64 (at&t)",
+		"x86_64 (intel)", "arm", "thumb", "aarch64", "powerpc", "powerpc64",
+		"powerpc64le", "mips" };
+	for(int i=0; i<11; ++i) {
+		gui->icExamples->add(examples[i]);
+	}
+	gui->icExamples->value(0);
+	onExampleSelection();
 
-    // can test triples with:
-    // clang -S -c -target ppc32le-apple-darwin hello.c
-    // see also lib/Support/Triple.cpp in llvm source
-    // see also http://clang.llvm.org/docs/CrossCompilation.html
-    // TODO: add the default machine config */
-    gui->icPresets->add("i386-none-none");
-    gui->icPresets->add("x86_64-none-none");
-    gui->icPresets->add("arm-none-none-eabi");
-    gui->icPresets->add("thumb-none-none");
-    gui->icPresets->add("aarch64-none-none-eabi");
-    gui->icPresets->add("powerpc-none-none");
-    gui->icPresets->add("powerpc64-none-none");
-    gui->icPresets->add("powerpc64le-none-none");
-    gui->icPresets->add("mips-pc-eabi");
-    /* start it at the 0'th value */
-    gui->icPresets->value(0);
-    /* pretend the user did it */
-    onConfigSelection();
+	rc = 0;
+	//cleanup:
+	return;
+}
 
-    assemble_forced = true;
-
-    rc = 0;
-    //cleanup:
-    return;
+void
+onBtnTest()
+{
+	printf("clicked test!\n");
+	gui->hexView->clearBytes();
 }
 
 void
 onIdle(void *data)
 {
-    assemble();
+	assemble();
 }
 
 void
 onExit(void)
 {
-    printf("onExit()\n");
+	printf("onExit()\n");
 }

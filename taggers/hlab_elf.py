@@ -16,6 +16,14 @@ ELFCLASSNUM = 3
 ELFDATANONE = 0
 ELFDATA2LSB = 1
 ELFDATA2MSB = 2
+def ei_data_tostr(t):
+	lookup = { ELFDATANONE:'NONE', ELFDATA2LSB:'LSB (little-end)', 
+		ELFDATA2MSB:'MSB (big-end)' }
+
+	if t in lookup:
+		return lookup[t]
+	else:
+		return 'UNKNOWN'
 
 EV_NONE = 0
 EV_CURRENT = 1
@@ -278,7 +286,7 @@ def isElf(fp):
 	if not (elfClass in [ELFCLASS32, ELFCLASS64]):
 		return False
 	eiData = unpack('B', fp.read(1))[0] # e_ident[EI_DATA]
-	if not eiData in [ELFDATA2LSB]:
+	if not eiData in [ELFDATA2LSB, ELFDATA2MSB]:
 		return False
 	eiVersion = unpack('B', fp.read(1))[0]
 	if not (eiVersion in [EV_CURRENT]): # e_ident[EI_VERSION]

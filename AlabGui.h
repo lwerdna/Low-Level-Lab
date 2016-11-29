@@ -8,10 +8,10 @@
 #include "Fl_Text_Display_Log.h"
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Menu_Bar.H>
-#include <FL/Fl_Group.H>
 #include <FL/Fl_Output.H>
 #include <FL/Fl_Input_Choice.H>
 #include <FL/Fl_Check_Button.H>
+#include <FL/Fl_Button.H>
 
 class AlabGui {
 public:
@@ -24,11 +24,6 @@ public:
   Fl_Output *oOs;
   Fl_Output *oEnviron;
   Fl_Output *oFormat;
-  Fl_Input_Choice *icPresets;
-private:
-  inline void cb_icPresets_i(Fl_Input_Choice*, void*);
-  static void cb_icPresets(Fl_Input_Choice*, void*);
-public:
   Fl_Output *oVendor;
   Fl_Input_Choice *icExamples;
 private:
@@ -42,6 +37,10 @@ private:
   static void cb_cbAtt(Fl_Check_Button*, void*);
 public:
   HexView *hexView;
+private:
+  inline void cb_test_i(Fl_Button*, void*);
+  static void cb_test(Fl_Button*, void*);
+public:
   Fl_Text_Buffer *srcBuf; 
 };
 #endif

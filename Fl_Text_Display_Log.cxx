@@ -49,7 +49,7 @@ Fl_Text_Display_Log::Fl_Text_Display_Log(int x, int y, int w, int h):
     color(fl_rgb_color(0,0,0));
 
     Fl_Text_Display::buffer(m_textBuf);
-    Fl_Text_Display::highlight_data(m_styleBuf, zzz, 3, 'Z', NULL, NULL);
+    Fl_Text_Display::highlight_data(m_styleBuf, zzz, 8, 'Z', NULL, NULL);
 }
 
 void Fl_Text_Display_Log::setColor(int color)

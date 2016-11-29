@@ -3,13 +3,6 @@
 #include "AlabGui.h"
 #include "AlabLogic.h"
 
-void AlabGui::cb_icPresets_i(Fl_Input_Choice*, void*) {
-  onConfigSelection();
-}
-void AlabGui::cb_icPresets(Fl_Input_Choice* o, void* v) {
-  ((AlabGui*)(o->parent()->parent()->user_data()))->cb_icPresets_i(o,v);
-}
-
 void AlabGui::cb_icExamples_i(Fl_Input_Choice*, void*) {
   onExampleSelection();
 }
@@ -22,6 +15,13 @@ void AlabGui::cb_cbAtt_i(Fl_Check_Button*, void*) {
 }
 void AlabGui::cb_cbAtt(Fl_Check_Button* o, void* v) {
   ((AlabGui*)(o->parent()->user_data()))->cb_cbAtt_i(o,v);
+}
+
+void AlabGui::cb_test_i(Fl_Button*, void*) {
+  onBtnTest();
+}
+void AlabGui::cb_test(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_test_i(o,v);
 }
 
 Fl_Double_Window* AlabGui::make_window() {
@@ -46,40 +46,31 @@ Fl_Double_Window* AlabGui::make_window() {
       srcBuf->text("testes");
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor_Asm* srcCode
-    { Fl_Group* o = new Fl_Group(276, 39, 750, 57, "Configuration String / Triple / Triplet:");
-      o->box(FL_BORDER_BOX);
-      o->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      { oArch = new Fl_Output(507, 66, 84, 24, "arch:");
-        oArch->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      } // Fl_Output* oArch
-      { oSubArch = new Fl_Output(593, 66, 84, 24, "subarch:");
-        oSubArch->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      } // Fl_Output* oSubArch
-      { oOs = new Fl_Output(765, 66, 84, 24, "os:");
-        oOs->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      } // Fl_Output* oOs
-      { oEnviron = new Fl_Output(851, 66, 84, 24, "environ:");
-        oEnviron->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      } // Fl_Output* oEnviron
-      { oFormat = new Fl_Output(937, 66, 84, 24, "format:");
-        oFormat->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      } // Fl_Output* oFormat
-      { icPresets = new Fl_Input_Choice(282, 66, 221, 24, "presets:");
-        icPresets->callback((Fl_Callback*)cb_icPresets);
-        icPresets->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      } // Fl_Input_Choice* icPresets
-      { oVendor = new Fl_Output(679, 66, 84, 24, "vendor:");
-        oVendor->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-      } // Fl_Output* oVendor
-      o->end();
-    } // Fl_Group* o
-    { icExamples = new Fl_Input_Choice(5, 39, 259, 24, "examples:");
+    { oArch = new Fl_Output(238, 39, 60, 23, "arch:");
+      oArch->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    } // Fl_Output* oArch
+    { oSubArch = new Fl_Output(300, 39, 60, 23, "subarch:");
+      oSubArch->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    } // Fl_Output* oSubArch
+    { oOs = new Fl_Output(424, 39, 60, 23, "os:");
+      oOs->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    } // Fl_Output* oOs
+    { oEnviron = new Fl_Output(486, 39, 60, 23, "environ:");
+      oEnviron->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    } // Fl_Output* oEnviron
+    { oFormat = new Fl_Output(548, 39, 60, 23, "format:");
+      oFormat->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    } // Fl_Output* oFormat
+    { oVendor = new Fl_Output(362, 39, 60, 23, "vendor:");
+      oVendor->align(Fl_Align(FL_ALIGN_TOP_LEFT));
+    } // Fl_Output* oVendor
+    { icExamples = new Fl_Input_Choice(5, 39, 227, 24, "examples:");
       icExamples->callback((Fl_Callback*)cb_icExamples);
       icExamples->align(Fl_Align(FL_ALIGN_TOP_LEFT));
     } // Fl_Input_Choice* icExamples
     { log = new Fl_Text_Display_Log(4, 612, 1063, 96);
       log->box(FL_DOWN_FRAME);
-      log->color(FL_BACKGROUND2_COLOR);
+      log->color(FL_FOREGROUND_COLOR);
       log->selection_color(FL_SELECTION_COLOR);
       log->labeltype(FL_NORMAL_LABEL);
       log->labelfont(0);
@@ -88,7 +79,7 @@ Fl_Double_Window* AlabGui::make_window() {
       log->align(Fl_Align(FL_ALIGN_TOP));
       log->when(FL_WHEN_RELEASE);
     } // Fl_Text_Display_Log* log
-    { cbAtt = new Fl_Check_Button(176, 65, 28, 28, "at&&t syntax");
+    { cbAtt = new Fl_Check_Button(612, 35, 28, 28, "at&&t syntax");
       cbAtt->down_box(FL_DOWN_BOX);
       cbAtt->callback((Fl_Callback*)cb_cbAtt);
     } // Fl_Check_Button* cbAtt
@@ -103,6 +94,9 @@ Fl_Double_Window* AlabGui::make_window() {
       hexView->align(Fl_Align(FL_ALIGN_CENTER));
       hexView->when(FL_WHEN_RELEASE);
     } // HexView* hexView
+    { Fl_Button* o = new Fl_Button(16, 68, 28, 28, "test");
+      o->callback((Fl_Callback*)cb_test);
+    } // Fl_Button* o
     mainWindow->end();
   } // Fl_Double_Window* mainWindow
   srcCode->linenumber_width(24);

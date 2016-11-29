@@ -33,6 +33,8 @@ class HexView : public Fl_Widget {
     void setView();
     void setSelection(uint64_t start, uint64_t end);
     void clearBytes(void);
+	void setShowAddress(bool);
+	void setShowAscii(bool);
     int handle(int event);
     void draw();
     void resize(int, int, int, int);
@@ -71,6 +73,9 @@ class HexView : public Fl_Widget {
     int marginLeft, marginRight, marginTop, marginBottom;
     int viewWidth, viewHeight;
     int lineWidth, lineHeight;
+
+	bool showAddress=true;
+	bool showAscii=true;
 
     int bytesPerLine;
     int cursorOffs;

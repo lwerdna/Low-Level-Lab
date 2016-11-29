@@ -118,8 +118,8 @@ asm_output_to_instr_counts(const char *asmText, vector<int> &result)
 
 	for(; cur<stop; cur++) {
 		/* if an encoding block */
-		if(0==strncmp(cur,"# encoding: [", 13)) {
-			cur += 13;
+		if(0==strncmp(cur," encoding: [", 12)) {
+			cur += 12;
 
 			int instrSize = 0;
 
@@ -165,6 +165,8 @@ obj_output_to_bytes(const char *data, string &result)
 	int rc = -1;
 
 	int codeOffset=0, codeSize = 0;
+
+	/* Mach-O */
 	if(*(uint32_t *)data == 0xFEEDFACF) {
 		unsigned int idx = 0;
 		idx += 0x20; /* skip mach_header_64 to first command */
@@ -176,11 +178,21 @@ obj_output_to_bytes(const char *data, string &result)
 		codeOffset = scn_offset;
 		codeSize = scn_size;
 	}
+	/* 32-bit ELF */
 	else if(0==memcmp(data, "\x7F" "ELF\x01\x01\x01\x00", 8)) {
 		/* assume four sections: NULL, .strtab, .text, .symtab */
 		uint32_t e_shoff = *(uint32_t *)(data + 0x20);
 		uint32_t sh_offset = *(uint32_t *)(data + e_shoff + 2*0x28 + 0x10); /* second shdr */
 		uint32_t sh_size = *(uint32_t *)(data + e_shoff + 2*0x28 + 0x14); /* second shdr */
+		codeOffset = sh_offset;
+		codeSize = sh_size;
+	}
+	/* 64-bit ELF */
+	else if(0==memcmp(data, "\x7F" "ELF\x02\x01\x01\x00", 8)) {
+		/* assume text is third section (eg: NULL, .strtab, .text) */
+		uint64_t e_shoff = *(uint64_t *)(data + 0x28);
+		uint64_t sh_offset = *(uint64_t *)(data + e_shoff + 2*0x40 + 0x18); /* second shdr */
+		uint64_t sh_size = *(uint64_t *)(data + e_shoff + 2*0x40 + 0x20); /* second shdr */
 		codeOffset = sh_offset;
 		codeSize = sh_size;
 	}
@@ -387,10 +399,8 @@ llvm_svcs_assemble(
 		true /* ShowInst (show encoding) */
 	);
 
-	rc = invoke_llvm_parsers(target, srcMgr, *context, *streamer, *asmInfo, 
-		*subTargetInfo, *instrInfo, targetOpts, dialect);
-
-	if(rc) {
+	if(invoke_llvm_parsers(target, srcMgr, *context, *streamer, *asmInfo, 
+	  *subTargetInfo, *instrInfo, targetOpts, dialect)) {
 		strErr = "invoking llvm parsers\n";
 		goto cleanup;
 	}
@@ -398,17 +408,17 @@ llvm_svcs_assemble(
 	/* flush the FRO (formatted raw ostream) */
 	fro.flush();
 
-	//printf("got back:\n%s", asmOut.c_str());
+	printf("got back:\n%s", asmOut.c_str());
 
-	rc = asm_output_to_instr_counts(asmOut.c_str(), instrLengths);
-	if(rc != 0) {
+	if(asm_output_to_instr_counts(asmOut.c_str(), instrLengths)) {
 		strErr = "couldn't parse instruction lengths\n";
 		goto cleanup;
 	}
 
-	//for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
-	//	printf("%d\n", *i);
-	//}
+	printf("here're the instruciton lengths:\n");
+	for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
+		printf("%d\n", *i);
+	}	
 
 	/*************************************************************************/
 	/* assemble to object by creating a new streamer */
@@ -434,29 +444,26 @@ llvm_svcs_assemble(
         false /* DWARFMustBeAtTheEnd */
     );
 
-	rc = invoke_llvm_parsers(target, srcMgr, *context, *streamer, *asmInfo, 
-		*subTargetInfo, *instrInfo, targetOpts, dialect);
-
-	if(rc) {
+	if(invoke_llvm_parsers(target, srcMgr, *context, *streamer, *asmInfo, 
+	  *subTargetInfo, *instrInfo, targetOpts, dialect)) {
 		strErr = "invoking llvm parsers\n";
 		goto cleanup;
 	}
+
+	/* dump to file for debugging */
+	FILE *fp;
+	fp = fopen("out.bin", "wb");
+	fwrite(smallString.data(), 1, smallString.size(), fp);
+	fclose(fp);
 
 	if(obj_output_to_bytes(smallString.data(), instrBytes)) {
 		strErr = "parsing bytes from LLVM obj\n";
 		goto cleanup;
 	}
 	
-	/* dump to file for debugging */
-	//FILE *fp;
-	//fp = fopen("out.bin", "wb");
-	//fwrite(smallString.data(), 1, smallString.size(), fp);
-	//fclose(fp);
-
-	//dump_bytes((unsigned char *)(instrBytes.c_str()), instrBytes.size(), 0);
-
 	rc = 0;
 	cleanup:
+	printf("%s() returns %d\n", __func__, rc);
 	return rc;
 }
 
