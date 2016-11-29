@@ -29,10 +29,10 @@ HexView::HexView(int x_, int y_, int w, int h, const char *label):
     bytesPerLine = 16;
 
     addrWidth32 = lineHeight = 0;
-    fl_measure("DEADBEEF: ", addrWidth32, lineHeight); 
+    fl_measure("DEADBEEF ", addrWidth32, lineHeight); 
 
     addrWidth64 = lineHeight = 0;
-    fl_measure("DEADBEEFCAFEBABE: ", addrWidth64, lineHeight);
+    fl_measure("DEADBEEFCAFEBABE ", addrWidth64, lineHeight);
 
     charWidth = lineHeight = 0;
     fl_measure("_", charWidth, lineHeight); 
@@ -171,19 +171,6 @@ void HexView::setSelection(uint64_t start, uint64_t end)
 /*****************************************************************************/
 /* drawing helpers */
 /*****************************************************************************/
-int HexView::viewAddrToAddressesXY(uint64_t addr, int *ax, int *ay)
-{
-    if(addr < addrViewStart || addr >= addrViewEnd) return -1;
-
-    int offs = addr - addrViewStart;
-    int lineNum = offs / 16;
-
-    *ax = x() + marginLeft;
-    *ay = y() + marginTop + lineNum*lineHeight;
-
-    return 0;
-}
-
 int HexView::viewAddrToBytesXY(uint64_t addr, int *ax, int *ay)
 {
     if(addr < addrViewStart || addr >= addrViewEnd) return -1;
@@ -233,7 +220,7 @@ void HexView::hlClear(void)
 void HexView::draw(void)
 {
     char buf[256];
-    int x1,y1,x2,y2;
+    int i,x1,y1,x2,y2;
    
     if(!bytes) {
         return;
@@ -245,23 +232,14 @@ void HexView::draw(void)
     /* note that the point you specify to draw at (x,y) is 0,0 on screen's top
         left corner, but is on text's bottom left corner (which is why we have
         (line+1) */
-
     fl_draw_box(FL_BORDER_BOX, x(), y(), w(), h(), fl_rgb_color(255, 255, 255));
    
     /* draw the addresses */
     fl_color(0x00640000);
-
-    for(uint64_t addr=addrViewStart; addr<addrViewEnd; addr+=16) {
-        viewAddrToAddressesXY(addr, &x1, &y1);
-        if(addrMode == 32) {
-            sprintf(buf, "%08llX: ", addr);
-        }
-        else if(addrMode == 64) {
-            sprintf(buf, "%016llX: ", addr);
-        }
-       
-        fl_draw(buf, x1, y1+r2c_bias_y);
-    }
+	for(i=0; i<linesPerPage; ++i) {
+        sprintf(buf, (addrMode==32) ? "%08llX ":"%016llX ", addrViewStart+i*16);
+		fl_draw(buf, x()+marginLeft, y()+marginTop+i*lineHeight+r2c_bias_y);
+	}	
 
     /* draw the bytes */
     #define TO_RGB_COLOR(p) fl_rgb_color(((p)&0xFF0000)>>16, ((p)&0xFF00)>>8, (p&0xFF))
