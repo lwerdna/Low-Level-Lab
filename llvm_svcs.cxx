@@ -108,7 +108,7 @@ map_reloc_mode(int relocMode)
 }
 
 int
-asm_output_to_instr_counts(const char *asmText, vector<int> &result)
+asm_output_to_instr_lengths(const char *asmText, vector<int> &result)
 {
 	int rc = -1;
 	result.clear();
@@ -124,19 +124,26 @@ asm_output_to_instr_counts(const char *asmText, vector<int> &result)
 			int instrSize = 0;
 
 			while(1) {
-				/* parse byte or placeholder */
+				/* parse byte eg: "encoding: [0x70,0x47]" */
 				if(0 == strncmp(cur,"0x", 2)) {
-					cur += 4; /* skip 0x?? */
+					/* special case eg: "encoding: [A,0xe0'A'] */
+					if(0==strncmp(cur+4,"'A'", 3)) {
+						cur += 7; /* skip 0x??'A' */
+					}
+					else {
+						cur += 4; /* skip 0x?? */
+					}
 				}
+				/* parse placeholder eg: "encoding: [A]" */
 				else if(cur[0]=='A') {
+					instrSize += 1;
 					cur += 1; /* skip A */
 				}
 				else {
 					//printf("ERROR: expected a 0x?? format byte or A placeholder\n");
 					goto cleanup;
 				}
-
-				/* increment instruction size */
+						
 				instrSize += 1;
 
 				/* is encoding block over? */
@@ -428,17 +435,17 @@ llvm_svcs_assemble(
 	/* flush the FRO (formatted raw ostream) */
 	fro.flush();
 
-	//printf("got back:\n%s", asmOut.c_str());
+	printf("got back:\n%s", asmOut.c_str());
 
-	if(asm_output_to_instr_counts(asmOut.c_str(), instrLengths)) {
+	if(asm_output_to_instr_lengths(asmOut.c_str(), instrLengths)) {
 		strErr = "couldn't parse instruction lengths\n";
 		goto cleanup;
 	}
 
-	//printf("here're the instruction lengths:\n");
-	//for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
-	//	printf("%d\n", *i);
-	//}	
+	printf("here're the instruction lengths:\n");
+	for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
+		printf("%d\n", *i);
+    }	
 
 	/*************************************************************************/
 	/* assemble to object by creating a new streamer */

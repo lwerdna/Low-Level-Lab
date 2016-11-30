@@ -260,9 +260,9 @@ assemble()
 	/* triplet */
 	char triplet[128] = {'\0'};
 	strcat(triplet, gui->iArch->value());
-	if(gui->iSubArch->size()) {
-		strcat(triplet, gui->iSubArch->value());
-	}
+	//if(gui->iSubArch->size()) {
+	//	strcat(triplet, gui->iSubArch->value());
+	//}
 	if(gui->iVendor->size()) {
 		strcat(triplet, "-");
 		strcat(triplet, gui->iVendor->value());
@@ -291,9 +291,10 @@ assemble()
 	vector<int> instrLengths;
 
 	if(0 != llvm_svcs_assemble(srcText, dialect, triplet, abi, 
-		LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_DEFAULT, assemble_cb,
-		assembledBytes, instrLengths, assembledErr)) {
-	    logError("llvm_svcs_assemble()\n");
+	  LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_DEFAULT, assemble_cb,
+	  assembledBytes, instrLengths, assembledErr)) {
+	    logError("llvm_svcs_assemble()");
+		logError(assembledErr.c_str());
 	    return;
 	}
 
@@ -447,15 +448,15 @@ onExampleSelection()
 	}
 	else if(0==strcmp(eg, "arm")) {
 	    gui->srcBuf->text((char *)rsrc_arm_s);
-		triplet = "arm-none-none-eabi";
+		triplet = "armv7-none-none";
 	}
 	else if(0==strcmp(eg, "thumb")) {
 	    gui->srcBuf->text((char *)rsrc_thumb_s);
-		triplet = "thumb-none-none";
+		triplet = "thumbv7-none-none";
 	}
 	else if(0==strcmp(eg, "aarch64")) {
 	    gui->srcBuf->text((char *)rsrc_arm64_s);
-		triplet = "aarch64-none-none-eabi";
+		triplet = "aarch64-none-none";
 	}
 	else if(0==strcmp(eg, "mips")) {
 	    gui->srcBuf->text((char *)rsrc_mips_s);
@@ -465,6 +466,8 @@ onExampleSelection()
 	string arch, subarch, vendor, os, environ, objFormat;
 	llvm_svcs_triplet_decompose(triplet, arch, subarch, vendor, os, environ,
 	    objFormat);
+	printf("yes arch was: %s\n", arch.c_str());
+	printf("yes subarch was: %s\n", subarch.c_str());
 	gui->iArch->value(arch.c_str());
 	gui->iSubArch->value(subarch.c_str());
 	gui->iVendor->value(vendor.c_str());
