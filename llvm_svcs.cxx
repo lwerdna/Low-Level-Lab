@@ -1,4 +1,8 @@
-/* abstract away LLVM details from the rest of LLL */
+/* abstract away LLVM details from the rest of LLL 
+
+	anything starting with "llvm_svcs" is a public API
+	anything else is internal use
+*/
 
 /* c++ includes */
 #include <map>
@@ -7,30 +11,27 @@
 using namespace std;
 
 /* llvm includes */
+/* note that at least in 4.0.0 and onward, much gets moved to llvm/MC/MCParser/ */
 #include <llvm/MC/MCAsmBackend.h>
 #include <llvm/MC/MCAsmInfo.h>
 #include <llvm/MC/MCContext.h>
+#include <llvm/MC/MCDisassembler.h>
 #include <llvm/MC/MCInstPrinter.h>
 #include <llvm/MC/MCInstrInfo.h>
 #include <llvm/MC/MCObjectFileInfo.h>
-#include <llvm/MC/MCParser/AsmLexer.h>
-#define DIALECT_ATT 0
-#define DIALECT_INTEL 1
-
-/* note that at least in 4.0.0 and onward, this gets moved to llvm/MC/MCParser/ */
-#include <llvm/MC/MCTargetAsmParser.h>
 #include <llvm/MC/MCRegisterInfo.h>
 #include <llvm/MC/MCSectionMachO.h>
 #include <llvm/MC/MCStreamer.h>
 #include <llvm/MC/MCSubtargetInfo.h>
+#include <llvm/MC/MCTargetAsmParser.h>
 #include <llvm/MC/MCTargetOptionsCommandFlags.h>
+#include <llvm/MC/MCParser/AsmLexer.h>
+
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Compression.h>
 #include <llvm/Support/FileUtilities.h>
 #include <llvm/Support/FormattedStream.h>
-
 #include <llvm/Support/Host.h> // for getDefaultTargetTriple();
-
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/PrettyStackTrace.h>
@@ -40,6 +41,9 @@ using namespace std;
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/ToolOutputFile.h>
 
+#define DIALECT_ATT 0
+#define DIALECT_INTEL 1
+
 /* autils */
 extern "C" {
 #include <autils/output.h>
@@ -48,32 +52,84 @@ extern "C" {
 /* local includes */
 #include "llvm_svcs.h"
 
-/* source manager diagnostics handler
-	(instead of printing to stderr) */
-/* we set LLVM's callback to this thunk which then calls the user
-	requested callback, hiding LLVM details */
-static 
+/*****************************************************************************/
+/* MISCELLANY */
+/*****************************************************************************/
+
 void
-diag_cb(const SMDiagnostic &diag, void *param)
+llvm_svcs_init(void)
 {
-	if(!param) return;
+	llvm::InitializeAllTargetInfos();
+	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllAsmParsers();
+	llvm::InitializeAllDisassemblers();
+}
 
-	#ifdef __GNUC__
-	__extension__
-	#endif
-	llvm_svcs_assemble_cb_type pfunc = (llvm_svcs_assemble_cb_type)param;
+/* references:
+	http://clang.llvm.org/docs/CrossCompilation.html
+	<llvm_source>/include/llvm/ADT/Triple.h
+*/
+void
+llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
+	string &vendor, string &os, string &environ, string &objFormat)
+{
+	//spec = llvm::sys::getDefaultTargetTriple();
+	//std::string machSpec = "x86_64-apple-darwin14.5.0";
+	//std::string machSpec = "x86_64-apple-darwin";
+	//std::string machSpec = "x86_64-thumb-linux-gnu";
+	//std::string machSpec = "x86_64-unknown-linux-gnu";
+	Triple trip(triplet);
 
-	int k;
-	switch(diag.getKind()) {
-		case SourceMgr::DK_Note: k=LLVM_SVCS_CB_NOTE; break;
-		case SourceMgr::DK_Warning: k=LLVM_SVCS_CB_WARNING; break;
-		case SourceMgr::DK_Error: k=LLVM_SVCS_CB_ERROR; break;
+	/* FIRST component is <arch><subarch> 
+		eg: x86,arm,thumb,mips,... */
+	arch = trip.getArchName();
+
+	/* sub architecture
+		eg: v5,v6m,v7a,v7m,... */
+	switch(trip.getSubArch()) {
+		case llvm::Triple::NoSubArch: subarch=""; break;
+   		case llvm::Triple::ARMSubArch_v8_2a: subarch="v8_2a"; break;
+		case llvm::Triple::ARMSubArch_v8_1a: subarch="v8_1a"; break;
+		case llvm::Triple::ARMSubArch_v8: subarch="v8"; break;
+		case llvm::Triple::ARMSubArch_v7: subarch="v7"; break;
+		case llvm::Triple::ARMSubArch_v7em: subarch="v7em"; break;
+		case llvm::Triple::ARMSubArch_v7m: subarch="v7m"; break;
+		case llvm::Triple::ARMSubArch_v7s: subarch="v7s"; break;
+		case llvm::Triple::ARMSubArch_v7k: subarch="v7k"; break;
+		case llvm::Triple::ARMSubArch_v6: subarch="v6"; break;
+		case llvm::Triple::ARMSubArch_v6m: subarch="v6m"; break;
+		case llvm::Triple::ARMSubArch_v6k: subarch="v6k"; break;
+		case llvm::Triple::ARMSubArch_v6t2: subarch="v6t2"; break;
+		case llvm::Triple::ARMSubArch_v5: subarch="v5"; break;
+		case llvm::Triple::ARMSubArch_v5te: subarch="v5te"; break;
+		case llvm::Triple::ARMSubArch_v4t: subarch="v4t"; break;
+		case llvm::Triple::KalimbaSubArch_v3: subarch="v3"; break;
+		case llvm::Triple::KalimbaSubArch_v4: subarch="v4"; break;
+		case llvm::Triple::KalimbaSubArch_v5: subarch="v5"; break;
 	}
 
-	// call back back to llvm_svcs user
-	string fileName = diag.getFilename().str();
-	string message = diag.getMessage().str();
-	pfunc(k, fileName.c_str(), diag.getLineNo(), message.c_str()); 
+	/* SECOND component is <vendor> 
+		eg: pc,apple,nvidia,ibm,... */
+	vendor = trip.getVendorName();
+
+	/* THIRD component is <sys> or <os> 
+		eg: none,linux,win32,darwin,cuda,... */
+	os = trip.getOSName();
+
+	/* FOURTH component is <environment> or <abi> 
+		eg: eabi,gnu,android.macho,elf,... */
+	environ = trip.getEnvironmentName();
+
+	/* this is not part of the triplet, just trivia about what object format
+		will be used to contain the code */
+	Triple::ObjectFormatType oft = trip.getObjectFormat();
+
+	switch(oft) {
+		case Triple::COFF: objFormat = "coff"; break;
+		case Triple::ELF: objFormat = "elf"; break;
+		case Triple::MachO: objFormat = "MachO"; break;
+		case Triple::UnknownObjectFormat: objFormat = "unknown"; break;
+	}
 }
 
 /* map LLVM services code model to LLVM code model
@@ -107,64 +163,9 @@ map_reloc_mode(int relocMode)
 	}
 }
 
-int
-asm_output_to_instr_lengths(const char *asmText, vector<int> &result)
-{
-	int rc = -1;
-	result.clear();
-
-	const char *cur = asmText;
-	const char *stop = cur+strlen(asmText);
-
-	for(; cur<stop; cur++) {
-		/* if an encoding block */
-		if(0==strncmp(cur," encoding: [", 12)) {
-			cur += 12;
-
-			int instrSize = 0;
-
-			while(1) {
-				/* parse byte eg: "encoding: [0x70,0x47]" */
-				if(0 == strncmp(cur,"0x", 2)) {
-					/* special case eg: "encoding: [A,0xe0'A'] */
-					if(0==strncmp(cur+4,"'A'", 3)) {
-						cur += 7; /* skip 0x??'A' */
-					}
-					else {
-						cur += 4; /* skip 0x?? */
-					}
-				}
-				/* parse placeholder eg: "encoding: [A]" */
-				else if(cur[0]=='A') {
-					instrSize += 1;
-					cur += 1; /* skip A */
-				}
-				else {
-					//printf("ERROR: expected a 0x?? format byte or A placeholder\n");
-					goto cleanup;
-				}
-						
-				instrSize += 1;
-
-				/* is encoding block over? */
-				if(*cur==']') {
-					break;
-				} else if(*cur==',') {
-					cur++;
-				} else {
-					//printf("ERROR: expected a ']' or ',' after byte\n");
-					goto cleanup;
-				}
-			}
-
-			result.push_back(instrSize);
-		}
-	}
-
-	rc = 0;
-	cleanup:
-	return rc;
-}
+/*****************************************************************************/
+/* ASSEMBLE RELATED FUNCTIONS */
+/*****************************************************************************/
 
 int
 obj_output_to_bytes(const char *data, string &result)
@@ -236,6 +237,34 @@ obj_output_to_bytes(const char *data, string &result)
 	return rc;
 }
 
+/* source manager diagnostics handler
+	(instead of printing to stderr) */
+/* we set LLVM's callback to this thunk which then calls the user
+	requested callback, hiding LLVM details */
+static 
+void
+diag_cb(const SMDiagnostic &diag, void *param)
+{
+	if(!param) return;
+
+	#ifdef __GNUC__
+	__extension__
+	#endif
+	llvm_svcs_assemble_cb_type pfunc = (llvm_svcs_assemble_cb_type)param;
+
+	int k;
+	switch(diag.getKind()) {
+		case SourceMgr::DK_Note: k=LLVM_SVCS_CB_NOTE; break;
+		case SourceMgr::DK_Warning: k=LLVM_SVCS_CB_WARNING; break;
+		case SourceMgr::DK_Error: k=LLVM_SVCS_CB_ERROR; break;
+	}
+
+	// call back back to llvm_svcs user
+	string fileName = diag.getFilename().str();
+	string message = diag.getMessage().str();
+	pfunc(k, fileName.c_str(), diag.getLineNo(), message.c_str()); 
+}
+
 int
 invoke_llvm_parsers(const Target *TheTarget, SourceMgr *SrcMgr, MCContext &context, 
 	MCStreamer &Str, MCAsmInfo &MAI, MCSubtargetInfo &STI, MCInstrInfo &MCII, 
@@ -277,14 +306,6 @@ invoke_llvm_parsers(const Target *TheTarget, SourceMgr *SrcMgr, MCContext &conte
   	return rc;
 }
 
-/* assemble using LLVM 
-
-	this works by assembling twice:
-		1) pass 1 outputs to temporary assembler file ("verbose asm"), so we 
-		can parse the number of bytes each instruction is
-		2) pass 2 outputs to temporary object file, so little relative
-		addresses and such from branches will be resolved
-*/
 int 
 llvm_svcs_assemble(
 	/* in parameters */
@@ -300,7 +321,6 @@ llvm_svcs_assemble(
 
 	/* out parameters */
 	string &instrBytes,			/* output bytes */
-	vector<int> &instrLengths,	/* instruction lengths */
 	string &strErr				/* error string */
 )
 {
@@ -317,11 +337,6 @@ llvm_svcs_assemble(
 
 	/* misc */
 	MCContext *context;
-
-	llvm::InitializeAllTargetInfos();
-	llvm::InitializeAllTargetMCs();
-	llvm::InitializeAllAsmParsers();
-	llvm::InitializeAllDisassemblers();
 
 	/*************************************************************************/
 	/* the triple and the target */
@@ -351,7 +366,6 @@ llvm_svcs_assemble(
 	MCSubtargetInfo *subTargetInfo = target->createMCSubtargetInfo(machSpec, "", ""); /* subtarget instr set */
 	/* fixups, relaxations, objs, elfs */
 	MCAsmBackend *asmBackend = target->createMCAsmBackend(*regInfo, machSpec, /* specific CPU */ "");
-	MCInstPrinter *instrPrinter =  target->createMCInstPrinter(Triple(machSpec), /*variant*/0, *asmInfo, *instrInfo, *regInfo);
 
 	/*************************************************************************/
 	/* source code manager */
@@ -400,66 +414,10 @@ llvm_svcs_assemble(
 	targetOpts.ABIName = abi;
 
 	/*************************************************************************/
-	/* assemble to string */
+	/* assemble to object */
 	/*************************************************************************/
 
-	/* the output stream ... a formatted_raw_ostream wraps a raw_ostream to provide
-	   tracking of line and column position for padding and shit */
-	/* but raw_ostream is abstract and is implemented by raw_fd_ostream, raw_string_ostream, etc. */
-	std::string asmOut;
-	raw_string_ostream rso(asmOut);
-	formatted_raw_ostream fro(rso);
-	std::unique_ptr<formatted_raw_ostream> pfro(&fro);
-
-	// this is the assembler interface
-	// -methods per .s statements (emit bytes, handle directive, etc.)
-	// -remembers current section
-	// -implementations that write a .s, or .o in various formats
-	MCStreamer *streamer = target->createAsmStreamer(
-		*context, /* the MC context */
-		std::move(pfro), /* output stream (type: std::unique_ptr<formatted_raw_ostream> from Support/FormattedStream.h) */
-		true, /* isVerboseAsm */
-		false, /* useDwarfDirectory */
-		instrPrinter, /* if given, the instruction printer to use (else, MCInstr representation is used) */
-		codeEmitter, /* if given, a code emitter used to show instruction encoding inline with the asm */
-		asmBackend,  /* the AsmBackend, (fixups, relaxation, objs and elfs) */
-		true /* ShowInst (show encoding) */
-	);
-
-	if(invoke_llvm_parsers(target, srcMgr, *context, *streamer, *asmInfo, 
-	  *subTargetInfo, *instrInfo, targetOpts, dialect)) {
-		strErr = "invoking llvm parsers\n";
-		goto cleanup;
-	}
-
-	/* flush the FRO (formatted raw ostream) */
-	fro.flush();
-
-	printf("got back:\n%s", asmOut.c_str());
-
-	if(asm_output_to_instr_lengths(asmOut.c_str(), instrLengths)) {
-		strErr = "couldn't parse instruction lengths\n";
-		goto cleanup;
-	}
-
-	printf("here're the instruction lengths:\n");
-	for(auto i = instrLengths.begin(); i!=instrLengths.end(); ++i) {
-		printf("%d\n", *i);
-    }	
-
-	/*************************************************************************/
-	/* assemble to object by creating a new streamer */
-	/*************************************************************************/
-
-	/* have tried various "reset" behaviors here, like codeEmitter->reset(),
-		and re-initializing the source manager, but ultimately settled for
-		a full context re-initialization */
-
-	context = new MCContext(asmInfo.get(), regInfo.get(), &objFileInfo, srcMgr);
-	objFileInfo.InitMCObjectFileInfo(TheTriple, map_reloc_mode(relocMode), map_code_model(codeModel), *context);
-	codeEmitter = target->createMCCodeEmitter(*instrInfo, *regInfo, *context);
-
-    streamer = target->createMCObjectStreamer(
+    MCStreamer *streamer = target->createMCObjectStreamer(
 		TheTriple,
         *context,
         *asmBackend,  /* (fixups, relaxation, objs and elfs) */
@@ -493,60 +451,116 @@ llvm_svcs_assemble(
 	return rc;
 }
 
-void
-llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
-	string &vendor, string &os, string &environ, string &objFormat)
+/*****************************************************************************/
+/* DISASSEMBLE related functions */
+/*****************************************************************************/
+
+int
+disasm_single(
+	/* in parameters */
+	const char *triplet, 
+	uint8_t *src, int src_len,
+	uint64_t addr, 
+	/* out parameters */
+	string &result, int &instrLen,
+	/* internal */
+	LLVMDisasmContextRef context
+)
 {
-	//spec = llvm::sys::getDefaultTargetTriple();
-	//std::string machSpec = "x86_64-apple-darwin14.5.0";
-	//std::string machSpec = "x86_64-apple-darwin";
-	//std::string machSpec = "x86_64-thumb-linux-gnu";
-	//std::string machSpec = "x86_64-unknown-linux-gnu";
-	Triple trip(triplet);
+	int rc = -1;
 
-	/* FIRST component is <arch><subarch> */
-	arch = trip.getArchName();
+	char buf[1024] = {0};
 
-	/* sub architecture (see llvm/ADT/Triple.h) */
-	switch(trip.getSubArch()) {
-		case llvm::Triple::NoSubArch: subarch=""; break;
-   		case llvm::Triple::ARMSubArch_v8_2a: subarch="v8_2a"; break;
-		case llvm::Triple::ARMSubArch_v8_1a: subarch="v8_1a"; break;
-		case llvm::Triple::ARMSubArch_v8: subarch="v8"; break;
-		case llvm::Triple::ARMSubArch_v7: subarch="v7"; break;
-		case llvm::Triple::ARMSubArch_v7em: subarch="v7em"; break;
-		case llvm::Triple::ARMSubArch_v7m: subarch="v7m"; break;
-		case llvm::Triple::ARMSubArch_v7s: subarch="v7s"; break;
-		case llvm::Triple::ARMSubArch_v7k: subarch="v7k"; break;
-		case llvm::Triple::ARMSubArch_v6: subarch="v6"; break;
-		case llvm::Triple::ARMSubArch_v6m: subarch="v6m"; break;
-		case llvm::Triple::ARMSubArch_v6k: subarch="v6k"; break;
-		case llvm::Triple::ARMSubArch_v6t2: subarch="v6t2"; break;
-		case llvm::Triple::ARMSubArch_v5: subarch="v5"; break;
-		case llvm::Triple::ARMSubArch_v5te: subarch="v5te"; break;
-		case llvm::Triple::ARMSubArch_v4t: subarch="v4t"; break;
-		case llvm::Triple::KalimbaSubArch_v3: subarch="v3"; break;
-		case llvm::Triple::KalimbaSubArch_v4: subarch="v4"; break;
-		case llvm::Triple::KalimbaSubArch_v5: subarch="v5"; break;
+	instrLen = LLVMDisasmInstruction(
+		context, /* disasm context */
+		src, /* source data */ 
+		src_len, /* length of source data */ 
+		addr, /* address */ 
+		buf, /* output buf */
+		sizeof(buf) /* size of output buf */
+	);
+
+	if(instrLen <= 0) {
+		//printf("%04X: undefined?\n", offs);
+		goto cleanup;
 	}
 
-	/* SECOND component is <vendor> */
-	vendor = trip.getVendorName();
+	result = buf;
 
-	/* THIRD component is <sys> or <os> */
-	os = trip.getOSName();
+	rc = 0;
+	cleanup:
+	return rc;
+}
 
-	/* FOURTH component is <environment> or <abi> */
-	environ = trip.getEnvironmentName();
+/* disassemble a single instruction from the start of an input buffer */
+int 
+llvm_svcs_disasm_single(
+	/* in parameters */
+	const char *triplet, 
+	uint8_t *src, int src_len,
+	uint64_t addr, 
+	/* out parameters */
+	string &result, int &instrLen
+)
+{
+	int rc = -1;
 
-	/* this is not part of the triplet, just trivia about what object format
-		will be used to contain the code */
-	Triple::ObjectFormatType oft = trip.getObjectFormat();
+	/* see /lib/MC/MCDisassembler/Disassembler.h */
+	LLVMDisasmContextRef context = LLVMCreateDisasm(triplet, 
+		NULL, 0, NULL, NULL);
 
-	switch(oft) {
-		case Triple::COFF: objFormat = "coff"; break;
-		case Triple::ELF: objFormat = "elf"; break;
-		case Triple::MachO: objFormat = "MachO"; break;
-		case Triple::UnknownObjectFormat: objFormat = "unknown"; break;
+	if(context == NULL) {
+		//printf("ERROR: LLVMCreateDisasm()\n");
+		goto cleanup;
 	}
+
+	if(0 != disasm_single(triplet, src, src_len, addr, result, 
+	  instrLen, context)) {
+		//printf("ERROR: disasm_single()\n");
+		goto cleanup;
+	}
+
+	rc = 0;
+	cleanup:
+	return rc;
+}
+
+int 
+llvm_svcs_disasm_lengths(
+	/* in parameters */
+	const char *triplet, 
+	uint8_t *src, int src_len,
+	uint64_t addr, 
+	/* out parameters */
+	vector<int> &lengths
+)
+{
+	int rc = -1;
+	int length;
+	string result;
+
+	LLVMDisasmContextRef context = LLVMCreateDisasm(triplet, 
+		NULL, 0, NULL, NULL);
+	if(!context) {
+		//printf("ERROR: LLVMCreateDisasm()\n");
+		goto cleanup;
+	}
+
+	lengths.clear();
+	for(int i=0; i<src_len; ) {
+		if(disasm_single(triplet, src+i, src_len-i, addr, result, length, 
+		  context)) {
+			printf("ERROR: disasm_single()\n");
+			goto cleanup;
+		}
+
+		printf("%s(): %s has length %d\n", __func__, result.c_str(), length);
+
+		lengths.push_back(length);
+		i += length;
+	}
+
+	rc = 0;
+	cleanup:
+	return rc;
 }

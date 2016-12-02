@@ -199,7 +199,7 @@ void assemble_cb(int type, const char *fileName, int lineNum,
 void
 assemble()
 {
-	int rc = -1;
+	int rc = -1, offs;
 	char *srcText = NULL;
 
 	/* assemble timing vars */
@@ -290,32 +290,38 @@ assemble()
 
 	vector<int> instrLengths;
 
-	if(0 != llvm_svcs_assemble(srcText, dialect, triplet, abi, 
+	if(llvm_svcs_assemble(srcText, dialect, triplet, abi, 
 	  LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_DEFAULT, assemble_cb,
-	  assembledBytes, instrLengths, assembledErr)) {
+	  assembledBytes, assembledErr)) {
 	    logError("llvm_svcs_assemble()");
 		logError(assembledErr.c_str());
-	    return;
+	    goto cleanup;
 	}
 
 	/* output */
 	gui->hexView->clearBytes();
 	gui->hexView->setBytes(0, (uint8_t *)(assembledBytes.c_str()), assembledBytes.size());	
 
-	int offs = 0;
-	for(auto i=instrLengths.begin(); i!=instrLengths.end(); ++i) {
-		//printf("hlAdd( [%d,%d) (%d bytes) )\n", offs, offs+*i, *i);
-		gui->hexView->hlAdd(offs, offs+*i);
-		offs += *i;
+	if(llvm_svcs_disasm_lengths(triplet, (uint8_t *)assembledBytes.c_str(), assembledBytes.size(),
+	  0, instrLengths)) {
+		logError("llvm_svcs_disasm_lengths()");
+		goto cleanup;
+	}
+	
+	offs = 0;
+	for(auto it=instrLengths.begin(); it!=instrLengths.end(); ++it) {
+		//printf("hlAdd( [%d,%d) (%d bytes) )\n", offs, offs+*it, *it);
+		gui->hexView->hlAdd(offs, offs+*it);
+		offs += *it;
 	}
 
+	/* done */
 	rc = 0;
-	//cleanup:
+	cleanup:
 	if(srcText) {
 	    free(srcText);
 	    srcText = NULL;
 	}
-	return;
 }
 
 /*****************************************************************************/
@@ -466,8 +472,6 @@ onExampleSelection()
 	string arch, subarch, vendor, os, environ, objFormat;
 	llvm_svcs_triplet_decompose(triplet, arch, subarch, vendor, os, environ,
 	    objFormat);
-	printf("yes arch was: %s\n", arch.c_str());
-	printf("yes subarch was: %s\n", subarch.c_str());
 	gui->iArch->value(arch.c_str());
 	gui->iSubArch->value(subarch.c_str());
 	gui->iVendor->value(vendor.c_str());
@@ -508,6 +512,9 @@ onGuiFinished(AlabGui *gui_)
 	};
 	
 	gui->menuBar->copy(menuItems);
+
+	// LLVM STUFF
+	llvm_svcs_init();
 
 	// can test triples with:
 	// clang -S -c -target ppc32le-apple-darwin hello.c
