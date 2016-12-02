@@ -30,9 +30,8 @@ typedef void (*llvm_svcs_assemble_cb_type)(int type, const char *fileName,
 	int lineNum, const char *message);
 
 int llvm_svcs_assemble(const char *src, int dialect, const char *triplet, 
-	string abi, int codeModel, int relocMode, 
-	llvm_svcs_assemble_cb_type callback, string &outBytes, 
-	string &err);
+	int codeModel, int relocMode, llvm_svcs_assemble_cb_type callback, 
+	string &outBytes, string &err);
 
 /* disassemble */
 int llvm_svcs_disasm_single(const char *triplet, uint8_t *src,

@@ -280,18 +280,18 @@ assemble()
 
 	/* abi parameter */
 	string abi = "none";
-	if(strstr(triplet, "mips")) {
-		logNote("using MCTargetOptions.abi \"eabi\" for mips");
-		abi = "eabi";
-	}
+	//if(strstr(triplet, "mips")) {
+	//	logNote("using MCTargetOptions.abi \"eabi\" for mips");
+	//	abi = "o32";
+	//}
 		
 	/* start */	
 	string assembledText, assembledErr;
 
 	vector<int> instrLengths;
 
-	if(llvm_svcs_assemble(srcText, dialect, triplet, abi, 
-	  LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_DEFAULT, assemble_cb,
+	if(llvm_svcs_assemble(srcText, dialect, triplet, 
+	  LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_STATIC, assemble_cb,
 	  assembledBytes, assembledErr)) {
 	    logError("llvm_svcs_assemble()");
 		logError(assembledErr.c_str());
@@ -307,14 +307,14 @@ assemble()
 		logError("llvm_svcs_disasm_lengths()");
 		goto cleanup;
 	}
-	
+
 	offs = 0;
 	for(auto it=instrLengths.begin(); it!=instrLengths.end(); ++it) {
 		//printf("hlAdd( [%d,%d) (%d bytes) )\n", offs, offs+*it, *it);
 		gui->hexView->hlAdd(offs, offs+*it);
 		offs += *it;
 	}
-
+	
 	/* done */
 	rc = 0;
 	cleanup:
@@ -466,7 +466,7 @@ onExampleSelection()
 	}
 	else if(0==strcmp(eg, "mips")) {
 	    gui->srcBuf->text((char *)rsrc_mips_s);
-		triplet = "mips-pc-eabi";
+		triplet = "mips-pc-none-o32";
 	}
 
 	string arch, subarch, vendor, os, environ, objFormat;

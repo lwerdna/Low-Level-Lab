@@ -68,6 +68,7 @@ llvm_svcs_init(void)
 /* references:
 	http://clang.llvm.org/docs/CrossCompilation.html
 	<llvm_source>/include/llvm/ADT/Triple.h
+	https://wiki.debian.org/Multiarch/Tuples
 */
 void
 llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
@@ -314,7 +315,6 @@ llvm_svcs_assemble(
 	const char *srcText, 		/* eg: "mov r0, r0" */
 	int dialect, 				/* eg: LLVM_SVCS_DIALECT_ATT */
 	const char *triplet, 		/* eg: x86_64-thumb-linux-gnu */
-	string abi,					/* usually "none", but "eabi" for mips */	
 	int codeModel,				/* LLVM_SVCS_CM_JIT, LLVM_SVCS_CM_SMALL, etc. */
 	int relocMode, 				/* LLVM_SVCS_DEFAULT, LLVM_SVCS_STATIC, etc. */
 
@@ -413,7 +413,8 @@ llvm_svcs_assemble(
 	/* target opts */
 	MCTargetOptions targetOpts;
 	targetOpts.MCUseDwarfDirectory = false;
-	targetOpts.ABIName = abi;
+	/* how is this different than the last field of the triplet? */
+	//targetOpts.ABIName = abi;
 
 	/*************************************************************************/
 	/* assemble to object */
@@ -482,14 +483,6 @@ disasm_single(
 	int rc = -1;
 
 	char buf[1024] = {0};
-
-	//printf("%s(src=%p,src_len=%d) attempting to disassemble: \n", __func__, src, src_len, __func__);
-	//for(int i=0; i<src_len; ++i) printf("%02X ", src[i]);
-	//printf("\n");
-
-	//printf("calling LLVMDisasmInstruction(%p, ", context);
-	//for(int i=0; i<src_len; ++i) printf("%02X ", src[i]);
-	//printf(", %d, %p, %p, %d);\n", src_len, addr, buf, sizeof(buf));
 
 	instrLen = LLVMDisasmInstruction(
 		context, /* disasm context */
@@ -580,16 +573,16 @@ llvm_svcs_disasm_lengths(
 
 	lengths.clear();
 	for(int i=0; i<src_len; ) {
-
-		printf("%s() attempting to disassemble: \n", __func__);
-		for(int i=0; i<src_len; ++i) printf("%02X ", src[i]);
-		printf("\n");
-
-
 		if(disasm_single(triplet, src+i, src_len-i, addr+i, result, length, 
 		  context)) {
-			printf("ERROR: disasm_single()\n");
-			goto cleanup;
+			if(0) {
+				printf("ERROR: disasm_single()\n");
+				goto cleanup;
+			}
+			else {
+				/* make it best effort */
+				break;
+			}
 		}
 
 		printf("%s(): %s has length %d\n", __func__, result.c_str(), length);
