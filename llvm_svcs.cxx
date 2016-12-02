@@ -91,6 +91,8 @@ llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
    		case llvm::Triple::ARMSubArch_v8_2a: subarch="v8_2a"; break;
 		case llvm::Triple::ARMSubArch_v8_1a: subarch="v8_1a"; break;
 		case llvm::Triple::ARMSubArch_v8: subarch="v8"; break;
+		case llvm::Triple::ARMSubArch_v8m_baseline: subarch="v8m"; break;
+		case llvm::Triple::ARMSubArch_v8m_mainline: subarch="v8m"; break; // ??
 		case llvm::Triple::ARMSubArch_v7: subarch="v7"; break;
 		case llvm::Triple::ARMSubArch_v7em: subarch="v7em"; break;
 		case llvm::Triple::ARMSubArch_v7m: subarch="v7m"; break;
@@ -153,13 +155,13 @@ map_code_model(int codeModel)
 Reloc::Model
 map_reloc_mode(int relocMode)
 {
-	/* SEE: include/llvm-c/TargetMachine.h */
+	/* SEE: NOT the values in include/llvm-c/TargetMachine.h 
+		but llvm/Support/CodeGen.h */
 	switch(relocMode) {
-		case LLVM_SVCS_RM_DEFAULT: return Reloc::Default;
 		case LLVM_SVCS_RM_STATIC: return Reloc::Static;
 		case LLVM_SVCS_RM_PIC: return Reloc::PIC_;
 		case LLVM_SVCS_RM_DYNAMIC_NO_PIC: return Reloc::DynamicNoPIC;
-		default: return Reloc::Default;
+		default: return Reloc::Static;
 	}
 }
 
@@ -455,6 +457,16 @@ llvm_svcs_assemble(
 /* DISASSEMBLE related functions */
 /*****************************************************************************/
 
+/* a dummy function for the disasm context, else aarch64 crashes on
+	FF 43 00 D1 */
+const char *
+symbol_lookup_cb(void *DisInfo, uint64_t ReferenceValue, uint64_t *ReferenceType,
+	uint64_t ReferencePC, const char **ReferenceName)
+{
+	printf("%s()\n", __func__);
+	return NULL;
+}
+
 int
 disasm_single(
 	/* in parameters */
@@ -470,6 +482,14 @@ disasm_single(
 	int rc = -1;
 
 	char buf[1024] = {0};
+
+	//printf("%s(src=%p,src_len=%d) attempting to disassemble: \n", __func__, src, src_len, __func__);
+	//for(int i=0; i<src_len; ++i) printf("%02X ", src[i]);
+	//printf("\n");
+
+	//printf("calling LLVMDisasmInstruction(%p, ", context);
+	//for(int i=0; i<src_len; ++i) printf("%02X ", src[i]);
+	//printf(", %d, %p, %p, %d);\n", src_len, addr, buf, sizeof(buf));
 
 	instrLen = LLVMDisasmInstruction(
 		context, /* disasm context */
@@ -506,8 +526,13 @@ llvm_svcs_disasm_single(
 	int rc = -1;
 
 	/* see /lib/MC/MCDisassembler/Disassembler.h */
-	LLVMDisasmContextRef context = LLVMCreateDisasm(triplet, 
-		NULL, 0, NULL, NULL);
+    LLVMDisasmContextRef context = LLVMCreateDisasm (
+		triplet, /* triple */
+        NULL, /* void *DisInfo */
+		0, /* TagType */
+		NULL, /* LLVMOpInfoCallback GetOpInfo */
+		symbol_lookup_cb /* LLVMSymbolLookupCallback SymbolLookUp */
+	);
 
 	if(context == NULL) {
 		//printf("ERROR: LLVMCreateDisasm()\n");
@@ -539,8 +564,15 @@ llvm_svcs_disasm_lengths(
 	int length;
 	string result;
 
-	LLVMDisasmContextRef context = LLVMCreateDisasm(triplet, 
-		NULL, 0, NULL, NULL);
+	/* see /lib/MC/MCDisassembler/Disassembler.h */
+    LLVMDisasmContextRef context = LLVMCreateDisasm (
+		triplet, /* triple */
+        NULL, /* void *DisInfo */
+		0, /* TagType */
+		NULL, /* LLVMOpInfoCallback GetOpInfo */
+		symbol_lookup_cb /* LLVMSymbolLookupCallback SymbolLookUp */
+	);
+
 	if(!context) {
 		//printf("ERROR: LLVMCreateDisasm()\n");
 		goto cleanup;
@@ -548,7 +580,13 @@ llvm_svcs_disasm_lengths(
 
 	lengths.clear();
 	for(int i=0; i<src_len; ) {
-		if(disasm_single(triplet, src+i, src_len-i, addr, result, length, 
+
+		printf("%s() attempting to disassemble: \n", __func__);
+		for(int i=0; i<src_len; ++i) printf("%02X ", src[i]);
+		printf("\n");
+
+
+		if(disasm_single(triplet, src+i, src_len-i, addr+i, result, length, 
 		  context)) {
 			printf("ERROR: disasm_single()\n");
 			goto cleanup;
