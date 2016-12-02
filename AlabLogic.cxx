@@ -152,7 +152,8 @@ int file_load(const char *path)
 /* MAIN ROUTINE */
 /*****************************************************************************/
 
-void logNote(const char *msg)
+void 
+logNote(const char *msg)
 {
 	gui->log->setColor(FL_GREEN);
    	gui->log->append("NOTE: ");
@@ -161,7 +162,8 @@ void logNote(const char *msg)
 	gui->log->append("\n");
 }
 
-void logWarning(const char *msg)
+void 
+logWarning(const char *msg)
 {
 	gui->log->setColor(FL_YELLOW);
    	gui->log->append("WARN: ");
@@ -170,13 +172,50 @@ void logWarning(const char *msg)
 	gui->log->append("\n");
 }
 
-void logError(const char *msg)
+void 
+logError(const char *msg)
 {
 	gui->log->setColor(FL_RED);
    	gui->log->append("ERROR: ");
 	gui->log->setColor(FL_WHITE);
 	gui->log->append(msg);
 	gui->log->append("\n");
+}
+
+int 
+getCodeModel()
+{
+	const char *guiStr = gui->icCodeModel->value();
+
+	if(!strcmp(guiStr, "jit"))
+		return LLVM_SVCS_CM_DEFAULT;
+	if(!strcmp(guiStr, "small"))
+		return LLVM_SVCS_CM_SMALL;
+	if(!strcmp(guiStr, "kernel"))
+		return LLVM_SVCS_CM_KERNEL;
+	if(!strcmp(guiStr, "medium"))
+		return LLVM_SVCS_CM_MEDIUM;
+	if(!strcmp(guiStr, "large"))
+		return LLVM_SVCS_CM_LARGE;
+
+	logError("invalid code model selection, defaulting to JIT");
+	return LLVM_SVCS_CM_DEFAULT;
+}
+
+int 
+getRelocModel()
+{
+	const char *guiStr = gui->icRelocModel->value();
+
+	if(!strcmp(guiStr, "static"))
+		return LLVM_SVCS_RM_STATIC;
+	if(!strcmp(guiStr, "pic"))
+		return LLVM_SVCS_RM_PIC;
+	if(!strcmp(guiStr, "dynamic"))
+		return LLVM_SVCS_RM_DYNAMIC_NO_PIC;
+
+	logError("invalid reloc model selection, defaulting to static");
+	return LLVM_SVCS_RM_STATIC;
 }
 
 void assemble_cb(int type, const char *fileName, int lineNum, 
@@ -284,7 +323,7 @@ assemble()
 	vector<int> instrLengths;
 
 	if(llvm_svcs_assemble(srcText, dialect, triplet, 
-	  LLVM_SVCS_CM_DEFAULT, LLVM_SVCS_RM_STATIC, assemble_cb,
+	  getCodeModel(), getRelocModel(), assemble_cb,
 	  assembledBytes, assembledErr)) {
 	    logError("llvm_svcs_assemble()");
 		logError(assembledErr.c_str());
@@ -507,25 +546,36 @@ onGuiFinished(AlabGui *gui_)
 	// LLVM STUFF
 	llvm_svcs_init();
 
-//	// can test triples with:
-//	// clang -S -c -target ppc32le-apple-darwin hello.c
-//	// see also lib/Support/Triple.cpp in llvm source
-//	// see also http://clang.llvm.org/docs/CrossCompilation.html
-//	// TODO: add the default machine config */
-//	const char *examples[11] = { "i386 (at&t)", "i386 (intel)", "x86_64 (at&t)",
-//		"x86_64 (intel)", "arm", "thumb", "aarch64", "powerpc", "powerpc64",
-//		"powerpc64le", "mips" };
-//	for(int i=0; i<11; ++i) {
-//		gui->icExamples->add(examples[i]);
-//	}
-//	gui->icExamples->value(0);
-//	onExampleSelection();
+	/* init code models */
+	const char *cms[5] = { "jit", "small", "kernel", "medium", "large" };
+	for(int i=0; i<5; ++i)
+		gui->icCodeModel->add(cms[i]);
+	gui->icCodeModel->value(0);
 
-	onBtnX86();
+	/* init reloc models */	
+	const char *rms[3] = { "static", "pic", "dynamic" };
+	for(int i=0; i<3; ++i)
+		gui->icRelocModel->add(rms[i]);
+	gui->icRelocModel->value(0);
+
+	/* start by pretending the user hit x86 (intel syntax) */
+	onBtnX86_();
 
 	rc = 0;
 	//cleanup:
 	return;
+}
+
+void
+onIcCodeModel()
+{
+	assemble_forced = true;
+}
+
+void
+onIcRelocModel()
+{
+	assemble_forced = true;
 }
 
 void

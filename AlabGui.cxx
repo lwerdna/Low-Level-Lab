@@ -73,6 +73,20 @@ void AlabGui::cb_mips(Fl_Button* o, void* v) {
   ((AlabGui*)(o->parent()->user_data()))->cb_mips_i(o,v);
 }
 
+void AlabGui::cb_icCodeModel_i(Fl_Input_Choice*, void*) {
+  onIcCodeModel();
+}
+void AlabGui::cb_icCodeModel(Fl_Input_Choice* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_icCodeModel_i(o,v);
+}
+
+void AlabGui::cb_icRelocModel_i(Fl_Input_Choice*, void*) {
+  onIcRelocModel();
+}
+void AlabGui::cb_icRelocModel(Fl_Input_Choice* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_icRelocModel_i(o,v);
+}
+
 Fl_Double_Window* AlabGui::make_window() {
   { mainWindow = new Fl_Double_Window(1071, 652, "Assembler Lab");
     mainWindow->user_data((void*)(this));
@@ -159,6 +173,12 @@ Fl_Double_Window* AlabGui::make_window() {
     { Fl_Button* o = new Fl_Button(167, 22, 56, 20, "mips");
       o->callback((Fl_Callback*)cb_mips);
     } // Fl_Button* o
+    { icCodeModel = new Fl_Input_Choice(558, 21, 83, 20, "code model:");
+      icCodeModel->callback((Fl_Callback*)cb_icCodeModel);
+    } // Fl_Input_Choice* icCodeModel
+    { icRelocModel = new Fl_Input_Choice(558, 41, 83, 20, "reloc model:");
+      icRelocModel->callback((Fl_Callback*)cb_icRelocModel);
+    } // Fl_Input_Choice* icRelocModel
     mainWindow->end();
   } // Fl_Double_Window* mainWindow
   srcCode->linenumber_width(24);

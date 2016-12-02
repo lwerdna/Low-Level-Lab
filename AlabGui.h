@@ -10,6 +10,7 @@
 #include <FL/Fl_Menu_Bar.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Button.H>
+#include <FL/Fl_Input_Choice.H>
 
 class AlabGui {
 public:
@@ -44,6 +45,16 @@ private:
   static void cb_ppc64le(Fl_Button*, void*);
   inline void cb_mips_i(Fl_Button*, void*);
   static void cb_mips(Fl_Button*, void*);
+public:
+  Fl_Input_Choice *icCodeModel;
+private:
+  inline void cb_icCodeModel_i(Fl_Input_Choice*, void*);
+  static void cb_icCodeModel(Fl_Input_Choice*, void*);
+public:
+  Fl_Input_Choice *icRelocModel;
+private:
+  inline void cb_icRelocModel_i(Fl_Input_Choice*, void*);
+  static void cb_icRelocModel(Fl_Input_Choice*, void*);
 public:
   Fl_Text_Buffer *srcBuf; 
 };

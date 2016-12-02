@@ -87,7 +87,7 @@ void HexView::clrCallback(void)
 
 void HexView::setBytes(uint64_t addr, unsigned char *data, int len)
 {
-    printf("setBytes(addr=%016llX, data=<ptr>, len=0x%X)\n", addr, len);
+    //printf("setBytes(addr=%016llX, data=<ptr>, len=0x%X)\n", addr, len);
     //dump_bytes(data, len, (uintptr_t)0);
 
     /* maybe clear highlight data? */

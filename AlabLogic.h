@@ -16,6 +16,9 @@ void onDialectChange(void);
 void onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
     const char * deletedText, void *cbArg);
 
+void onIcCodeModel();
+void onIcRelocModel();
+
 void onBtnX86();
 void onBtnX86_();
 void onBtnX64();
