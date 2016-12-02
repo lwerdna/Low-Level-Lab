@@ -19,15 +19,15 @@ class AlabGui {open
   Function {make_window()} {open
   } {
     Fl_Window mainWindow {
-      label {Assembler Lab} open selected
-      xywh {450 364 1071 713} type Double visible
+      label {Assembler Lab} open
+      xywh {258 370 1071 652} type Double visible
     } {
       Fl_Menu_Bar menuBar {
         label menu open
-        xywh {0 0 1071 20} color 29
+        xywh {0 0 1070 20} color 29
       } {}
       Fl_Text_Editor srcCode {
-        xywh {4 123 462 485} align 21 textfont 4
+        xywh {3 64 462 485} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
         code2 {srcBuf->text("testes");}
@@ -35,50 +35,78 @@ class AlabGui {open
         class Fl_Text_Editor_Asm
       }
       Fl_Input iArch {
-        label {arch, subarch:}
-        xywh {331 26 60 23}
-      }
-      Fl_Input iSubArch {
-        xywh {393 26 60 23} align 8
+        label {arch/sub:}
+        xywh {229 38 60 23} align 1
       }
       Fl_Input iOs {
         label {os/sys:}
-        xywh {331 73 60 23}
+        xywh {351 38 60 23} align 1
       }
       Fl_Input iEnviron {
-        label {environ/abi:}
-        xywh {331 97 60 23}
-      }
-      Fl_Output oFormat {
-        label {format:}
-        xywh {92 94 60 23}
+        label {envir/abi:}
+        xywh {412 38 60 23} align 1
       }
       Fl_Input iVendor {
         label {vendor:}
-        xywh {331 49 60 23}
+        xywh {290 38 60 23} align 1
       }
-      Fl_Input_Choice icExamples {
-        label {examples:}
-        callback {onExampleSelection();} open
-        xywh {5 39 227 24} align 5
-      } {}
       Fl_Text_Display log {
-        xywh {4 612 1063 96} color 0
+        xywh {3 553 1064 96} color 0
         class Fl_Text_Display_Log
       }
-      Fl_Check_Button cbAtt {
-        label {at&&t syntax}
-        callback {onDialectChange();}
-        xywh {44 64 28 28} down_box DOWN_BOX
-      }
       Fl_Box hexView {
-        xywh {471 123 596 485} box BORDER_BOX color 7 labeltype NO_LABEL
+        xywh {469 64 597 485} box BORDER_BOX color 7 labeltype NO_LABEL
         class HexView
       }
       Fl_Button {} {
-        label test
-        callback {onBtnTest();}
-        xywh {3 92 28 28}
+        label x86
+        callback {onBtnX86();}
+        xywh {3 22 41 20}
+      }
+      Fl_Button {} {
+        label {x86*}
+        callback {onBtnX86_();}
+        xywh {44 22 41 20}
+      }
+      Fl_Button {} {
+        label x64
+        callback {onBtnX64();}
+        xywh {85 22 41 20}
+      }
+      Fl_Button {} {
+        label {x64*}
+        callback {onBtnX64_();}
+        xywh {126 22 41 20}
+      }
+      Fl_Button {} {
+        label arm
+        callback {onBtnArm()}
+        xywh {3 42 35 20}
+      }
+      Fl_Button {} {
+        label arm64
+        callback {onBtnArm64();}
+        xywh {38 42 47 20}
+      }
+      Fl_Button {} {
+        label ppc
+        callback {onBtnPpc();}
+        xywh {85 42 36 20}
+      }
+      Fl_Button {} {
+        label ppc64
+        callback {onBtnPpc64();}
+        xywh {121 42 46 20}
+      }
+      Fl_Button {} {
+        label ppc64le
+        callback {onBtnPpc64le();}
+        xywh {167 42 56 20}
+      }
+      Fl_Button {} {
+        label mips
+        callback {onBtnMips();} selected
+        xywh {167 22 56 20}
       }
     }
     code {srcCode->linenumber_width(24);} {}

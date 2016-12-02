@@ -69,6 +69,7 @@ llvm_svcs_init(void)
 	http://clang.llvm.org/docs/CrossCompilation.html
 	<llvm_source>/include/llvm/ADT/Triple.h
 	https://wiki.debian.org/Multiarch/Tuples
+	https://www.linux-mips.org/wiki/MIPS_ABI_History
 */
 void
 llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
@@ -585,7 +586,7 @@ llvm_svcs_disasm_lengths(
 			}
 		}
 
-		printf("%s(): %s has length %d\n", __func__, result.c_str(), length);
+		//printf("%s(): %s has length %d\n", __func__, result.c_str(), length);
 
 		lengths.push_back(length);
 		i += length;

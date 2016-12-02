@@ -9,9 +9,6 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Menu_Bar.H>
 #include <FL/Fl_Input.H>
-#include <FL/Fl_Output.H>
-#include <FL/Fl_Input_Choice.H>
-#include <FL/Fl_Check_Button.H>
 #include <FL/Fl_Button.H>
 
 class AlabGui {
@@ -21,26 +18,32 @@ public:
   Fl_Menu_Bar *menuBar;
   Fl_Text_Editor_Asm *srcCode;
   Fl_Input *iArch;
-  Fl_Input *iSubArch;
   Fl_Input *iOs;
   Fl_Input *iEnviron;
-  Fl_Output *oFormat;
   Fl_Input *iVendor;
-  Fl_Input_Choice *icExamples;
-private:
-  inline void cb_icExamples_i(Fl_Input_Choice*, void*);
-  static void cb_icExamples(Fl_Input_Choice*, void*);
-public:
   Fl_Text_Display_Log *log;
-  Fl_Check_Button *cbAtt;
-private:
-  inline void cb_cbAtt_i(Fl_Check_Button*, void*);
-  static void cb_cbAtt(Fl_Check_Button*, void*);
-public:
   HexView *hexView;
 private:
-  inline void cb_test_i(Fl_Button*, void*);
-  static void cb_test(Fl_Button*, void*);
+  inline void cb_x86_i(Fl_Button*, void*);
+  static void cb_x86(Fl_Button*, void*);
+  inline void cb_x861_i(Fl_Button*, void*);
+  static void cb_x861(Fl_Button*, void*);
+  inline void cb_x64_i(Fl_Button*, void*);
+  static void cb_x64(Fl_Button*, void*);
+  inline void cb_x641_i(Fl_Button*, void*);
+  static void cb_x641(Fl_Button*, void*);
+  inline void cb_arm_i(Fl_Button*, void*);
+  static void cb_arm(Fl_Button*, void*);
+  inline void cb_arm64_i(Fl_Button*, void*);
+  static void cb_arm64(Fl_Button*, void*);
+  inline void cb_ppc_i(Fl_Button*, void*);
+  static void cb_ppc(Fl_Button*, void*);
+  inline void cb_ppc64_i(Fl_Button*, void*);
+  static void cb_ppc64(Fl_Button*, void*);
+  inline void cb_ppc64le_i(Fl_Button*, void*);
+  static void cb_ppc64le(Fl_Button*, void*);
+  inline void cb_mips_i(Fl_Button*, void*);
+  static void cb_mips(Fl_Button*, void*);
 public:
   Fl_Text_Buffer *srcBuf; 
 };

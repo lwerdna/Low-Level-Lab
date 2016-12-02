@@ -36,7 +36,8 @@ bool assemble_requested = false;
 int length_last_assemble = 0;
 time_t time_last_assemble = 0;
 uint32_t crc_last_assemble = 0;
-/* configuration string */
+int dialect = LLVM_SVCS_DIALECT_UNSPEC;
+
 string assembledBytes;
 
 /*****************************************************************************/
@@ -250,19 +251,11 @@ assemble()
 	gui->log->clear(); 
 	/* keep the bytes from previous assemble in case this fails */
 
-	/* dialect */
-	int dialect = LLVM_SVCS_DIALECT_UNSPEC;
-	if(gui->cbAtt->value()) 
-	    dialect = LLVM_SVCS_DIALECT_ATT;
-	else    
-	    dialect = LLVM_SVCS_DIALECT_INTEL;
-
-	/* triplet */
+	/* reassemble the triplet from the GUI components
+	  (so that user can tweak it) */
 	char triplet[128] = {'\0'};
 	strcat(triplet, gui->iArch->value());
-	//if(gui->iSubArch->size()) {
-	//	strcat(triplet, gui->iSubArch->value());
-	//}
+	
 	if(gui->iVendor->size()) {
 		strcat(triplet, "-");
 		strcat(triplet, gui->iVendor->value());
@@ -415,80 +408,78 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 }
 
 void
-onExampleSelection()
+setTripletAndReassemble(const char *triplet, char *src, int dialect_)
 {
-	const char *eg = gui->icExamples->value();
-	const char *triplet;
+	/* set dialect (UNSPECIFIED, INTEL, ATT) */
+	dialect = dialect_;
 
-	if(0==strcmp(eg, "i386 (at&t)")) {
-	    gui->srcBuf->text((char *)rsrc_x86_s);
-	    gui->cbAtt->value(1);
-		triplet = "i386-none-none";
-	}
-	else if(0==strcmp(eg, "i386 (intel)")) {
-	    gui->srcBuf->text((char *)rsrc_x86_intel_s);
-	    gui->cbAtt->value(0);
-		triplet = "i386-none-none";
-	}
-	else if(0==strcmp(eg, "x86_64 (at&t)")) {
-	    gui->srcBuf->text((char *)rsrc_x86_64_s);
-	    gui->cbAtt->value(1);
-		triplet = "x86_64-none-none";
-	}
-	else if(0==strcmp(eg, "x86_64 (intel)")) {
-	    gui->srcBuf->text((char *)rsrc_x86_64_intel_s);
-	    gui->cbAtt->value(0);
-		triplet = "x86_64-none-none";
-	}
-	else if(0==strcmp(eg, "powerpc")) {
-	    gui->srcBuf->text((char *)rsrc_ppc_s);
-		triplet = "powerpc-none-none";
-	}
-	else if(0==strcmp(eg, "powerpc64")) {
-	    gui->srcBuf->text((char *)rsrc_ppc64_s);
-		triplet = "powerpc64-none-none";
-	}
-	else if(0==strcmp(eg, "powerpc64le")) {
-	    gui->srcBuf->text((char *)rsrc_ppc64_s);
-		triplet = "powerpc64le-none-none";
-	}
-	else if(0==strcmp(eg, "arm")) {
-	    gui->srcBuf->text((char *)rsrc_arm_s);
-		triplet = "armv7-none-none";
-	}
-	else if(0==strcmp(eg, "thumb")) {
-	    gui->srcBuf->text((char *)rsrc_thumb_s);
-		triplet = "thumbv7-none-none";
-	}
-	else if(0==strcmp(eg, "aarch64")) {
-	    gui->srcBuf->text((char *)rsrc_arm64_s);
-		triplet = "aarch64-none-none";
-	}
-	else if(0==strcmp(eg, "mips")) {
-	    gui->srcBuf->text((char *)rsrc_mips_s);
-		triplet = "mips-pc-none-o32";
-	}
+	/* set the source code buffer */
+	gui->srcBuf->text(src);
 
+	/* set the arch, vendor, os, environment */
 	string arch, subarch, vendor, os, environ, objFormat;
 	llvm_svcs_triplet_decompose(triplet, arch, subarch, vendor, os, environ,
 	    objFormat);
 	gui->iArch->value(arch.c_str());
-	gui->iSubArch->value(subarch.c_str());
 	gui->iVendor->value(vendor.c_str());
 	gui->iOs->value(os.c_str());
 	gui->iEnviron->value(environ.c_str());
-	gui->oFormat->value(objFormat.c_str());
 
+	/* initiate assembly after idle */
 	assemble_forced = true;
 }
 
-void
-onDialectChange()
+void onBtnX86()
 {
-	int state = gui->cbAtt->value();
-	printf("new at&t check state: %d\n", state);
-	assemble_forced = true;
+	setTripletAndReassemble("i386-none-none", (char *)rsrc_x86_s, LLVM_SVCS_DIALECT_ATT);	
 }
+
+void onBtnX86_()
+{
+	setTripletAndReassemble("i386-none-none", (char *)rsrc_x86_intel_s, LLVM_SVCS_DIALECT_INTEL);	
+}
+
+void onBtnX64()
+{
+	setTripletAndReassemble("x86_64-none-none", (char *)rsrc_x86_64_s, LLVM_SVCS_DIALECT_ATT);	
+}
+
+void onBtnX64_()
+{
+	setTripletAndReassemble("x86_64-none-none", (char *)rsrc_x86_64_intel_s, LLVM_SVCS_DIALECT_INTEL);	
+}
+
+void onBtnMips()
+{
+	setTripletAndReassemble("mips-pc-none-o32", (char *)rsrc_mips_s, 0);	
+}
+
+void onBtnArm()
+{
+	printf("WTF?\n");
+	setTripletAndReassemble("armv7-none-none", (char *)rsrc_arm_s, 0);	
+}
+
+void onBtnArm64()
+{
+	setTripletAndReassemble("aarch64-none-none", (char *)rsrc_arm64_s, 0);	
+}
+
+void onBtnPpc()
+{
+	setTripletAndReassemble("powerpc-none-none", (char *)rsrc_ppc_s, 0);	
+}
+
+void onBtnPpc64()
+{
+	setTripletAndReassemble("powerpc64-none-none", (char *)rsrc_ppc64_s, 0);	
+}
+
+void onBtnPpc64le()
+{
+	setTripletAndReassemble("powerpc64le-none-none", (char *)rsrc_ppc64_s, 0);	
+}
+
 
 void
 onGuiFinished(AlabGui *gui_)
@@ -516,30 +507,25 @@ onGuiFinished(AlabGui *gui_)
 	// LLVM STUFF
 	llvm_svcs_init();
 
-	// can test triples with:
-	// clang -S -c -target ppc32le-apple-darwin hello.c
-	// see also lib/Support/Triple.cpp in llvm source
-	// see also http://clang.llvm.org/docs/CrossCompilation.html
-	// TODO: add the default machine config */
-	const char *examples[11] = { "i386 (at&t)", "i386 (intel)", "x86_64 (at&t)",
-		"x86_64 (intel)", "arm", "thumb", "aarch64", "powerpc", "powerpc64",
-		"powerpc64le", "mips" };
-	for(int i=0; i<11; ++i) {
-		gui->icExamples->add(examples[i]);
-	}
-	gui->icExamples->value(0);
-	onExampleSelection();
+//	// can test triples with:
+//	// clang -S -c -target ppc32le-apple-darwin hello.c
+//	// see also lib/Support/Triple.cpp in llvm source
+//	// see also http://clang.llvm.org/docs/CrossCompilation.html
+//	// TODO: add the default machine config */
+//	const char *examples[11] = { "i386 (at&t)", "i386 (intel)", "x86_64 (at&t)",
+//		"x86_64 (intel)", "arm", "thumb", "aarch64", "powerpc", "powerpc64",
+//		"powerpc64le", "mips" };
+//	for(int i=0; i<11; ++i) {
+//		gui->icExamples->add(examples[i]);
+//	}
+//	gui->icExamples->value(0);
+//	onExampleSelection();
+
+	onBtnX86();
 
 	rc = 0;
 	//cleanup:
 	return;
-}
-
-void
-onBtnTest()
-{
-	printf("clicked test!\n");
-	gui->hexView->clearBytes();
 }
 
 void

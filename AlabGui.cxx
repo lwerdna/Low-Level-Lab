@@ -3,34 +3,83 @@
 #include "AlabGui.h"
 #include "AlabLogic.h"
 
-void AlabGui::cb_icExamples_i(Fl_Input_Choice*, void*) {
-  onExampleSelection();
+void AlabGui::cb_x86_i(Fl_Button*, void*) {
+  onBtnX86();
 }
-void AlabGui::cb_icExamples(Fl_Input_Choice* o, void* v) {
-  ((AlabGui*)(o->parent()->user_data()))->cb_icExamples_i(o,v);
-}
-
-void AlabGui::cb_cbAtt_i(Fl_Check_Button*, void*) {
-  onDialectChange();
-}
-void AlabGui::cb_cbAtt(Fl_Check_Button* o, void* v) {
-  ((AlabGui*)(o->parent()->user_data()))->cb_cbAtt_i(o,v);
+void AlabGui::cb_x86(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_x86_i(o,v);
 }
 
-void AlabGui::cb_test_i(Fl_Button*, void*) {
-  onBtnTest();
+void AlabGui::cb_x861_i(Fl_Button*, void*) {
+  onBtnX86_();
 }
-void AlabGui::cb_test(Fl_Button* o, void* v) {
-  ((AlabGui*)(o->parent()->user_data()))->cb_test_i(o,v);
+void AlabGui::cb_x861(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_x861_i(o,v);
+}
+
+void AlabGui::cb_x64_i(Fl_Button*, void*) {
+  onBtnX64();
+}
+void AlabGui::cb_x64(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_x64_i(o,v);
+}
+
+void AlabGui::cb_x641_i(Fl_Button*, void*) {
+  onBtnX64_();
+}
+void AlabGui::cb_x641(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_x641_i(o,v);
+}
+
+void AlabGui::cb_arm_i(Fl_Button*, void*) {
+  onBtnArm();
+}
+void AlabGui::cb_arm(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_arm_i(o,v);
+}
+
+void AlabGui::cb_arm64_i(Fl_Button*, void*) {
+  onBtnArm64();
+}
+void AlabGui::cb_arm64(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_arm64_i(o,v);
+}
+
+void AlabGui::cb_ppc_i(Fl_Button*, void*) {
+  onBtnPpc();
+}
+void AlabGui::cb_ppc(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_ppc_i(o,v);
+}
+
+void AlabGui::cb_ppc64_i(Fl_Button*, void*) {
+  onBtnPpc64();
+}
+void AlabGui::cb_ppc64(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_ppc64_i(o,v);
+}
+
+void AlabGui::cb_ppc64le_i(Fl_Button*, void*) {
+  onBtnPpc64le();
+}
+void AlabGui::cb_ppc64le(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_ppc64le_i(o,v);
+}
+
+void AlabGui::cb_mips_i(Fl_Button*, void*) {
+  onBtnMips();
+}
+void AlabGui::cb_mips(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_mips_i(o,v);
 }
 
 Fl_Double_Window* AlabGui::make_window() {
-  { mainWindow = new Fl_Double_Window(1071, 713, "Assembler Lab");
+  { mainWindow = new Fl_Double_Window(1071, 652, "Assembler Lab");
     mainWindow->user_data((void*)(this));
-    { menuBar = new Fl_Menu_Bar(0, 0, 1071, 20, "menu");
+    { menuBar = new Fl_Menu_Bar(0, 0, 1070, 20, "menu");
       menuBar->color((Fl_Color)29);
     } // Fl_Menu_Bar* menuBar
-    { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(4, 123, 462, 485);
+    { Fl_Text_Editor_Asm* o = srcCode = new Fl_Text_Editor_Asm(3, 64, 462, 485);
       srcCode->box(FL_DOWN_FRAME);
       srcCode->color(FL_BACKGROUND2_COLOR);
       srcCode->selection_color(FL_SELECTION_COLOR);
@@ -46,24 +95,19 @@ Fl_Double_Window* AlabGui::make_window() {
       srcBuf->text("testes");
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor_Asm* srcCode
-    { iArch = new Fl_Input(331, 26, 60, 23, "arch, subarch:");
+    { iArch = new Fl_Input(229, 38, 60, 23, "arch/sub:");
+      iArch->align(Fl_Align(FL_ALIGN_TOP));
     } // Fl_Input* iArch
-    { iSubArch = new Fl_Input(393, 26, 60, 23);
-      iSubArch->align(Fl_Align(FL_ALIGN_RIGHT));
-    } // Fl_Input* iSubArch
-    { iOs = new Fl_Input(331, 73, 60, 23, "os/sys:");
+    { iOs = new Fl_Input(351, 38, 60, 23, "os/sys:");
+      iOs->align(Fl_Align(FL_ALIGN_TOP));
     } // Fl_Input* iOs
-    { iEnviron = new Fl_Input(331, 97, 60, 23, "environ/abi:");
+    { iEnviron = new Fl_Input(412, 38, 60, 23, "envir/abi:");
+      iEnviron->align(Fl_Align(FL_ALIGN_TOP));
     } // Fl_Input* iEnviron
-    { oFormat = new Fl_Output(92, 94, 60, 23, "format:");
-    } // Fl_Output* oFormat
-    { iVendor = new Fl_Input(331, 49, 60, 23, "vendor:");
+    { iVendor = new Fl_Input(290, 38, 60, 23, "vendor:");
+      iVendor->align(Fl_Align(FL_ALIGN_TOP));
     } // Fl_Input* iVendor
-    { icExamples = new Fl_Input_Choice(5, 39, 227, 24, "examples:");
-      icExamples->callback((Fl_Callback*)cb_icExamples);
-      icExamples->align(Fl_Align(FL_ALIGN_TOP_LEFT));
-    } // Fl_Input_Choice* icExamples
-    { log = new Fl_Text_Display_Log(4, 612, 1063, 96);
+    { log = new Fl_Text_Display_Log(3, 553, 1064, 96);
       log->box(FL_DOWN_FRAME);
       log->color(FL_FOREGROUND_COLOR);
       log->selection_color(FL_SELECTION_COLOR);
@@ -74,11 +118,7 @@ Fl_Double_Window* AlabGui::make_window() {
       log->align(Fl_Align(FL_ALIGN_TOP));
       log->when(FL_WHEN_RELEASE);
     } // Fl_Text_Display_Log* log
-    { cbAtt = new Fl_Check_Button(44, 64, 28, 28, "at&&t syntax");
-      cbAtt->down_box(FL_DOWN_BOX);
-      cbAtt->callback((Fl_Callback*)cb_cbAtt);
-    } // Fl_Check_Button* cbAtt
-    { hexView = new HexView(471, 123, 596, 485);
+    { hexView = new HexView(469, 64, 597, 485);
       hexView->box(FL_BORDER_BOX);
       hexView->color(FL_BACKGROUND2_COLOR);
       hexView->selection_color(FL_BACKGROUND_COLOR);
@@ -89,8 +129,35 @@ Fl_Double_Window* AlabGui::make_window() {
       hexView->align(Fl_Align(FL_ALIGN_CENTER));
       hexView->when(FL_WHEN_RELEASE);
     } // HexView* hexView
-    { Fl_Button* o = new Fl_Button(3, 92, 28, 28, "test");
-      o->callback((Fl_Callback*)cb_test);
+    { Fl_Button* o = new Fl_Button(3, 22, 41, 20, "x86");
+      o->callback((Fl_Callback*)cb_x86);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(44, 22, 41, 20, "x86*");
+      o->callback((Fl_Callback*)cb_x861);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(85, 22, 41, 20, "x64");
+      o->callback((Fl_Callback*)cb_x64);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(126, 22, 41, 20, "x64*");
+      o->callback((Fl_Callback*)cb_x641);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(3, 42, 35, 20, "arm");
+      o->callback((Fl_Callback*)cb_arm);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(38, 42, 47, 20, "arm64");
+      o->callback((Fl_Callback*)cb_arm64);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(85, 42, 36, 20, "ppc");
+      o->callback((Fl_Callback*)cb_ppc);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(121, 42, 46, 20, "ppc64");
+      o->callback((Fl_Callback*)cb_ppc64);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(167, 42, 56, 20, "ppc64le");
+      o->callback((Fl_Callback*)cb_ppc64le);
+    } // Fl_Button* o
+    { Fl_Button* o = new Fl_Button(167, 22, 56, 20, "mips");
+      o->callback((Fl_Callback*)cb_mips);
     } // Fl_Button* o
     mainWindow->end();
   } // Fl_Double_Window* mainWindow
