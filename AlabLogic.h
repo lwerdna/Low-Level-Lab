@@ -31,3 +31,8 @@ void onBtnPpc64();
 void onBtnPpc64le();
 void onBtnPpc64le();
 
+void onInpArch();
+void onInpVendor();
+void onInpOs();
+void onInpEnviron();
+

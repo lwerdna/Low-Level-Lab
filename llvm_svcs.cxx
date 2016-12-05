@@ -465,7 +465,7 @@ const char *
 symbol_lookup_cb(void *DisInfo, uint64_t ReferenceValue, uint64_t *ReferenceType,
 	uint64_t ReferencePC, const char **ReferenceName)
 {
-	printf("%s()\n", __func__);
+	//printf("%s()\n", __func__);
 	return NULL;
 }
 

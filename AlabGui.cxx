@@ -3,6 +3,34 @@
 #include "AlabGui.h"
 #include "AlabLogic.h"
 
+void AlabGui::cb_iArch_i(Fl_Input*, void*) {
+  onInpArch();
+}
+void AlabGui::cb_iArch(Fl_Input* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_iArch_i(o,v);
+}
+
+void AlabGui::cb_iOs_i(Fl_Input*, void*) {
+  onInpOs();
+}
+void AlabGui::cb_iOs(Fl_Input* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_iOs_i(o,v);
+}
+
+void AlabGui::cb_iEnviron_i(Fl_Input*, void*) {
+  onInpEnviron();
+}
+void AlabGui::cb_iEnviron(Fl_Input* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_iEnviron_i(o,v);
+}
+
+void AlabGui::cb_iVendor_i(Fl_Input*, void*) {
+  onInpVendor();
+}
+void AlabGui::cb_iVendor(Fl_Input* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_iVendor_i(o,v);
+}
+
 void AlabGui::cb_x86_i(Fl_Button*, void*) {
   onBtnX86();
 }
@@ -110,16 +138,24 @@ Fl_Double_Window* AlabGui::make_window() {
       srcBuf->add_modify_callback(onSourceModified, this);
     } // Fl_Text_Editor_Asm* srcCode
     { iArch = new Fl_Input(229, 38, 60, 23, "arch/sub:");
+      iArch->callback((Fl_Callback*)cb_iArch);
       iArch->align(Fl_Align(FL_ALIGN_TOP));
+      iArch->when(FL_WHEN_CHANGED);
     } // Fl_Input* iArch
     { iOs = new Fl_Input(351, 38, 60, 23, "os/sys:");
+      iOs->callback((Fl_Callback*)cb_iOs);
       iOs->align(Fl_Align(FL_ALIGN_TOP));
+      iOs->when(FL_WHEN_CHANGED);
     } // Fl_Input* iOs
     { iEnviron = new Fl_Input(412, 38, 60, 23, "envir/abi:");
+      iEnviron->callback((Fl_Callback*)cb_iEnviron);
       iEnviron->align(Fl_Align(FL_ALIGN_TOP));
+      iEnviron->when(FL_WHEN_CHANGED);
     } // Fl_Input* iEnviron
     { iVendor = new Fl_Input(290, 38, 60, 23, "vendor:");
+      iVendor->callback((Fl_Callback*)cb_iVendor);
       iVendor->align(Fl_Align(FL_ALIGN_TOP));
+      iVendor->when(FL_WHEN_CHANGED);
     } // Fl_Input* iVendor
     { log = new Fl_Text_Display_Log(3, 553, 1064, 96);
       log->box(FL_DOWN_FRAME);
@@ -189,7 +225,7 @@ int main(int argc, char **argv) {
   AlabGui gui;
   Fl_Double_Window *w = gui.make_window();
   onGuiFinished(&gui);
-  Fl::add_idle(onIdle, &gui);
+  //Fl::add_idle(onIdle, &gui);
   w->end();
   w->show();
   int rc = Fl::run();

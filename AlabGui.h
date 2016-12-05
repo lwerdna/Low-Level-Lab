@@ -19,9 +19,25 @@ public:
   Fl_Menu_Bar *menuBar;
   Fl_Text_Editor_Asm *srcCode;
   Fl_Input *iArch;
+private:
+  inline void cb_iArch_i(Fl_Input*, void*);
+  static void cb_iArch(Fl_Input*, void*);
+public:
   Fl_Input *iOs;
+private:
+  inline void cb_iOs_i(Fl_Input*, void*);
+  static void cb_iOs(Fl_Input*, void*);
+public:
   Fl_Input *iEnviron;
+private:
+  inline void cb_iEnviron_i(Fl_Input*, void*);
+  static void cb_iEnviron(Fl_Input*, void*);
+public:
   Fl_Input *iVendor;
+private:
+  inline void cb_iVendor_i(Fl_Input*, void*);
+  static void cb_iVendor(Fl_Input*, void*);
+public:
   Fl_Text_Display_Log *log;
   HexView *hexView;
 private:

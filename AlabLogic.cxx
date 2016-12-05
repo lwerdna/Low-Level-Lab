@@ -31,13 +31,7 @@ AlabGui *gui = NULL;
 char fileOpenPath[FILENAME_MAX] = {'\0'};
 
 /* reassemble state vars */
-bool assemble_forced = false;
-bool assemble_requested = false;
-int length_last_assemble = 0;
-time_t time_last_assemble = 0;
-uint32_t crc_last_assemble = 0;
 int dialect = LLVM_SVCS_DIALECT_UNSPEC;
-
 string assembledBytes;
 
 /*****************************************************************************/
@@ -149,7 +143,7 @@ int file_load(const char *path)
 }
 
 /*****************************************************************************/
-/* MAIN ROUTINE */
+/* LOGGING STUFF */
 /*****************************************************************************/
 
 void 
@@ -181,6 +175,10 @@ logError(const char *msg)
 	gui->log->append(msg);
 	gui->log->append("\n");
 }
+
+/*****************************************************************************/
+/* ASSEMBLE */
+/*****************************************************************************/
 
 int 
 getCodeModel()
@@ -237,61 +235,20 @@ void assemble_cb(int type, const char *fileName, int lineNum,
 }
 
 void
-assemble()
+assemble(void *)
 {
 	int rc = -1, offs;
-	char *srcText = NULL;
+	char *src_text = NULL;
 
-	/* assemble timing vars */
-	time_t time_now = 0;
-	int length_now = 0;
-	uint32_t crc_now = 0;
-
-	Fl_Text_Buffer *srcBuf = gui->srcBuf;
-
-	srcText = srcBuf->text();
-
-	if(!assemble_forced && !assemble_requested) {
-	    //printf("skipping assemble, neither forced nor requested\n");
-	    return;
-	}
-	
-	if(!assemble_forced && assemble_requested) {
-	    /* skip if we assembled within the last second */
-	    time(&time_now);
-	    float delta = difftime(time_now, time_last_assemble);
-	    if(delta >= 0 && delta < 1) {
-	        /* just too soon, remain requested */
-	        //printf("skipping assemble, too soon (now,last,diff)=(%ld,%ld,%f)\n",
-	        //    time_now, time_last_assemble, difftime(time_now, time_last_assemble));
-	        return;
-	    }
-	    else {
-	        /* skip if the text is unchanged */
-	        length_now = srcBuf->length();
-	        if(length_last_assemble == length_now) {
-	            crc_now = crc32(0, srcText, srcBuf->length());
-	            if(crc_now == crc_last_assemble) {
-	                //printf("skipping assemble, buffer unchanged\n");
-	                assemble_requested = false;
-	                return;
-	            }
-	        }
-	    }
-	}
-
-	assemble_forced = false;
-	assemble_requested = false;
-	if(crc_now) crc_last_assemble = crc_now;
-	if(time_now) time_last_assemble = time_now;
-	if(length_now) length_last_assemble = length_now;
-	
 	/* clear the log */
 	gui->log->clear(); 
-	/* keep the bytes from previous assemble in case this fails */
+	logNote("assembling");
+
+	/* do NOT clear the log
+		keep the bytes from previous assemble in case this fails */
 
 	/* reassemble the triplet from the GUI components
-	  (so that user can tweak it) */
+	  (to take into immediate account user selections) */
 	char triplet[128] = {'\0'};
 	strcat(triplet, gui->iArch->value());
 	
@@ -319,10 +276,10 @@ assemble()
 		
 	/* start */	
 	string assembledText, assembledErr;
-
+	src_text = gui->srcBuf->text();
 	vector<int> instrLengths;
 
-	if(llvm_svcs_assemble(srcText, dialect, triplet, 
+	if(llvm_svcs_assemble(src_text, dialect, triplet, 
 	  getCodeModel(), getRelocModel(), assemble_cb,
 	  assembledBytes, assembledErr)) {
 	    logError("llvm_svcs_assemble()");
@@ -350,10 +307,40 @@ assemble()
 	/* done */
 	rc = 0;
 	cleanup:
-	if(srcText) {
-	    free(srcText);
-	    srcText = NULL;
+	if(src_text) free(src_text);
+}
+
+/* manages assemble requests
+	- don't assemble too frequently (wait .5 seconds after last modifcation)
+	- don't assemble if unnecessary (if source buf not changed)
+*/
+void
+assemble_schedule(bool forced)
+{
+	int rc = -1;
+	uint32_t crc = 0;
+	static uint32_t crc_last = 0;
+	
+	Fl_Text_Buffer *srcBuf = gui->srcBuf;
+	char *src_text = srcBuf->text();
+
+	/* if source not modified, skip */
+	if(!forced) {
+		crc = crc32(0, src_text, srcBuf->length());
+		if(crc == crc_last) {
+			goto cleanup;
+		}
 	}
+	
+	crc_last = crc;
+
+	/* remove previously scheduled call
+		(additional keystrokes schedule a NEW callback) */
+	Fl::remove_timeout(assemble);
+	Fl::add_timeout(.5, assemble);
+
+	cleanup:
+	if(src_text) free(src_text);
 }
 
 /*****************************************************************************/
@@ -429,21 +416,13 @@ void quit_cb(Fl_Widget *, void *) {
 /* GUI CALLBACK STUFF */
 /*****************************************************************************/
 
-/* reassemble request from GUI with 0 args */
-void
-reassemble(void)
-{
-	printf("reassemble request\n");
-	assemble_forced = true;
-}
-
 /* callback when the source code is changed
 	(normal callback won't trigger during text change) */
 void
 onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 	const char * deletedText, void *cbArg)
 {
-	assemble_requested = true;
+	assemble_schedule(false);
 }
 
 void
@@ -451,9 +430,6 @@ setTripletAndReassemble(const char *triplet, char *src, int dialect_)
 {
 	/* set dialect (UNSPECIFIED, INTEL, ATT) */
 	dialect = dialect_;
-
-	/* set the source code buffer */
-	gui->srcBuf->text(src);
 
 	/* set the arch, vendor, os, environment */
 	string arch, subarch, vendor, os, environ, objFormat;
@@ -464,8 +440,9 @@ setTripletAndReassemble(const char *triplet, char *src, int dialect_)
 	gui->iOs->value(os.c_str());
 	gui->iEnviron->value(environ.c_str());
 
-	/* initiate assembly after idle */
-	assemble_forced = true;
+	/* set the source code buffer
+		this also triggers the modify callback (which schedules assemble) */
+	gui->srcBuf->text(src);
 }
 
 void onBtnX86()
@@ -495,7 +472,6 @@ void onBtnMips()
 
 void onBtnArm()
 {
-	printf("WTF?\n");
 	setTripletAndReassemble("armv7-none-none", (char *)rsrc_arm_s, 0);	
 }
 
@@ -518,7 +494,6 @@ void onBtnPpc64le()
 {
 	setTripletAndReassemble("powerpc64le-none-none", (char *)rsrc_ppc64_s, 0);	
 }
-
 
 void
 onGuiFinished(AlabGui *gui_)
@@ -569,19 +544,43 @@ onGuiFinished(AlabGui *gui_)
 void
 onIcCodeModel()
 {
-	assemble_forced = true;
+	//printf("%s()\n", __func__);
+	assemble_schedule(true);
 }
 
 void
 onIcRelocModel()
 {
-	assemble_forced = true;
+	//printf("%s()\n", __func__);
+	assemble_schedule(true);
 }
 
 void
-onIdle(void *data)
+onInpArch()
 {
-	assemble();
+	//printf("%s()\n", __func__);
+	assemble_schedule(true);
+}
+
+void
+onInpVendor()
+{
+	//printf("%s()\n", __func__);
+	assemble_schedule(true);
+}
+
+void
+onInpOs()
+{
+	//printf("%s()\n", __func__);
+	assemble_schedule(true);
+}
+
+void
+onInpEnviron()
+{
+	//printf("%s()\n", __func__);
+	assemble_schedule(true);
 }
 
 void
