@@ -460,12 +460,48 @@ llvm_svcs_assemble(
 /*****************************************************************************/
 
 /* a dummy function for the disasm context, else aarch64 crashes on
-	FF 43 00 D1 */
+	FF 43 00 D1 
+
+	see llvm-c/Disassembler.h
+*/
 const char *
 symbol_lookup_cb(void *DisInfo, uint64_t ReferenceValue, uint64_t *ReferenceType,
 	uint64_t ReferencePC, const char **ReferenceName)
 {
-	//printf("%s()\n", __func__);
+	const char *strRefType = "unknown";
+
+	switch(*ReferenceType) {
+		/* No input reference type or no output reference type. */
+		case LLVMDisassembler_ReferenceType_InOut_None:
+			strRefType = "none"; break;
+		/* The input reference is from a branch instruction. */
+		case LLVMDisassembler_ReferenceType_In_Branch:
+			strRefType = "branch"; break;
+		/* The input reference is from a PC relative load instruction. */
+		case LLVMDisassembler_ReferenceType_In_PCrel_Load:
+			strRefType = "pcref_load"; break;
+
+		/* The input reference is from an ARM64::ADRP instruction. */
+		case LLVMDisassembler_ReferenceType_In_ARM64_ADRP:
+			strRefType = "arm64_adrp"; break;
+		/* The input reference is from an ARM64::ADDXri instruction. */
+		case LLVMDisassembler_ReferenceType_In_ARM64_ADDXri:
+			strRefType = "arm64_addxri"; break;
+		/* The input reference is from an ARM64::LDRXui instruction. */
+		case LLVMDisassembler_ReferenceType_In_ARM64_LDRXui:
+			strRefType = "arm64_ldrxui"; break;
+		/* The input reference is from an ARM64::LDRXl instruction. */
+		case LLVMDisassembler_ReferenceType_In_ARM64_LDRXl:
+			strRefType = "arm64_ldrxl"; break;
+		/* The input reference is from an ARM64::ADR instruction. */
+		case LLVMDisassembler_ReferenceType_In_ARM64_ADR:
+			strRefType = "arm64_adr"; break;
+	}
+	
+	//printf("%s(refval:%llx reftype:%s)\n", __func__, ReferenceValue, 
+	//	strRefType);
+
+	*ReferenceType = LLVMDisassembler_ReferenceType_InOut_None;
 	return NULL;
 }
 
