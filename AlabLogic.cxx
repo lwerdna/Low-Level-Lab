@@ -71,7 +71,7 @@ int file_save(const char *path)
 	    printf("ERROR: fwrite()\n");
 	    goto cleanup;
 	}
-	
+
 	rc = 0;
 	cleanup:
 	if(buf) { free(buf); buf = NULL; }
@@ -220,7 +220,7 @@ void assemble_cb(int type, const char *fileName, int lineNum,
 	const char *message)
 {
 	char buf[128];
-	
+
 	sprintf(buf, "line %d: %s", lineNum, message);
 
 	switch(type) {
@@ -251,7 +251,7 @@ assemble(void *)
 	  (to take into immediate account user selections) */
 	char triplet[128] = {'\0'};
 	strcat(triplet, gui->iArch->value());
-	
+
 	if(gui->iVendor->size()) {
 		strcat(triplet, "-");
 		strcat(triplet, gui->iVendor->value());
@@ -264,7 +264,7 @@ assemble(void *)
 		strcat(triplet, "-");
 		strcat(triplet, gui->iEnviron->value());
 	}
-	
+
 	logNote(triplet);
 
 	/* abi parameter */
@@ -273,8 +273,8 @@ assemble(void *)
 	//	logNote("using MCTargetOptions.abi \"eabi\" for mips");
 	//	abi = "o32";
 	//}
-		
-	/* start */	
+	
+	/* start */
 	string assembledText, assembledErr;
 	src_text = gui->srcBuf->text();
 	vector<int> instrLengths;
@@ -289,7 +289,7 @@ assemble(void *)
 
 	/* output */
 	gui->hexView->clearBytes();
-	gui->hexView->setBytes(0, (uint8_t *)(assembledBytes.c_str()), assembledBytes.size());	
+	gui->hexView->setBytes(0, (uint8_t *)(assembledBytes.c_str()), assembledBytes.size());
 
 	if(llvm_svcs_disasm_lengths(triplet, (uint8_t *)assembledBytes.c_str(), assembledBytes.size(),
 	  0, instrLengths)) {
@@ -303,7 +303,7 @@ assemble(void *)
 		gui->hexView->hlAdd(offs, offs+*it);
 		offs += *it;
 	}
-	
+
 	/* done */
 	rc = 0;
 	cleanup:
@@ -320,7 +320,7 @@ assemble_schedule(bool forced)
 	int rc = -1;
 	uint32_t crc = 0;
 	static uint32_t crc_last = 0;
-	
+
 	Fl_Text_Buffer *srcBuf = gui->srcBuf;
 	char *src_text = srcBuf->text();
 
@@ -331,7 +331,7 @@ assemble_schedule(bool forced)
 			goto cleanup;
 		}
 	}
-	
+
 	crc_last = crc;
 
 	/* remove previously scheduled call
@@ -426,7 +426,8 @@ onSourceModified(int pos, int nInserted, int nDeleted, int nRestyled,
 }
 
 void
-setTripletAndReassemble(const char *triplet, char *src, int dialect_)
+setTripletAndReassemble(const char *triplet, char *src, int src_len, 
+  int dialect_)
 {
 	/* set dialect (UNSPECIFIED, INTEL, ATT) */
 	dialect = dialect_;
@@ -435,64 +436,80 @@ setTripletAndReassemble(const char *triplet, char *src, int dialect_)
 	string arch, subarch, vendor, os, environ, objFormat;
 	llvm_svcs_triplet_decompose(triplet, arch, subarch, vendor, os, environ,
 	    objFormat);
+
 	gui->iArch->value(arch.c_str());
+	gui->iArch->do_callback();
 	gui->iVendor->value(vendor.c_str());
+	gui->iVendor->do_callback();
 	gui->iOs->value(os.c_str());
+	gui->iOs->do_callback();
 	gui->iEnviron->value(environ.c_str());
+	gui->iEnviron->do_callback();
 
 	/* set the source code buffer
 		this also triggers the modify callback (which schedules assemble) */
-	gui->srcBuf->text(src);
+	string tmp(src, src_len);
+	gui->srcBuf->text(tmp.c_str());
 }
 
 void onBtnX86()
 {
-	setTripletAndReassemble("i386-none-none", (char *)rsrc_x86_s, LLVM_SVCS_DIALECT_ATT);	
+	setTripletAndReassemble("i386-none-none", (char *)rsrc_x86_s,
+		sizeof(rsrc_x86_s), LLVM_SVCS_DIALECT_ATT);
 }
 
 void onBtnX86_()
 {
-	setTripletAndReassemble("i386-none-none", (char *)rsrc_x86_intel_s, LLVM_SVCS_DIALECT_INTEL);	
+	setTripletAndReassemble("i386-none-none", (char *)rsrc_x86_intel_s, 
+		sizeof(rsrc_x86_intel_s),LLVM_SVCS_DIALECT_INTEL);
 }
 
 void onBtnX64()
 {
-	setTripletAndReassemble("x86_64-none-none", (char *)rsrc_x86_64_s, LLVM_SVCS_DIALECT_ATT);	
+	setTripletAndReassemble("x86_64-none-none", (char *)rsrc_x86_64_s, 
+		sizeof(rsrc_x86_64_s),LLVM_SVCS_DIALECT_ATT);
 }
 
 void onBtnX64_()
 {
-	setTripletAndReassemble("x86_64-none-none", (char *)rsrc_x86_64_intel_s, LLVM_SVCS_DIALECT_INTEL);	
+	setTripletAndReassemble("x86_64-none-none", (char *)rsrc_x86_64_intel_s, 
+		sizeof(rsrc_x86_64_intel_s),LLVM_SVCS_DIALECT_INTEL);
 }
 
 void onBtnMips()
 {
-	setTripletAndReassemble("mips-pc-none-o32", (char *)rsrc_mips_s, 0);	
+	setTripletAndReassemble("mips-pc-none-o32", (char *)rsrc_mips_s, 
+		sizeof(rsrc_mips_s),0);
 }
 
 void onBtnArm()
 {
-	setTripletAndReassemble("armv7-none-none", (char *)rsrc_arm_s, 0);	
+	setTripletAndReassemble("armv7-none-none", (char *)rsrc_arm_s, 
+		sizeof(rsrc_arm_s),0);
 }
 
 void onBtnArm64()
 {
-	setTripletAndReassemble("aarch64-none-none", (char *)rsrc_arm64_s, 0);	
+	setTripletAndReassemble("aarch64-none-none", (char *)rsrc_arm64_s, 
+		sizeof(rsrc_arm64_s),0);
 }
 
 void onBtnPpc()
 {
-	setTripletAndReassemble("powerpc-none-none", (char *)rsrc_ppc_s, 0);	
+	setTripletAndReassemble("powerpc-none-none", (char *)rsrc_ppc_s, 
+		sizeof(rsrc_ppc_s),0);
 }
 
 void onBtnPpc64()
 {
-	setTripletAndReassemble("powerpc64-none-none", (char *)rsrc_ppc64_s, 0);	
+	setTripletAndReassemble("powerpc64-none-none", (char *)rsrc_ppc64_s, 
+		sizeof(rsrc_ppc64_s),0);
 }
 
 void onBtnPpc64le()
 {
-	setTripletAndReassemble("powerpc64le-none-none", (char *)rsrc_ppc64_s, 0);	
+	setTripletAndReassemble("powerpc64le-none-none", (char *)rsrc_ppc64_s, 
+		sizeof(rsrc_ppc64_s),0);
 }
 
 void
@@ -515,7 +532,7 @@ onGuiFinished(AlabGui *gui_)
 	    { "E&xit",            FL_COMMAND + 'q', (Fl_Callback *)quit_cb, 0 },
 	    { 0 }
 	};
-	
+
 	gui->menuBar->copy(menuItems);
 
 	// LLVM STUFF
@@ -527,7 +544,7 @@ onGuiFinished(AlabGui *gui_)
 		gui->icCodeModel->add(cms[i]);
 	gui->icCodeModel->value(0);
 
-	/* init reloc models */	
+	/* init reloc models */
 	const char *rms[3] = { "static", "pic", "dynamic" };
 	for(int i=0; i<3; ++i)
 		gui->icRelocModel->add(rms[i]);
@@ -558,7 +575,7 @@ onIcRelocModel()
 void
 onInpArch()
 {
-	//printf("%s()\n", __func__);
+	printf("%s()\n", __func__);
 	assemble_schedule(true);
 }
 

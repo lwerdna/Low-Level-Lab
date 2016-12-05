@@ -413,7 +413,7 @@ void IntervalMgr::print()
 void IntervalMgr::dump()
 {
     for(unsigned int i=0; i<intervals.size(); ++i) {
-        printf("interval @%p ", &(intervals[i]));
+        printf("interval @%p ", (void *) &(intervals[i]));
         intervals[i].print();
     }
 }
