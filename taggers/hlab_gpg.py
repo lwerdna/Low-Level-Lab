@@ -46,6 +46,48 @@ def tagToStr(tag):
 
 	return 'unknown'
 
+# reference section 9.2 in rfc4880
+def symAlgoToStr(algo):
+	lookup = {0:'plaintext/unencrypted', 1:'IDEA', 2:'TripleDES', 3:'CAST5',
+		4:'Blowfish', 5:'Reserved', 6:'Reserved', 7:'AES128', 8:'AES192',
+		9:'AES256', 10:'Twofish'}
+
+	if algo in lookup:
+		return lookup[algo]
+
+	if algo >= 100 and algo <= 110:
+		return "private/experimental"
+
+	return 'unknown'
+
+# reference section 3.7.1 in rfc4880
+def s2kToStr(algo):
+	if algo == 0:
+		return 'Simple S2K'
+	if algo == 1:
+		return 'Salted S2K'
+	if algo == 2:
+		return 'Reserved'
+	if algo == 3:
+		return 'Iterated+Salted S2K'
+	if algo >= 100 and algo <= 110:
+		return 'private/experimental'
+
+	return 'unknown'
+
+# reference section 9.4 in refc4880
+def hashAlgoToStr(algo):
+	lookup = ['invalid', 'md5', 'sha1', 'ripe-md', 'reserved', 'reserved',
+		'reserved', 'reserved', 'sha256', 'sha384', 'sha512', 'sha224']
+
+	if algo >= 0 and algo < len(lookup):
+		return lookup[algo]
+
+	if algo >= 100 and algo <= 110:
+		return 'private/experimental'
+
+	return 'unknown'
+
 ###############################################################################
 # API that taggers must implement
 ###############################################################################
@@ -64,18 +106,18 @@ def tagReally(fpathIn, fpathOut):
 
 	# for each packet
 	while not IsEof(fp):
-		hdrLen = 0
+		(hdrLen,bodyLen) = (0,0)
 		oPacket = fp.tell()
 
-		tagByte = tagUint8(fp, "tag byte")
-		assert(tagByte & 0x80)
+		packetTag = tagUint8(fp, "packet tag byte")
+		assert(packetTag & 0x80)
 
 		tagId = 0
 		body = ''
-
-		if tagByte & 0x40:
-			# new format
-			tagId = 0x3F & tagByte
+			
+		# parse new format
+		if packetTag & 0x40:
+			tagId = 0x3F & packetTag
 			
 			while 1:
 				oLen = fp.tell()
@@ -86,16 +128,20 @@ def tagReally(fpathIn, fpathOut):
 				partial = False
 				bodyLen = 0
 				if octet1 <= 191:
+					hdrLen = 2
 					bodyLen = octet1
 					tag(fp, 1, "length (direct): 0x%X" % bodyLen)
 				elif octet1 >= 192 and octet1 <= 223:
+					hdrLen = 3
 					bodyLen = (octet1 - 192)*256 + octet2 + 192
 					tag(fp, 2, "length (calculated): 0x%X" % bodyLen)
 				elif octet1 >= 224 and octet1 <= 254:
+					hdrLen = 2
 					bodyLen = 1 << (octet1 & 0x1f)
 					tag(fp, 1, "length (partial): 0x%X" % bodyLen)
 					partial = True
 				else:
+					hdrLen = 5
 					bodyLen = tagUint32(fp, "len")
 					tag(fp, 1, "length (direct): 0x%X" % bodyLen)
 					
@@ -103,10 +149,12 @@ def tagReally(fpathIn, fpathOut):
 
 				if IsEof(fp) or not partial: 
 					break
+
+		# parse old format
 		else:
-			# old format
-			length_type = tagByte & 3
-			tagId = (0x3C & tagByte) >> 2
+			length_type = packetTag & 3
+			tagId = (0x3C & packetTag) >> 2
+
 			bodyLen = 0
 
 			if length_type == 0:
@@ -127,13 +175,33 @@ def tagReally(fpathIn, fpathOut):
 			body = fp.read(bodyLen)
 
 		# mark the whole packet
-		print "[0x%X,0x%X) 0x0 %s packet" % \
-			(oPacket, fp.tell(), tagToStr(tagId))
+		print "[0x%X,0x%X) 0x0 header" % (oPacket, oPacket+hdrLen)
+		print "[0x%X,0x%X) 0x0 body" % (oPacket+hdrLen, oPacket+hdrLen+bodyLen)
+		print "[0x%X,0x%X) 0x0 %s packet (Tag %d)" % \
+			(oPacket, fp.tell(), tagToStr(tagId), tagId)
+
+		oPacketEnd = fp.tell()
 
 		# certain packets we go deeper
-		#if tagId == TAG_SYMKEY_ENCR_SESS_KEY:
-		#else:
-
+		if tagId == TAG_SYMKEY_ENCR_SESS_KEY:
+			fp.seek(oPacket + hdrLen)
+			tagUint8(fp, "version");
+			algoId = uint8(fp, True)
+			tagUint8(fp, "algorithm (%s)" % symAlgoToStr(algoId))
+			s2kId = uint8(fp, True)
+			tagUint8(fp, "S2K (%s)" % s2kToStr(s2kId))
+		
+			if s2kId == 3: # iterated and salted
+				hashId = uint8(fp, True)
+				tagUint8(fp, "hash (%s)" % hashAlgoToStr(hashId))
+				tag(fp, 8, "salt");
+				countCoded = uint8(fp, True)
+				count = (16 + (countCoded & 0xF)) << ((countCoded >> 4) + 6)
+				tagUint8(fp, "count (decoded: %d)" % count)
+				
+		# next packet
+		fp.seek(oPacketEnd)
+		
 	fp.close()
 
 	# undo our output redirection
