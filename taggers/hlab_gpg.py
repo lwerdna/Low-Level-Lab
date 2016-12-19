@@ -75,7 +75,7 @@ def s2kToStr(algo):
 
 	return 'unknown'
 
-# reference section 9.4 in refc4880
+# reference section 9.4 in rfc4880
 def hashAlgoToStr(algo):
 	lookup = ['invalid', 'md5', 'sha1', 'ripe-md', 'reserved', 'reserved',
 		'reserved', 'reserved', 'sha256', 'sha384', 'sha512', 'sha224']
@@ -88,12 +88,36 @@ def hashAlgoToStr(algo):
 
 	return 'unknown'
 
+# reference section 9.3 in rfc4880
+def comprAlgoToStr(algo):
+	if algo == 0:
+		return 'uncompressed'
+	if algo == 1:
+		return 'zip [rfc1951]'
+	if algo == 2:
+		return 'zlib [rfc1950]'
+	if algo == 3:
+		return 'bzip2 [bz2]'
+	if algo >= 100 and algo <= 110:
+		return 'private/experimental'
+
+	return 'unknown'
+
+def litDataFmtToStr(fmt):
+	if fmt == ord('b'):
+		return 'binary'
+	if fmt == ord('t'):
+		return 'text'
+	if fmt == ord('u'):
+		return 'utf-8'
+	return 'unknown'
+
 ###############################################################################
 # API that taggers must implement
 ###############################################################################
 
 def tagTest(fpathIn):
-	return True
+	return False
 
 def tagReally(fpathIn, fpathOut):
 	fp = open(fpathIn, "rb")
@@ -168,9 +192,10 @@ def tagReally(fpathIn, fpathOut):
 				hdrLen = 5
 				bodyLen = tagUint32(fp, "len")
 			elif length_type == 3:
+				# length extends to end of file
 				hdrLen = 1
 				fp.seek(0, os.SEEK_END)
-				bodyLen = fp.tell() - oPacket + 1
+				bodyLen = fp.tell() - (oPacket + 1)
 
 			body = fp.read(bodyLen)
 
@@ -183,8 +208,9 @@ def tagReally(fpathIn, fpathOut):
 		oPacketEnd = fp.tell()
 
 		# certain packets we go deeper
+		fp.seek(oPacket + hdrLen)
+
 		if tagId == TAG_SYMKEY_ENCR_SESS_KEY:
-			fp.seek(oPacket + hdrLen)
 			tagUint8(fp, "version");
 			algoId = uint8(fp, True)
 			tagUint8(fp, "algorithm (%s)" % symAlgoToStr(algoId))
@@ -198,7 +224,20 @@ def tagReally(fpathIn, fpathOut):
 				countCoded = uint8(fp, True)
 				count = (16 + (countCoded & 0xF)) << ((countCoded >> 4) + 6)
 				tagUint8(fp, "count (decoded: %d)" % count)
-				
+		elif tagId == TAG_COMPR_DATA:
+			algoId = uint8(fp, True)
+			tagUint8(fp, "algorithm (%s)" % comprAlgoToStr(algoId))
+			tag(fp, oPacketEnd - fp.tell(), "compressed data")
+
+		elif tagId == TAG_LITERAL_DATA:
+			fmt = uint8(fp, True)
+			tagUint8(fp, "format (%s)" % litDataFmtToStr(fmt))
+			lenFile = tagUint8(fp, "filename length")
+			assert(lenFile < 256)
+			tag(fp, lenFile, "filename")
+			tagUint32(fp, "date")
+			tag(fp, oPacketEnd - fp.tell(), "data")
+	
 		# next packet
 		fp.seek(oPacketEnd)
 		
