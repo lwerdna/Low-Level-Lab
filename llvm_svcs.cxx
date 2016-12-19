@@ -93,8 +93,9 @@ llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
    		case llvm::Triple::ARMSubArch_v8_2a: subarch="v8_2a"; break;
 		case llvm::Triple::ARMSubArch_v8_1a: subarch="v8_1a"; break;
 		case llvm::Triple::ARMSubArch_v8: subarch="v8"; break;
-		case llvm::Triple::ARMSubArch_v8m_baseline: subarch="v8m"; break;
-		case llvm::Triple::ARMSubArch_v8m_mainline: subarch="v8m"; break; // ??
+		/* not here in 3.8.1, here in 3.9.0 */
+		//case llvm::Triple::ARMSubArch_v8m_baseline: subarch="v8m"; break;
+		//case llvm::Triple::ARMSubArch_v8m_mainline: subarch="v8m"; break; // ??
 		case llvm::Triple::ARMSubArch_v7: subarch="v7"; break;
 		case llvm::Triple::ARMSubArch_v7em: subarch="v7em"; break;
 		case llvm::Triple::ARMSubArch_v7m: subarch="v7m"; break;
