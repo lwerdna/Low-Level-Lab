@@ -15,7 +15,7 @@ LINK = $(CXX)
 #%.o: %.cxx
 #	$(CXX) $(CXXFLAGS) $(DEBUG) -c $<
 
-all: clab alab hlab
+all: clab alab hlab test
 
 # GUI objects
 #
@@ -58,6 +58,9 @@ llvm_svcs.o: llvm_svcs.cxx llvm_svcs.h
 IntervalMgr.o: IntervalMgr.cxx IntervalMgr.h
 	g++ $(CFLAGS) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c IntervalMgr.cxx
 
+test.o: test.cpp
+	g++ $(CFLAGS) $(FLAGS_DEBUG) -c test.cpp
+
 # RESOURCES
 rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s ./rsrc/x86_intel.s ./rsrc/x86_64_intel.s
 	./genrsrc.py source > rsrc.c
@@ -78,6 +81,9 @@ alab: rsrc.o AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Disp
 
 hlab: HlabGui.o HlabLogic.o HexView.o IntervalMgr.o Makefile
 	$(LINK)  $(FLAGS_LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o -o hlab $(LD_FLTK) $(PYTHON_LDFLAGS) -lautils
+
+test: test.o
+	$(LINK) $(FLAGS_LINK) test.o -lautils -o test
 
 # OTHER targets
 #
