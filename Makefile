@@ -6,7 +6,7 @@ FLAGS_FLTK = $(shell fltk-config --use-images --cxxflags )
 #LDFLAGS  = $(shell fltk-config --use-images --ldflags )
 LD_FLTK = $(shell fltk-config --use-images --ldstaticflags)
 LD_LLVM = $(shell llvm-config --ldflags) $(shell llvm-config --libs)
-PYTHON_CFLAGS = $(shell python2.7-config --cflags)
+FLAGS_PYTHON = $(shell python2.7-config --cflags)
 PYTHON_LDFLAGS = $(shell python2.7-config --ldflags)
 LINK = $(CXX)
 
@@ -49,17 +49,20 @@ AlabLogic.o: AlabLogic.cxx AlabLogic.h
 	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_DEBUG) -c AlabLogic.cxx
 
 HlabLogic.o: HlabLogic.cxx HlabLogic.h
-	g++ $(CFLAGS) $(FLAGS_FLTK) $(PYTHON_CFLAGS) $(FLAGS_DEBUG) -c HlabLogic.cxx
+	g++ $(CFLAGS) $(FLAGS_FLTK) $(FLAGS_PYTHON) $(FLAGS_DEBUG) -c HlabLogic.cxx
 
 # OTHER objects
 llvm_svcs.o: llvm_svcs.cxx llvm_svcs.h
 	g++ $(CFLAGS) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c llvm_svcs.cxx
 
+tagging.o: tagging.cxx tagging.h
+	g++ $(CFLAGS) $(FLAGS_PYTHON) $(FLAGS_DEBUG) -c tagging.cxx
+
 IntervalMgr.o: IntervalMgr.cxx IntervalMgr.h
-	g++ $(CFLAGS) $(FLAGS_LLVM) $(FLAGS_DEBUG) -c IntervalMgr.cxx
+	g++ $(CFLAGS) $(FLAGS_DEBUG) -c IntervalMgr.cxx
 
 test.o: test.cpp
-	g++ $(CFLAGS) $(FLAGS_DEBUG) -c test.cpp
+	g++ $(CFLAGS) $(FLAGS_PYTHON) $(FLAGS_DEBUG) -c test.cpp
 
 # RESOURCES
 rsrc.c: ./rsrc/arm.s ./rsrc/arm64.s ./rsrc/mips.s ./rsrc/ppc.s ./rsrc/thumb.s ./rsrc/x86.s ./rsrc/x86_64.s ./rsrc/x86_intel.s ./rsrc/x86_64_intel.s
@@ -82,8 +85,8 @@ alab: rsrc.o AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Disp
 hlab: HlabGui.o HlabLogic.o HexView.o IntervalMgr.o Makefile
 	$(LINK)  $(FLAGS_LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o -o hlab $(LD_FLTK) $(PYTHON_LDFLAGS) -lautils
 
-test: test.o
-	$(LINK) $(FLAGS_LINK) test.o -lautils -o test
+test: test.o tagging.o IntervalMgr.o
+	$(LINK) $(FLAGS_LINK) $(PYTHON_LDFLAGS) test.o tagging.o IntervalMgr.o -lautils -o test
 
 # OTHER targets
 #
