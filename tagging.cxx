@@ -1,3 +1,9 @@
+/* this deals with tagging modules
+
+	it's separated out mainly to isolate hlab from python details
+
+	hlab gets its results from this functionality in the form of an interval manager */
+
 /* c stdlib includes */
 #include <time.h>
 #include <stdio.h>
@@ -24,12 +30,121 @@ extern "C" {
 /* local stuff */
 #include "IntervalMgr.h"
 
+/* globals */
+PyObject *pModImp = NULL;
+PyObject *pFuncLoadSource = NULL;
+/* convert "/usr/local/lib/python2.7/site-packages/hlab_pe64.py" to "hlab_pe64"
+*/
+int
+tagging_path_to_module_name(string path, string &result)
+{
+	char buf[PATH_MAX];
+	int len = path.size();
+	if(len >= PATH_MAX) return -1;
+	strcpy(buf, path.c_str());
+	if(strlen(buf) != len) return -1;
+	if(0 != strncmp(buf+len-3, ".py", 3)) return -1;
+			
+	/* cut off the extension */
+	buf[len-3] = '\0';
+
+	/* scan backwards from before ".py" */
+	for(int i=len-4; i>0; --i) {
+		/* find "hlab_" ? */
+		if(0 == strncmp(buf+i, "hlab_", 5)) {
+			result = buf+i;
+			return 0;
+		}
+	}
+	return -1;
+}
+
+/* initialize python to a nice state */
+int
+tagging_python_init(char *progName)
+{
+	int rc = -1;
+
+	Py_SetProgramName(progName);
+	Py_Initialize();
+
+	pModImp = PyImport_ImportModule("imp");
+	if(!pModImp) goto cleanup; 
+
+	pFuncLoadSource = PyObject_GetAttrString(pModImp, "load_source");
+	if(!pFuncLoadSource) goto cleanup;
+
+	printf("pFuncLoadSource is: %p\n", pFuncLoadSource);
+
+	rc = 0;
+	cleanup:
+	return rc;
+}
+
+/* load a module from a path */
+int
+tagging_python_load_tagger(string modulePath, PyObject **pModule,
+  PyObject **pTagTest, PyObject **pTagReally)
+{
+	int rc = -1;
+	PyObject *pArgs, *pStr0, *pStr1, *pRetVal;
+	string moduleName;
+	
+	if(0 != tagging_path_to_module_name(modulePath, moduleName)) {
+		goto cleanup;
+	}
+
+	/* - call imp.load_source("hlab_XXX", "/path/to/hlab_XXX.py") 
+       - import hlab_XXX
+	   NOTE: in Python3, reload() is in imp module, and in 3.4, imp is
+	         deprecated in favor of importlib */
+	pArgs = PyTuple_New(2);
+	if(!pArgs) goto cleanup;
+	pStr0 = PyString_FromString(moduleName.c_str());
+	if(!pStr0) goto cleanup;
+	pStr1 = PyString_FromString(modulePath.c_str());
+	if(!pStr1) goto cleanup;
+	PyTuple_SetItem(pArgs, 0, pStr0); /* SetItem *steals* reference, no decref from us */
+	PyTuple_SetItem(pArgs, 1, pStr1);
+	pRetVal = PyObject_CallObject(pFuncLoadSource, pArgs);
+	if(!pRetVal) {
+		printf("WTF! ");
+		PyErr_Print();
+		goto cleanup;
+	}
+	*pModule = PyImport_ImportModule(moduleName.c_str());
+	if(!(*pModule)) goto cleanup; 
+
+	/* resolve tagTest() and tagReally() */
+	if(pTagTest) {
+		*pTagTest = PyObject_GetAttrString(*pModule, "tagTest");
+		if(!(*pTagTest)) goto cleanup;
+	}
+	if(pTagReally) {
+		*pTagReally = PyObject_GetAttrString(*pModule, "tagReally");
+		if(!(*pTagReally)) goto cleanup;
+	}
+
+	rc = 0;
+	cleanup:
+	return rc;
+}
+
+
+
+int
+tagging_release()
+{
+	// TODO: free or decref imp?
+	return 0;
+}
+
 /*****************************************************************************/
 /* TAGGING RESULTS: LOAD FILE ON DISK -> Interval Manager */
 /*****************************************************************************/
 
 int
-tags_load_results(const char *fpath, IntervalMgr &mgr)
+tagging_load_results(const char *fpath, IntervalMgr &mgr)
 {
     int rc = -1;
     char *line = NULL;
@@ -204,12 +319,21 @@ tagging_modules_find_dir(string path, vector<string> &results)
 	
 	while((ep = readdir(dp))) {
 		int len = strlen(ep->d_name);
+
+		/* file name must match r'hlab_.*\.py' */
 		if(len < 9) continue; /* needs "hlab_" and "X" and ".py" */
 		if(0 != strncmp(ep->d_name, "hlab_", 5)) continue; /* start with "hlab_" */
 		if(0 != strcmp((ep->d_name)+len-3, ".py")) continue; /* end with ".py" */
 		
-		string tmp = path + "/" + ep->d_name;
-		results.push_back(tmp);
+		/* it must load */
+		string pathed = path + "/" + ep->d_name;
+		PyObject *a, *b, *c;
+		if(0 != tagging_python_load_tagger(pathed, &a, &b, &c)) {
+			// TODO: decref
+			continue;
+		}
+
+		results.push_back(pathed);
 	}
 
 	closedir(dp);
@@ -251,48 +375,31 @@ int tagging_modules_find_all(vector<string> &taggers)
 	
 	result is (true/false) */
 int 
-tagging_module_test(string pathModule, string pathTarget, bool &result)
+tagging_module_test(string modulePath, string pathTarget, bool &result)
 {
 	int rc = -1;
 
-	PyObject *pModImp, *pModTagger;
-	PyObject *pRetVal=NULL;
-	PyObject *pStr0, *pStr1;
-	PyObject *pFunc;
-	/* python tuple, for arguments */
-	PyObject *pArgs=NULL;
-	
-	/* - import imp
-	   - resolve imp.load_source()
-	   - call imp.load_source("tagmodule", "/path/to/tagger.py") */
-	pModImp = PyImport_ImportModule("imp");
-	if(!pModImp) goto cleanup; 
-	pFunc = PyObject_GetAttrString(pModImp, "load_source");
-	if(!pFunc) goto cleanup;
-	pArgs = PyTuple_New(2);
-	if(!pArgs) goto cleanup;
-	pStr0 = PyString_FromString("tagmodule");
-	if(!pStr0) goto cleanup;
-	pStr1 = PyString_FromString(pathModule.c_str());
-	if(!pStr1) goto cleanup;
-	PyTuple_SetItem(pArgs, 0, pStr0); /* SetItem *steals* reference, no decref from us */
-	PyTuple_SetItem(pArgs, 1, pStr1);
-	pRetVal = PyObject_CallObject(pFunc, pArgs);
-	if(!pRetVal) goto cleanup;
+	PyObject *pRetVal, *pStr, *pArgs;
+	PyObject *pTagger, *pTest;
 
-	/* - import tagmodule
-	   - resolve tagTest()
-	   - call tagmodule.tagTest("/path/to/target.bin") */
-	pModTagger = PyImport_ImportModule("tagmodule");
-	if(!pModTagger) goto cleanup; 
-	pFunc = PyObject_GetAttrString(pModTagger, "tagTest");
-	if(!pFunc) goto cleanup;
-	pStr0 = PyString_FromString(pathTarget.c_str());
-	if(!pStr0) goto cleanup;
+	string moduleName;
+	if(0 != tagging_path_to_module_name(modulePath, moduleName)) {
+		goto cleanup;
+	}
+	   
+	/* import tag module, resolve tagTest() */
+	if(0 != tagging_python_load_tagger(modulePath, &pTagger, 
+	  &pTest, NULL)) {
+		goto cleanup;
+	}
+
+	/* call tagmodule.tagTest("/path/to/target.bin") */	
+	pStr = PyString_FromString(pathTarget.c_str());
+	if(!pStr) goto cleanup;
 	pArgs = PyTuple_New(1);
 	if(!pArgs) goto cleanup;
-	PyTuple_SetItem(pArgs, 0, pStr0);
-	pRetVal = PyObject_CallObject(pFunc, pArgs);
+	PyTuple_SetItem(pArgs, 0, pStr);
+	pRetVal = PyObject_CallObject(pTest, pArgs);
 	if(!pRetVal) goto cleanup;
 
 	/* can tag the file when tagTest() returns nonzero */
@@ -313,18 +420,18 @@ int
 tagging_modules_test(vector<string> modPaths, string pathTarget,
 	vector<string> &result)
 {
-	int rc=-1;
+	int rc = -1;
 
 	for(auto i=modPaths.begin(); i!=modPaths.end(); ++i) {
-		bool bCanTag;
-		if(0 != tagging_module_test(*i, pathTarget, bCanTag))
-			goto cleanup;
-		if(bCanTag)
-			result.push_back(*i);
+		bool bCanTag = false;
+		if(0 == tagging_module_test(*i, pathTarget, bCanTag)) {
+			if(bCanTag) {
+				result.push_back(*i);
+			}
+		}
 	}
 
 	rc = 0;
-	cleanup:
 	return rc;
 }
 

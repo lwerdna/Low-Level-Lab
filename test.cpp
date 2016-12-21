@@ -33,9 +33,8 @@ int main(int ac, char **av)
 	if(ac < 2) goto cleanup;
 
 	if(!strcmp(av[1], "tagging")) {
-		printf("initializing python...\n");
-		Py_SetProgramName(av[0]);
-		Py_Initialize();
+
+		tagging_python_init(av[0]);
 
 		vector<string> modules;
 		if(0 != tagging_modules_find_all(modules)) {
