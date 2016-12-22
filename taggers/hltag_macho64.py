@@ -175,37 +175,24 @@ LC_ENCRYPTION_INFO_64 = 0x2C
 LC_LINKER_OPTION = 0x2D
 LC_LINKER_OPTIMIZATION_HINT = 0x2E
 
-def isMachO64(fp):
+###############################################################################
+# "main"
+###############################################################################
+
+if __name__ == '__main__':
+	assert len(sys.argv) == 2
+
+	fp = open(sys.argv[1], "rb")
+
 	tmp = fp.tell()
 	fp.seek(0)
 	if uint32(fp) != MH_MAGIC_64: # magic
-		return False
+		sys.exit(-1);
 	if uint32(fp) != CPU_TYPE_X86_64: # cputype
-		return False
+		sys.exit(-1);
 	if (uint32(fp) & 0xFF) != CPU_SUBTYPE_386:
-		return False
+		sys.exit(-1);
 	fp.seek(tmp)
-	return True
-
-###############################################################################
-# API that taggers must implement
-###############################################################################
-
-def tagTest(fpathIn):
-	fp = open(fpathIn, "rb")
-	result = isMachO64(fp)
-	fp.close()
-	return result
-
-def tagReally(fpathIn, fpathOut):
-	fp = open(fpathIn, "rb")
-	assert(isMachO64(fp))
-
-	# we want to be keep the convenience of writing tags to stdout with print()
-	stdoutOld = None
-	if fpathOut:
-		stdoutOld = sys.stdout
-		sys.stdout = open(fpathOut, "w")
 
 	tag(fp, 4+4+4+4+4+4+4+4, "mach_header_64", 1)
 	# magic
@@ -389,25 +376,4 @@ def tagReally(fpathIn, fpathOut):
 			fp.seek(oCmd+cmdSize)
 			
 	fp.close()
-
-	# undo our output redirection
-	if stdoutOld:
-		sys.stdout.close()
-		sys.stdout = stdoutOld
-
-###############################################################################
-# "main"
-###############################################################################
-
-if __name__ == '__main__':
-	fpathIn = None
-	fpathOut = None
-
-	assert len(sys.argv) > 1
-
-	fpathIn = sys.argv[1]
-	if sys.argv[2:]:
-		fpathOut = sys.argv[2]
-
-	tagReally(fpathIn, fpathOut)
-
+	sys.exit(0);

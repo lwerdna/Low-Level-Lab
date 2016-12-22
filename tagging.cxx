@@ -26,118 +26,10 @@ extern "C" {
     #include <autils/bytes.h>
     #include <autils/subprocess.h>
 }
+#include <autils/filesys.hpp>
 
 /* local stuff */
 #include "IntervalMgr.h"
-
-/* globals */
-PyObject *pModImp = NULL;
-PyObject *pFuncLoadSource = NULL;
-/* convert "/usr/local/lib/python2.7/site-packages/hlab_pe64.py" to "hlab_pe64"
-*/
-int
-tagging_path_to_module_name(string path, string &result)
-{
-	char buf[PATH_MAX];
-	int len = path.size();
-	if(len >= PATH_MAX) return -1;
-	strcpy(buf, path.c_str());
-	if(strlen(buf) != len) return -1;
-	if(0 != strncmp(buf+len-3, ".py", 3)) return -1;
-			
-	/* cut off the extension */
-	buf[len-3] = '\0';
-
-	/* scan backwards from before ".py" */
-	for(int i=len-4; i>0; --i) {
-		/* find "hlab_" ? */
-		if(0 == strncmp(buf+i, "hlab_", 5)) {
-			result = buf+i;
-			return 0;
-		}
-	}
-	return -1;
-}
-
-/* initialize python to a nice state */
-int
-tagging_python_init(char *progName)
-{
-	int rc = -1;
-
-	Py_SetProgramName(progName);
-	Py_Initialize();
-
-	pModImp = PyImport_ImportModule("imp");
-	if(!pModImp) goto cleanup; 
-
-	pFuncLoadSource = PyObject_GetAttrString(pModImp, "load_source");
-	if(!pFuncLoadSource) goto cleanup;
-
-	printf("pFuncLoadSource is: %p\n", pFuncLoadSource);
-
-	rc = 0;
-	cleanup:
-	return rc;
-}
-
-/* load a module from a path */
-int
-tagging_python_load_tagger(string modulePath, PyObject **pModule,
-  PyObject **pTagTest, PyObject **pTagReally)
-{
-	int rc = -1;
-	PyObject *pArgs, *pStr0, *pStr1, *pRetVal;
-	string moduleName;
-	
-	if(0 != tagging_path_to_module_name(modulePath, moduleName)) {
-		goto cleanup;
-	}
-
-	/* - call imp.load_source("hlab_XXX", "/path/to/hlab_XXX.py") 
-       - import hlab_XXX
-	   NOTE: in Python3, reload() is in imp module, and in 3.4, imp is
-	         deprecated in favor of importlib */
-	pArgs = PyTuple_New(2);
-	if(!pArgs) goto cleanup;
-	pStr0 = PyString_FromString(moduleName.c_str());
-	if(!pStr0) goto cleanup;
-	pStr1 = PyString_FromString(modulePath.c_str());
-	if(!pStr1) goto cleanup;
-	PyTuple_SetItem(pArgs, 0, pStr0); /* SetItem *steals* reference, no decref from us */
-	PyTuple_SetItem(pArgs, 1, pStr1);
-	pRetVal = PyObject_CallObject(pFuncLoadSource, pArgs);
-	if(!pRetVal) {
-		printf("WTF! ");
-		PyErr_Print();
-		goto cleanup;
-	}
-	*pModule = PyImport_ImportModule(moduleName.c_str());
-	if(!(*pModule)) goto cleanup; 
-
-	/* resolve tagTest() and tagReally() */
-	if(pTagTest) {
-		*pTagTest = PyObject_GetAttrString(*pModule, "tagTest");
-		if(!(*pTagTest)) goto cleanup;
-	}
-	if(pTagReally) {
-		*pTagReally = PyObject_GetAttrString(*pModule, "tagReally");
-		if(!(*pTagReally)) goto cleanup;
-	}
-
-	rc = 0;
-	cleanup:
-	return rc;
-}
-
-
-
-int
-tagging_release()
-{
-	// TODO: free or decref imp?
-	return 0;
-}
 
 /*****************************************************************************/
 /* TAGGING RESULTS: LOAD FILE ON DISK -> Interval Manager */
@@ -269,169 +161,63 @@ tagging_load_results(const char *fpath, IntervalMgr &mgr)
 /*****************************************************************************/
 /* TAG MODULE ENUMERATING FROM DISK */
 /*****************************************************************************/
-int 
-tagging_get_py_ver(string &ver)
+
+int tagging_findall(vector<string> &result)
 {
-	int rc, rc_sub;
-	char buf_stdout[64] = {0};
-	char buf_stderr[64] = {0};
-	char s_python[] = "python";
-	char s_V[] = "-V";
-	char *argv[3] = {s_python, s_V, NULL};
-	char *buf_ver = NULL;
-	
-	rc = launch(s_python, argv, &rc_sub, buf_stdout, 64, buf_stderr, 64);
+	string cwd;
+	filesys_cwd(cwd);
 
-	if(rc) return -1;
-	if(rc_sub) return -2;
-	/* prior to Python 3.4, version information went to stderr */
-	if(*buf_stdout == 'P')
-		buf_ver = buf_stdout;
-	else if(*buf_stderr == 'P')
-		buf_ver = buf_stderr;
-	else
-		return -3;
-
-	/* now buf_ver points to either stdout or stderr buf */
-	if(strncmp(buf_ver, "Python ", 7)) return -4;
-	if(!isdigit(buf_ver[7])) return -5;
-	if(buf_ver[8] != '.') return -6;
-	if(!isdigit(buf_ver[9])) return -7;
-	if(buf_ver[10] != '.') return -8;
-
-	buf_ver[10] = '\0';
-	
-	ver = buf_ver + 7;
+	/* collect all files named hltag_* from hardcoded paths */
+	filesys_ls(AUTILS_FILESYS_LS_STARTSWITH, "hltag_", cwd, result, true);
+	filesys_ls(AUTILS_FILESYS_LS_STARTSWITH, "hltag_", cwd+"/taggers", 
+		result, true);
+	filesys_ls(AUTILS_FILESYS_LS_STARTSWITH, "hltag_", "/usr/local/bin", 
+		result, true);
 
 	return 0;
 }
 
-/* "what tagging modules are available from a specific directory?"
+/* "what taggers will service target?"
 */
-int 
-tagging_modules_find_dir(string path, vector<string> &results)
+int tagging_pollall(string target, vector<string> &results)
 {
-	DIR *dp;
-	struct dirent *ep;
+	int rc = -1;
 
-	dp = opendir(path.c_str());
-	if(dp == NULL) return -1;
-	
-	while((ep = readdir(dp))) {
-		int len = strlen(ep->d_name);
+	/* collect all taggers */
+	vector<string> candidates;
+	if(0 != tagging_findall(candidates))
+		goto cleanup;
 
-		/* file name must match r'hlab_.*\.py' */
-		if(len < 9) continue; /* needs "hlab_" and "X" and ".py" */
-		if(0 != strncmp(ep->d_name, "hlab_", 5)) continue; /* start with "hlab_" */
-		if(0 != strcmp((ep->d_name)+len-3, ".py")) continue; /* end with ".py" */
-		
-		/* it must load */
-		string pathed = path + "/" + ep->d_name;
-		PyObject *a, *b, *c;
-		if(0 != tagging_python_load_tagger(pathed, &a, &b, &c)) {
-			// TODO: decref
+	/* execute each one with target as an argument, see who responds */
+	for(auto i=candidates.begin(); i!=candidates.end(); ++i) {
+		int child_ret;
+		char child_stdout[4] = {0};
+		char arg0[PATH_MAX];
+		char arg1[PATH_MAX];
+		strncpy(arg0, i->c_str(), PATH_MAX-1);
+		strncpy(arg1, target.c_str(), PATH_MAX-1);
+		char *argv[3] = {arg0, arg1, NULL};
+
+		if(0 != launch(arg0, argv, &child_ret, child_stdout, 3, NULL, 0)) {
+			printf("ERROR: launch()\n");
 			continue;
 		}
 
-		results.push_back(pathed);
+		if(child_ret != 0) {
+			printf("ERROR: tagger returned %d\n", child_ret);
+			continue;
+		}
+
+		if(strncmp(child_stdout, "[0x", 3)) {
+			printf("ERROR: tagger output didn't look right\n");
+			continue;
+		}
+			
+		results.push_back(*i);
 	}
-
-	closedir(dp);
-
-	return 0;
-}
-
-/* "what tagging modules are available everywhere?"
-*/
-int tagging_modules_find_all(vector<string> &taggers)
-{
-	vector<string> tmp;
-	char cwd[PATH_MAX];
-
-	/* collect from current dir (aid experimentation)
-		and ./taggers (aid development) */
-	if(cwd == getcwd(cwd, PATH_MAX)) {
-		tagging_modules_find_dir(cwd, tmp);
-		tagging_modules_find_dir(string(cwd) + "/taggers", tmp);
-	}
-
-	/* collect from installed directory */
-	string py_ver;
-	if(0 == tagging_get_py_ver(py_ver)) {
-		tagging_modules_find_dir("/usr/local/lib/python" + py_ver + "/site-packages", tmp);
-	}
-
-	/* append to result */
-	taggers.insert(taggers.end(), tmp.begin(), tmp.end());
-
-	return 0;
-}
-
-/*****************************************************************************/
-/* TAG MODULE TEST() */
-/*****************************************************************************/
-
-/* "can /Users/john/Downloads/test.py tag /tmp/foo.exe?" 
-	
-	result is (true/false) */
-int 
-tagging_module_test(string modulePath, string pathTarget, bool &result)
-{
-	int rc = -1;
-
-	PyObject *pRetVal, *pStr, *pArgs;
-	PyObject *pTagger, *pTest;
-
-	string moduleName;
-	if(0 != tagging_path_to_module_name(modulePath, moduleName)) {
-		goto cleanup;
-	}
-	   
-	/* import tag module, resolve tagTest() */
-	if(0 != tagging_python_load_tagger(modulePath, &pTagger, 
-	  &pTest, NULL)) {
-		goto cleanup;
-	}
-
-	/* call tagmodule.tagTest("/path/to/target.bin") */	
-	pStr = PyString_FromString(pathTarget.c_str());
-	if(!pStr) goto cleanup;
-	pArgs = PyTuple_New(1);
-	if(!pArgs) goto cleanup;
-	PyTuple_SetItem(pArgs, 0, pStr);
-	pRetVal = PyObject_CallObject(pTest, pArgs);
-	if(!pRetVal) goto cleanup;
-
-	/* can tag the file when tagTest() returns nonzero */
-	result = (0 != PyInt_AsLong(pRetVal));
 
 	rc = 0;
 	cleanup:
-	if(rc != 0) {
-		PyErr_Print();
-	}
-	return rc;
-}
-
-/* "can any of [modPath0, modPath1, ...] tag /tmp/foo.exe?" 
-
-	result is subset of modules that answered yes */
-int
-tagging_modules_test(vector<string> modPaths, string pathTarget,
-	vector<string> &result)
-{
-	int rc = -1;
-
-	for(auto i=modPaths.begin(); i!=modPaths.end(); ++i) {
-		bool bCanTag = false;
-		if(0 == tagging_module_test(*i, pathTarget, bCanTag)) {
-			if(bCanTag) {
-				result.push_back(*i);
-			}
-		}
-	}
-
-	rc = 0;
 	return rc;
 }
 
@@ -444,48 +230,8 @@ int
 tagging_module_exec(string pathModule, string pathTarget, string pathTags)
 {
 	int rc = -1;
-
-	PyObject *pMod=NULL;
-	PyObject *pFunc;
-	PyObject *pPathSrc=NULL, *pPathDst=NULL;
-	PyObject *pValue=NULL;
-	PyObject *pArgs=NULL;
-
-	/* ensure that this tagging modules really supports the target, and load
-		that module as "tagmodule" */
-	bool supported;
-	if(0 != tagging_module_test(pathModule, pathTarget, supported))
-		goto cleanup;
-	if(!supported)
-		goto cleanup;
-
-	/* - import tagmodule
-	   - resolve tagReally()
-	   - call tagReally(<pathTarget>, <pathTags>)	
-	*/	
-	pMod = PyImport_ImportModule("tagmodule");
-	if(!pMod) goto cleanup;
-	pFunc = PyObject_GetAttrString(pMod, "tagReally");
-	if(!pFunc) goto cleanup;
-	pPathSrc = PyString_FromString(pathTarget.c_str());
-	if(!pPathSrc) goto cleanup;
-	pPathDst = PyString_FromString(pathTags.c_str());
-	if(!pPathDst) goto cleanup;
-	pArgs = PyTuple_New(2);
-	if(!pArgs) goto cleanup;
-	PyTuple_SetItem(pArgs, 0, pPathSrc);
-	PyTuple_SetItem(pArgs, 1, pPathDst);
-	pValue = PyObject_CallObject(pFunc, pArgs);
-	if(!pValue) goto cleanup;
-
 	rc = 0;
-
-	cleanup:
-
-	if(rc) {
-		PyErr_Print();
-	}
-
+	//cleanup:
 	return rc;
 }
 

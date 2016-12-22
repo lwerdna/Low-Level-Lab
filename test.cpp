@@ -12,9 +12,6 @@
 #include <vector>
 using namespace std;
 
-/* python */
-#include <Python.h>
-
 /* from autils */
 extern "C" {
 #include <autils/subprocess.h>
@@ -34,25 +31,15 @@ int main(int ac, char **av)
 
 	if(!strcmp(av[1], "tagging")) {
 
-		tagging_python_init(av[0]);
-
-		vector<string> modules;
-		if(0 != tagging_modules_find_all(modules)) {
-			printf("ERROR! tagging_modules_find_all()\n");
+		printf("all taggers:\n");
+		vector<string> taggers;
+		if(0 != tagging_findall(taggers)) {
+			printf("ERROR! tagging_findall()\n");
 			goto cleanup;
 		}
-
-		for(auto i=modules.begin(); i!=modules.end(); ++i) {
-			printf("module: %s\n", i->c_str());
-		}
-
-		string ver;
-		if(0 != tagging_get_py_ver(ver)) {
-			printf("ERROR! tagging_get_py_ver()\n");
-			//goto cleanup;
-		}
-
-		printf("python version: %s\n", ver.c_str());
+		for(auto i=taggers.begin(); i!=taggers.end(); ++i)
+			printf("%s\n", i->c_str());
+		
 
 		/* third argument? have the taggers chew on something */
 		if(ac < 3) {
@@ -61,16 +48,14 @@ int main(int ac, char **av)
 		}
 
 		char *pathTarget = av[2];
-		printf("target file: %s\n", pathTarget);
-		vector<string> modulesAccepting;
-		if(0 != tagging_modules_test(modules, pathTarget, modulesAccepting)) {
+		printf("these modules accept %s:\n", pathTarget);
+		taggers.clear();
+		if(0 != tagging_pollall(pathTarget, taggers)) {
 			printf("ERROR! tagging_modules_test()\n");
 			goto cleanup;
 		}
-
-		printf("these modules accept your file:\n");
-		for(auto i=modulesAccepting.begin(); i!=modulesAccepting.end(); ++i) {
-			printf("accepting module: %s\n", i->c_str());
+		for(auto i=taggers.begin(); i!=taggers.end(); ++i) {
+			printf("%s\n", i->c_str());
 		}
 
 		/* test tagging_module_exec() */
