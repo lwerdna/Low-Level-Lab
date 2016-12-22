@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys
 import struct
@@ -301,5 +301,10 @@ def isElf64(fp):
 def isElf32(fp):
 	result = isElf(fp)
 	return (result and result[1] == ELFCLASS32)
-	
 
+###############################################################################
+# main
+###############################################################################
+
+if __name__ == '__main__':
+	sys.exit(-1)

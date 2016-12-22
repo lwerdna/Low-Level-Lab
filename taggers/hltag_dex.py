@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import os
 import sys
@@ -25,25 +25,16 @@ def magicToStr(magic):
 	return 'uknown'
 
 ###############################################################################
-# API that taggers must implement
+# "main"
 ###############################################################################
 
-def tagTest(fpathIn):
-	fp = open(fpathIn, 'rb')
-	tmp = fp.read(8)
-	fp.close()
-	return tmp in [DEX_FILE_MAGIC_35, DEX_FILE_MAGIC_37]
-
-def tagReally(fpathIn, fpathOut):
-	fp = open(fpathIn, "rb")
-
-	# we want to be keep the convenience of writing tags to stdout with print()
-	stdoutOld = None
-	if fpathOut:
-		stdoutOld = sys.stdout
-		sys.stdout = open(fpathOut, "w")
+if __name__ == '__main__':
+	fp = open(sys.argv[1], "rb")
 
 	magic = fp.read(8)
+	if not (magic in [DEX_FILE_MAGIC_35, DEX_FILE_MAGIC_37]):
+		sys.exit(-1);
+
 	print "[0x0,0x8) 0x0 %s" % magicToStr(magic)
 	tagUint32(fp, 'checksum (adler32)')
 	tag(fp, 20, 'signature (sha1)')
@@ -72,25 +63,5 @@ def tagReally(fpathIn, fpathOut):
 	print "[0x0,0x70) 0x0 header_item"
 
 	fp.close()
-
-	# undo our output redirection
-	if stdoutOld:
-		sys.stdout.close()
-		sys.stdout = stdoutOld
-	
-###############################################################################
-# "main"
-###############################################################################
-
-if __name__ == '__main__':
-	fpathIn = None
-	fpathOut = None
-
-	assert len(sys.argv) > 1
-
-	fpathIn = sys.argv[1]
-	if sys.argv[2:]:
-		fpathOut = sys.argv[2]
-
-	tagReally(fpathIn, fpathOut)
+	sys.exit(0)
 

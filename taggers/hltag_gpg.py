@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import os
 import sys
@@ -113,20 +113,12 @@ def litDataFmtToStr(fmt):
 	return 'unknown'
 
 ###############################################################################
-# API that taggers must implement
+# "main"
 ###############################################################################
 
-def tagTest(fpathIn):
-	return False
-
-def tagReally(fpathIn, fpathOut):
-	fp = open(fpathIn, "rb")
-
-	# we want to be keep the convenience of writing tags to stdout with print()
-	stdoutOld = None
-	if fpathOut:
-		stdoutOld = sys.stdout
-		sys.stdout = open(fpathOut, "w")
+if __name__ == '__main__':
+	fp = open(sys.argv[1], "rb")
+	# TODO: implement a real test here
 
 	# for each packet
 	while not IsEof(fp):
@@ -242,30 +234,4 @@ def tagReally(fpathIn, fpathOut):
 		fp.seek(oPacketEnd)
 		
 	fp.close()
-
-	# undo our output redirection
-	if stdoutOld:
-		sys.stdout.close()
-		sys.stdout = stdoutOld
-
-###############################################################################
-# "main"
-###############################################################################
-
-if __name__ == '__main__':
-	fpathIn = None
-	fpathOut = None
-
-	assert len(sys.argv) > 1
-
-	fpathIn = sys.argv[1]
-	if sys.argv[2:]:
-		fpathOut = sys.argv[2]
-
-	tagReally(fpathIn, fpathOut)
-
-
-
-
-
-
+	sys.exit(0)

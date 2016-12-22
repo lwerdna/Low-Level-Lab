@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys
 import struct
@@ -8,24 +8,13 @@ from hlab_elf import *
 from hlab_taglib import *
 
 ###############################################################################
-# API that taggers must implement
+# "main"
 ###############################################################################
 
-def tagTest(fpathIn):
-	fp = open(fpathIn, "rb")
-	result = isElf64(fp)
-	fp.close()
-	return result
-
-def tagReally(fpathIn, fpathOut):
-	fp = open(fpathIn, "rb")
-	assert(isElf64(fp))
-
-	# we want to be keep the convenience of writing tags to stdout with print()
-	stdoutOld = None
-	if fpathOut:
-		stdoutOld = sys.stdout
-		sys.stdout = open(fpathOut, "w")
+if __name__ == '__main__':
+	fp = open(sys.argv[1], "rb")
+	if not isElf64(fp):
+		sys.exit(-1)
 
 	tag(fp, SIZE_ELF64_HDR, "elf64_hdr", 1)
 	tmp = tag(fp, 4, "e_ident[0..4)")
@@ -166,30 +155,5 @@ def tagReally(fpathIn, fpathOut):
 			(oHdr, fp.tell(), i, strType)
 	
 	fp.close()
-
-	# undo our output redirection
-	if stdoutOld:
-		sys.stdout.close()
-		sys.stdout = stdoutOld
-
-###############################################################################
-# "main"
-###############################################################################
-
-if __name__ == '__main__':
-	fpathIn = None
-	fpathOut = None
-
-	assert len(sys.argv) > 1
-
-	fpathIn = sys.argv[1]
-	if sys.argv[2:]:
-		fpathOut = sys.argv[2]
-
-	tagReally(fpathIn, fpathOut)
-
-
-
-
-
+	sys.exit(-1)
 

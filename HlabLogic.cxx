@@ -22,9 +22,6 @@ using namespace std;
 #include <FL/Fl_Tree.H>
 #include <FL/Fl_Tree_Item.H>
 
-/* python */
-#include <Python.h>
-
 /* autils */
 extern "C" {
     #include <autils/bytes.h>
@@ -489,11 +486,6 @@ onGuiFinished(HlabGui *gui_, int argc, char **argv)
     
     gui->hexView->setCallback(HexView_cb);
 
-	/* python */
-	printf("initializing python...\n");
-	Py_SetProgramName(argv[0]);
-	Py_Initialize();
-
     /* if command line parameter, open that */
     if(argc > 1) {
         file_load(argv[1]); 
@@ -532,9 +524,4 @@ void
 onExit(void)
 {
     printf("onExit()\n");
-
-	/* python */
-	Py_Finalize();
-
-	printf("done here\n");
 }

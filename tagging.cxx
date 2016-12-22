@@ -1,25 +1,22 @@
 /* this deals with tagging modules
 
-	it's separated out mainly to isolate hlab from python details
-
 	hlab gets its results from this functionality in the form of an interval manager */
 
 /* c stdlib includes */
 #include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* OS */
 #include <sys/mman.h>
 #include <dirent.h>
+#include <unistd.h>
 
 /* c++ includes */
 #include <map>
 #include <string>
 #include <vector>
 using namespace std;
-
-/* python */
-#include <Python.h>
 
 /* autils */
 extern "C" {
@@ -209,7 +206,11 @@ int tagging_pollall(string target, vector<string> &results)
 		}
 
 		if(strncmp(child_stdout, "[0x", 3)) {
-			printf("ERROR: tagger output didn't look right\n");
+			string basename;
+			filesys_basename(*i, basename);
+			child_stdout[3] = '\0';
+			printf("ERROR: tagger output (%s) didn't look right (\"%s...\")\n",
+				basename.c_str(), child_stdout);
 			continue;
 		}
 			

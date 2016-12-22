@@ -8,24 +8,13 @@ import hlab_pe as pe
 from hlab_taglib import *
 
 ###############################################################################
-# API that taggers must implement
+# "main"
 ###############################################################################
 
-def tagTest(fpathIn):
-	fp = open(fpathIn, "rb")
-	result = (pe.idFile(fp) == "pe32")
-	fp.close()
-	return result
-
-def tagReally(fpathIn, fpathOut):
-	fp = open(fpathIn, "rb")
-	assert(pe.idFile(fp) == "pe32")
-
-	# we want to be keep the convenience of writing tags to stdout with print()
-	stdoutOld = None
-	if fpathOut:
-		stdoutOld = sys.stdout
-		sys.stdout = open(fpathOut, "w")
+if __name__ == '__main__':
+	fp = open(sys.argv[1], "rb")
+	if not (pe.idFile(fp) == "pe32"):
+		sys.exit(-1)
 
 	oHdr = fp.tell()
 	e_magic = tag(fp, 2, "e_magic")
@@ -142,25 +131,5 @@ def tagReally(fpathIn, fpathOut):
 		pe.tagReloc(fp, nScnReloc)
 	
 	fp.close()
-
-	# undo our output redirection
-	if stdoutOld:
-		sys.stdout.close()
-		sys.stdout = stdoutOld
-
-###############################################################################
-# "main"
-###############################################################################
-
-if __name__ == '__main__':
-	fpathIn = None
-	fpathOut = None
-
-	assert len(sys.argv) > 1
-
-	fpathIn = sys.argv[1]
-	if sys.argv[2:]:
-		fpathOut = sys.argv[2]
-
-	tagReally(fpathIn, fpathOut)
+	sys.exit(0)
 	

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 from struct import pack, unpack
 
 ###############################################################################
@@ -237,3 +238,10 @@ def tagString(FP, length, comment, peek=0):
 	val = string(FP, length, peek)
 	print '[0x%X,0x%X) 0x0 %s=\"%s\"' % (pos, pos+length, comment, val)
 	return val
+
+###############################################################################
+# main
+###############################################################################
+
+if __name__ == '__main__':
+	sys.exit(-1)

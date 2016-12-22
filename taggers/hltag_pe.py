@@ -1,4 +1,8 @@
+#!/usr/bin/env python
+
 import os
+import sys
+
 from hlab_taglib import *
 from struct import pack, unpack
 
@@ -122,6 +126,10 @@ def tagReloc(fp, size, machine=''):
 			roffs = toto&0xFFF
 			tag(fp, 2, "reloc entry %d=%s offset=0x%X" % (rtype,rtypeStr,roffs))
 			
-				
-		
+###############################################################################
+# main
+###############################################################################
+
+if __name__ == '__main__':
+	sys.exit(-1)	
 	
