@@ -117,12 +117,12 @@ vector<Interval *> Interval::childRetrieve()
 
 void Interval::print()
 {
-    printf("[%016llX,%016llX)", left, right);
-    if(data_type) printf(" with data ");
+    printf("interval@%p [%016llX,%016llX)", this, left, right);
+    if(data_type) printf(" data: ");
     switch(data_type) {
         case 1: printf("%p", data_void_ptr); break;
         case 2: printf("0x%08X", data_u32); break;
-        case 3: printf("%s", data_string.c_str()); break;
+        case 3: printf("\"%s\"", data_string.c_str()); break;
     }
 
     if(children.size() > 0) {
@@ -405,15 +405,6 @@ vector<Interval *> IntervalMgr::findParentChild()
 void IntervalMgr::print()
 {
     for(unsigned int i=0; i<intervals.size(); ++i) {
-        Interval intv = intervals[i];
-        intv.print();
-    }
-}
-
-void IntervalMgr::dump()
-{
-    for(unsigned int i=0; i<intervals.size(); ++i) {
-        printf("interval @%p ", (void *) &(intervals[i]));
         intervals[i].print();
     }
 }

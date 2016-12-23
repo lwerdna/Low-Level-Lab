@@ -11,6 +11,7 @@
 #include <sys/mman.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <signal.h>
 
 /* c++ includes */
 #include <map>
@@ -28,49 +29,68 @@ extern "C" {
 /* local stuff */
 #include "IntervalMgr.h"
 
-/*****************************************************************************/
-/* TAGGING RESULTS: LOAD FILE ON DISK -> Interval Manager */
-/*****************************************************************************/
-
 int
-tagging_load_results(const char *fpath, IntervalMgr &mgr)
+tagging_tag(string target, string tagger, IntervalMgr &mgr)
 {
     int rc = -1;
-    char *line = NULL;
+	
+	/* subprocess variables */
+	pid_t pid = -1;
+	int child_stdout = -1;
+	char arg0[PATH_MAX];
+	char arg1[PATH_MAX];
+	char *argv[3] = {arg0, arg1, NULL};
 
-    FILE *fp = fopen(fpath, "r");
-    if(!fp) {
-        printf("ERROR: fopen()\n");
-        goto cleanup;
-    }
+	/* file/line stuff */
+	FILE *fp = NULL;
+	char *line = NULL;
+
+	/* execute */
+	strncpy(arg0, tagger.c_str(), PATH_MAX-1);
+	strncpy(arg1, target.c_str(), PATH_MAX-1);
+	if(0 != launch_ex(arg0, argv, &pid, NULL, &child_stdout, NULL)) {
+		printf("ERROR! launch_ex()\n");
+		goto cleanup;
+	}
+
+	/* wrap the tagger's stdout descriptor into a convenient file pointer */
+	fp = fdopen(child_stdout, "r");
+	if(!fp) {
+		printf("ERROR! fdopen()\n");
+		goto cleanup;
+	}
 
     for(int line_num=1; 1; ++line_num) {
-        size_t line_len;
+        uint64_t start, end;
+        uint32_t color;
+        int oStart=-1, oEnd=-1, oColor=-1, oComment=-1;
+        size_t line_allocd;
+		int line_len;
 
         if(line) {
             free(line);
             line = NULL;
         }
-        if(getline(&line, &line_len, fp) <= 0) {
+        if(getline(&line, &line_allocd, fp) <= 0) {
             // error or EOF? don't squawk
             break;
         }
 
-        if(0 == strcmp(line, "\x0d\x0a") || 0 == strcmp(line, "\x0a")) {
-            continue;
-        }
+		line_len = strlen(line);
+	
+		while(1) {
+			char c = line[line_len-1];
+			if(c!='\x0' && c!='\x0d' && c!='\x0a' && c!=' ') break;
+			line[line_len-1] = '\0';
+			line_len -= 1;
+		}
 
-        /* remove trailing newline */
-        while(line[line_len-1] == '\x0d' || line[line_len-1] == '\x0a') {
-            line[line_len-1] = '\x00';
-            line_len -= 1;
-        }
+		/* if it was all whitespace, continue to next line */
+		if(line[0] == '\0')
+			continue;
 
         //printf("got line %d (len:%ld): -%s-", line_num, line_len, line);
 
-        uint64_t start, end;
-        uint32_t color;
-        int oStart=-1, oEnd=-1, oColor=-1, oComment=-1;
         if(line[0] != '[') {
             printf("ERROR: expected '[' on line %d: %s\n", line_num, line);
             continue;
@@ -135,11 +155,27 @@ tagging_load_results(const char *fpath, IntervalMgr &mgr)
         }
 
         /* done, add interval */
-        mgr.add(Interval(start, end, string(line + oComment)));
+        Interval ival = Interval(start, end, string(line + oComment));
+        mgr.add(ival);
     }
 
     rc = 0;
     cleanup:
+
+	/* terminate tagger */
+	if(pid != -1) {	
+		int stat;
+
+		printf("kill() on pid=%d...\n", pid);
+		if(0 != kill(pid, SIGTERM)) 
+			printf("ERROR: kill()\n");
+
+		printf("waitpid() on pid=%d\n", pid);	
+		if(waitpid(pid, &stat, 0) != pid)
+			 printf("ERROR: waitpid()\n");
+
+		pid = -1;
+	}
 
     /* this free must occur even if getline() failed */
     if(line) {
@@ -147,18 +183,25 @@ tagging_load_results(const char *fpath, IntervalMgr &mgr)
         line = NULL;
     }
 
+	/* close wrapping file pointer */
     if(fp) {
         fclose(fp);
         fp = NULL;
+		/* The file descriptor is not dup'ed, and will be closed 
+			when the stream created by fdopen() is closed. */
+		child_stdout = -1;
     }
+
+	/* close stdout file descriptor (if necessary) */
+	if(child_stdout != -1) {
+		close(child_stdout);
+		child_stdout = -1;
+	}
 
     return rc;
 }
 
-/*****************************************************************************/
-/* TAG MODULE ENUMERATING FROM DISK */
-/*****************************************************************************/
-
+/* "what taggers exist?" */
 int tagging_findall(vector<string> &result)
 {
 	string cwd;
@@ -174,8 +217,7 @@ int tagging_findall(vector<string> &result)
 	return 0;
 }
 
-/* "what taggers will service target?"
-*/
+/* "what taggers exist that will agree to service <target>?" */
 int tagging_pollall(string target, vector<string> &results)
 {
 	int rc = -1;
@@ -195,21 +237,23 @@ int tagging_pollall(string target, vector<string> &results)
 		strncpy(arg1, target.c_str(), PATH_MAX-1);
 		char *argv[3] = {arg0, arg1, NULL};
 
+		string basename;
+		filesys_basename(*i, basename);
+
 		if(0 != launch(arg0, argv, &child_ret, child_stdout, 3, NULL, 0)) {
 			printf("ERROR: launch()\n");
 			continue;
 		}
 
 		if(child_ret != 0) {
-			printf("ERROR: tagger returned %d\n", child_ret);
+			//printf("tagger(%s) returned %d\n", basename.c_str(), 
+			//	child_ret);
 			continue;
 		}
 
 		if(strncmp(child_stdout, "[0x", 3)) {
-			string basename;
-			filesys_basename(*i, basename);
 			child_stdout[3] = '\0';
-			printf("ERROR: tagger output (%s) didn't look right (\"%s...\")\n",
+			printf("ERROR: tagger(%s) output didn't look right (\"%s...\")\n",
 				basename.c_str(), child_stdout);
 			continue;
 		}
@@ -221,21 +265,5 @@ int tagging_pollall(string target, vector<string> &results)
 	cleanup:
 	return rc;
 }
-
-/*****************************************************************************/
-/* TAG MODULE TagReally() */
-/*****************************************************************************/
-
-/* call <module>.tagReally() on pathTarget, writing results to pathTag */
-int
-tagging_module_exec(string pathModule, string pathTarget, string pathTags)
-{
-	int rc = -1;
-	rc = 0;
-	//cleanup:
-	return rc;
-}
-
-// TODO: figure out the Py_DECREF stuff
 
 

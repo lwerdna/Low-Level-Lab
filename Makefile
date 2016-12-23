@@ -80,8 +80,8 @@ clab: ClabGui.o ClabLogic.o Fl_Text_Editor_C.o Fl_Text_Editor_Asm.o Makefile
 alab: rsrc.o AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_Log.o HexView.o IntervalMgr.o Makefile
 	$(LINK)  $(FLAGS_LINK) AlabGui.o AlabLogic.o llvm_svcs.o Fl_Text_Editor_Asm.o Fl_Text_Display_log.o HexView.o IntervalMgr.o rsrc.o -o alab $(LD_FLTK) $(LD_LLVM) -lautils
 
-hlab: HlabGui.o HlabLogic.o HexView.o IntervalMgr.o Makefile
-	$(LINK)  $(FLAGS_LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o -o hlab $(LD_FLTK) -lautils
+hlab: HlabGui.o HlabLogic.o HexView.o IntervalMgr.o tagging.o Makefile
+	$(LINK)  $(FLAGS_LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o tagging.o -o hlab $(LD_FLTK) -lautils
 
 test: test.o tagging.o IntervalMgr.o
 	$(LINK) $(FLAGS_LINK) test.o tagging.o IntervalMgr.o -lautils -o test

@@ -119,6 +119,7 @@ def litDataFmtToStr(fmt):
 if __name__ == '__main__':
 	fp = open(sys.argv[1], "rb")
 	# TODO: implement a real test here
+	sys.exit(-1)
 
 	# for each packet
 	while not IsEof(fp):

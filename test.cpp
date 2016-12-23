@@ -30,6 +30,7 @@ int main(int ac, char **av)
 	if(ac < 2) goto cleanup;
 
 	if(!strcmp(av[1], "tagging")) {
+		IntervalMgr mgr;
 
 		printf("all taggers:\n");
 		vector<string> taggers;
@@ -58,7 +59,14 @@ int main(int ac, char **av)
 			printf("%s\n", i->c_str());
 		}
 
-		/* test tagging_module_exec() */
+		printf("invoking tagger %s on %s\n", 
+			taggers[0].c_str(), pathTarget);
+		if(0 != tagging_tag(pathTarget, taggers[1], mgr)) {
+			printf("ERROR: tagging_tag()\n");
+			goto cleanup;
+		}
+		
+		mgr.print();	
 	}
 
 	rc = 0;
