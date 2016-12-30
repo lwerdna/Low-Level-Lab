@@ -117,10 +117,13 @@ def litDataFmtToStr(fmt):
 ###############################################################################
 
 if __name__ == '__main__':
-	fp = open(sys.argv[1], "rb")
-	# TODO: implement a real test here
-	sys.exit(-1)
+	# for now, test just the file extension
+	# TODO: see if file would make sense if we treated its bytes like packets
+	if not re.match(r'^.*\.gpg$', sys.argv[1]):
+		sys.exit(-1)
 
+	fp = open(sys.argv[1], "rb")
+	
 	# for each packet
 	while not IsEof(fp):
 		(hdrLen,bodyLen) = (0,0)
@@ -128,12 +131,14 @@ if __name__ == '__main__':
 
 		packetTag = tagUint8(fp, "packet tag byte")
 		assert(packetTag & 0x80)
-
+	
+		hdrStyle = 'unknown'
 		tagId = 0
 		body = ''
 			
 		# parse new format
 		if packetTag & 0x40:
+			hdrStyle = 'new'
 			tagId = 0x3F & packetTag
 			
 			while 1:
@@ -169,6 +174,7 @@ if __name__ == '__main__':
 
 		# parse old format
 		else:
+			hdrStyle = 'old'
 			length_type = packetTag & 3
 			tagId = (0x3C & packetTag) >> 2
 
@@ -193,7 +199,7 @@ if __name__ == '__main__':
 			body = fp.read(bodyLen)
 
 		# mark the whole packet
-		print "[0x%X,0x%X) 0x0 header" % (oPacket, oPacket+hdrLen)
+		print "[0x%X,0x%X) 0x0 header (%s)" % (oPacket, oPacket+hdrLen, hdrStyle)
 		print "[0x%X,0x%X) 0x0 body" % (oPacket+hdrLen, oPacket+hdrLen+bodyLen)
 		print "[0x%X,0x%X) 0x0 %s packet (Tag %d)" % \
 			(oPacket, fp.tell(), tagToStr(tagId), tagId)
