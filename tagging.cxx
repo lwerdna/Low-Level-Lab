@@ -32,6 +32,8 @@ extern "C" {
 int
 tagging_tag(string target, string tagger, IntervalMgr &mgr)
 {
+	//TODO: check for stderr chars
+
     int rc = -1;
 	
 	/* subprocess variables */
@@ -77,7 +79,7 @@ tagging_tag(string target, string tagger, IntervalMgr &mgr)
         }
 
 		line_len = strlen(line);
-	
+
 		while(1) {
 			char c = line[line_len-1];
 			if(c!='\x0' && c!='\x0d' && c!='\x0a' && c!=' ') break;
@@ -89,7 +91,7 @@ tagging_tag(string target, string tagger, IntervalMgr &mgr)
 		if(line[0] == '\0')
 			continue;
 
-        //printf("got line %d (len:%ld): -%s-", line_num, line_len, line);
+        //printf("got line %d (len:%ld): -%s-\n", line_num, line_len, line);
 
         if(line[0] != '[') {
             printf("ERROR: expected '[' on line %d: %s\n", line_num, line);
@@ -229,8 +231,9 @@ int tagging_pollall(string target, vector<string> &results)
 
 	/* execute each one with target as an argument, see who responds */
 	for(auto i=candidates.begin(); i!=candidates.end(); ++i) {
+		#define CHILD_STDOUT_SZ 100
 		int child_ret;
-		char child_stdout[4] = {0};
+		char child_stdout[CHILD_STDOUT_SZ] = {'\0'};
 		char arg0[PATH_MAX];
 		char arg1[PATH_MAX];
 		strncpy(arg0, i->c_str(), PATH_MAX-1);
@@ -240,7 +243,8 @@ int tagging_pollall(string target, vector<string> &results)
 		string basename;
 		filesys_basename(*i, basename);
 
-		if(0 != launch(arg0, argv, &child_ret, child_stdout, 3, NULL, 0)) {
+		memset(child_stdout, 0, CHILD_STDOUT_SZ);
+		if(0 != launch(arg0, argv, &child_ret, child_stdout, CHILD_STDOUT_SZ, NULL, 0)) {
 			printf("ERROR: launch()\n");
 			continue;
 		}
@@ -252,9 +256,9 @@ int tagging_pollall(string target, vector<string> &results)
 		}
 
 		if(strncmp(child_stdout, "[0x", 3)) {
-			child_stdout[3] = '\0';
+			child_stdout[CHILD_STDOUT_SZ-1] = '\0';
 			printf("ERROR: tagger(%s) output didn't look right (\"%s...\")\n",
-				basename.c_str(), child_stdout);
+				i->c_str(), child_stdout);
 			continue;
 		}
 			

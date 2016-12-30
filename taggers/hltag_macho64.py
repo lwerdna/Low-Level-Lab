@@ -10,7 +10,7 @@
 import sys
 import binascii
 from struct import unpack;
-from hlab_taglib import *
+from hltag_lib import *
 
 MH_MAGIC = 0xFEEDFACE
 MH_CIGAM = 0xCEFAEDFE

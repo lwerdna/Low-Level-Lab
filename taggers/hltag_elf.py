@@ -3,7 +3,7 @@
 import sys
 import struct
 import binascii
-from hlab_taglib import *
+from hltag_lib import *
 
 EI_NIDENT = 16
 ELFMAG = '\x7FELF'

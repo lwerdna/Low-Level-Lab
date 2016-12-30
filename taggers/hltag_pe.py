@@ -3,7 +3,7 @@
 import os
 import sys
 
-from hlab_taglib import *
+from hltag_lib import *
 from struct import pack, unpack
 
 IMAGE_NUMBEROF_DIRECTORY_ENTRIES = 16

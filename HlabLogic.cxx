@@ -121,7 +121,7 @@ void tags_populate_tree(Fl_Tree *tree, Fl_Tree_Item *parentItem, Interval *paren
 	Fl_Tree_Item *childItem = tree->insert(parentItem, parentIval->data_string.c_str(), pos);
 
 	treeItemToInterv[childItem] = parentIval;
-	printf("Fl_Tree_Item %p ->", childItem);
+	//printf("Fl_Tree_Item %p ->", childItem);
 	//parentIval->print();
 
 	/* recur on each child */
@@ -143,6 +143,7 @@ int tags_load_file(const char *target)
 
 	if(0 != tagging_pollall(target, taggers)) goto cleanup;
 	// TODO: popup and let user decide if there are >1 taggers
+	printf("going with tagger: %s\n", taggers[0].c_str());
 
 	if(0 != tagging_tag(target, taggers[0], intervMgr)) {
 		printf("ERROR: tagging_tag()\n");

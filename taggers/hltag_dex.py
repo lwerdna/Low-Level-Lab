@@ -4,7 +4,10 @@ import os
 import sys
 import struct
 import binascii
-from hlab_taglib import *
+
+scriptDir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(scriptDir)
+from hltag_lib import *
 
 ENDIAN_CONSTANT = 0x12345678
 REVERSE_ENDIAN_CONSTANT = 0x78563412
@@ -46,8 +49,8 @@ if __name__ == '__main__':
 	tagUint32(fp, 'link_size')
 	tagUint32(fp, 'link_off')
 	tagUint32(fp, 'map_off')
-	tagUint32(fp, 'string_ids_size')
-	tagUint32(fp, 'string_ids_off')
+	string_ids_size = tagUint32(fp, 'string_ids_size')
+	string_ids_off = tagUint32(fp, 'string_ids_off')
 	tagUint32(fp, 'type_ids_size')
 	tagUint32(fp, 'type_ids_off')
 	tagUint32(fp, 'proto_ids_size')
@@ -60,7 +63,22 @@ if __name__ == '__main__':
 	tagUint32(fp, 'class_defs_off')
 	tagUint32(fp, 'data_size')
 	tagUint32(fp, 'data_off')
-	print "[0x0,0x70) 0x0 header_item"
+	print "[0x0,0x70) 0x0 header"
+
+	# visit string_id_item array
+	fp.seek(string_ids_off)
+	print "[0x%X,0x%X) 0x0 string_ids (%d entries)" % \
+		(string_ids_off, string_ids_off+string_ids_size*4, string_ids_size)
+	offs = []
+	for i in range(string_ids_size):
+		off = tagUint32(fp, "string_id_item %d/%d" % (i+1, string_ids_size))
+		offs.append(off)
+	# visit string_data_item array
+	for o in offs:
+		fp.seek(o)
+		utf16_size = tagUleb128(fp, "utf16_size")
+		data = tagDataUntil(fp, "\x00", "data")
+		print "[0x%X,0x%X) 0x0 string_data_item \"%s\"" % (o, fp.tell(), data[0:-1])
 
 	fp.close()
 	sys.exit(0)

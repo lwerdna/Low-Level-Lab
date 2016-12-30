@@ -4,7 +4,7 @@ import os
 import sys
 import struct
 import binascii
-from hlab_taglib import *
+from hltag_lib import *
 
 TAG_RESERVED = 0
 TAG_PUB_KEY_ENCR_SESS_KEY = 1

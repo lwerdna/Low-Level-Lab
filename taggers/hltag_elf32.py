@@ -4,8 +4,8 @@ import sys
 import struct
 import binascii
 
-from hlab_elf import *
-from hlab_taglib import *
+from hltag_elf import *
+from hltag_lib import *
 
 if __name__ == '__main__':
 	fp = open(sys.argv[1], "rb")

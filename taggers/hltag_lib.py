@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import binascii
 from struct import pack, unpack
 
 ###############################################################################
@@ -190,6 +191,29 @@ def uint64(FP, peek=0):
 	if peek: FP.seek(-8,1)
 	return value
 
+def uleb128(FP, peek=1):
+	anchor = FP.tell()
+
+	nbytes = 0
+	value = 0
+	while 1:
+		if nbytes > 6:
+			FP.seek(anchor)
+			sample = binascii.hexlify(FP.read(5))
+			raise Exception("invalid uleb128 at offs=0x%X %s..." % (anchor, sample))
+
+		t = unpack('B', FP.read(1))[0]
+		value = value | ((t & 0x7F)<<(7*nbytes))
+		nbytes += 1
+
+		if not (t & 0x80): 
+			break
+
+	if peek: 
+		FP.seek(anchor)
+
+	return (value, nbytes)
+
 # strings (eats trailing nulls)
 def string(FP, length, peek=0):
 	value = unpack('%ds' % length, FP.read(length))[0]
@@ -197,6 +221,19 @@ def string(FP, length, peek=0):
 	    value = value[0:-1]
 	if peek: FP.seek(-1*length, 1)
 	return value
+
+#
+def dataUntil(FP, terminator, peek=0):
+	data = ''
+	lenterm = len(terminator)
+	while 1:
+		data += FP.read(1)
+
+		if len(data) >= lenterm:
+			if data[-lenterm:] == terminator:
+				break
+	if peek: FP.seek(-len(data), 1)
+	return data
 
 ###############################################################################
 # taggers
@@ -233,11 +270,23 @@ def tagUint64(FP, comment, peek=0):
 	print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+8, comment, val)
 	return val
 
+def tagUleb128(FP, comment, peek=0):
+	pos = FP.tell()
+	(val,length) = uleb128(FP, peek)
+	print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+length, comment, val)
+	return val
+
 def tagString(FP, length, comment, peek=0):
 	pos = FP.tell()
 	val = string(FP, length, peek)
 	print '[0x%X,0x%X) 0x0 %s=\"%s\"' % (pos, pos+length, comment, val)
 	return val
+
+def tagDataUntil(FP, term, comment, peek=0):
+	pos = FP.tell()
+	data = dataUntil(FP, term, peek)
+	print '[0x%X,0x%X) 0x0 %s' % (pos, pos+len(data), comment)
+	return data
 
 ###############################################################################
 # main

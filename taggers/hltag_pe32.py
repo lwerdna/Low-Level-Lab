@@ -4,8 +4,8 @@ import sys
 import struct
 import binascii
 
-import hlab_pe as pe
-from hlab_taglib import *
+import hltag_pe as pe
+from hltag_lib import *
 
 ###############################################################################
 # "main"
