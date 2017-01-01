@@ -191,7 +191,7 @@ def uint64(FP, peek=0):
 	if peek: FP.seek(-8,1)
 	return value
 
-def uleb128(FP, peek=1):
+def uleb128(FP, peek=0):
 	anchor = FP.tell()
 
 	nbytes = 0
