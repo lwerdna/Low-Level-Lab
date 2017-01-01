@@ -159,6 +159,7 @@ if __name__ == '__main__':
 				(fp.tell()-8, fp.tell(), i+1, methods_ids_size, repr(stringIdxToString[name_idx]))
 
 	# visit class_def_item array
+	classDataOffets = []
 	if class_defs_off:
 		fp.seek(class_defs_off)
 		if class_defs_size > 1:
@@ -171,14 +172,42 @@ if __name__ == '__main__':
 			tagUint32(fp, "interfaces_off")
 			tagUint32(fp, "source_file_idx")
 			tagUint32(fp, "annotations_off")
-			tagUint32(fp, "class_data_off")
+			class_data_off = tagUint32(fp, "class_data_off")
 			tagUint32(fp, "static_values_off")
-			if class_idx < len(typeIdxToString):
-				print "[0x%X,0x%X) 0x0 class_def_item %d/%d %s" % \
-					(fp.tell()-32, fp.tell(), i+1, class_defs_size, repr(typeIdxToString[class_idx]))
-			else:
-				print "[0x%X,0x%X) 0x0 class_def_item %d/%d 'err'" % \
-					(fp.tell()-32, fp.tell(), i+1, class_defs_size)
+			print "[0x%X,0x%X) 0x0 class_def_item %d/%d %s" % \
+				(fp.tell()-32, fp.tell(), i+1, class_defs_size, repr(typeIdxToString[class_idx]))
+			classDataOffets.append(class_data_off)
+
+	# visit each class_data_item
+	for o in classDataOffets:
+		fp.seek(o)
+		static_fields_size = tagUleb128(fp, 'static_fields_size')
+		instance_fields_size = tagUleb128(fp, 'instance_fields_size')
+		direct_methods_size = tagUleb128(fp, 'direct_methods_size')
+		virtual_methods_size = tagUleb128(fp, 'virtual_methods_size')
+		for i in range(static_fields_size):
+			t = fp.tell()
+			tagUleb128(fp, 'field_idx_diff')
+			tagUleb128(fp, 'access_flags')
+			print "[0x%X,0x%X) 0x0 static_field" % (t, fp.tell())
+		for i in range(instance_fields_size):
+			t = fp.tell()
+			tagUleb128(fp, 'field_idx_diff')
+			tagUleb128(fp, 'access_flags')
+			print "[0x%X,0x%X) 0x0 instance_field" % (t, fp.tell())
+		for i in range(direct_methods_size):
+			t = fp.tell()
+			tagUleb128(fp, 'method_idx_diff')
+			tagUleb128(fp, 'access_flags')
+			tagUleb128(fp, 'code_off')
+			print "[0x%X,0x%X) 0x0 direct_methods" % (t, fp.tell())
+		for i in range(virtual_methods_size):
+			t = fp.tell()
+			tagUleb128(fp, 'field_idx_diff')
+			tagUleb128(fp, 'access_flags')
+			tagUleb128(fp, 'code_off')
+			print "[0x%X,0x%X) 0x0 virtual_methods" % (t, fp.tell())
+		print "[0x%X,0x%X) 0x0 class_data_item" % (o, fp.tell())
 
 	# visit string_data_item array
 	for o in stringIdOffsets:
