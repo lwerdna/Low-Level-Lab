@@ -482,6 +482,12 @@ void onBtnMips()
 		sizeof(rsrc_mips_s),0);
 }
 
+void onBtnThumb()
+{
+	setTripletAndReassemble("thumbv7-none-none", (char *)rsrc_thumb_s, 
+		sizeof(rsrc_thumb_s),0);
+}
+
 void onBtnArm()
 {
 	setTripletAndReassemble("armv7-none-none", (char *)rsrc_arm_s, 

@@ -25,6 +25,7 @@ void onBtnX64();
 void onBtnX64_();
 void onBtnMips();
 void onBtnArm();
+void onBtnThumb();
 void onBtnArm64();
 void onBtnPpc();
 void onBtnPpc64();

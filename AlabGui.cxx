@@ -115,6 +115,13 @@ void AlabGui::cb_icRelocModel(Fl_Input_Choice* o, void* v) {
   ((AlabGui*)(o->parent()->user_data()))->cb_icRelocModel_i(o,v);
 }
 
+void AlabGui::cb_thumb_i(Fl_Button*, void*) {
+  onBtnThumb();
+}
+void AlabGui::cb_thumb(Fl_Button* o, void* v) {
+  ((AlabGui*)(o->parent()->user_data()))->cb_thumb_i(o,v);
+}
+
 Fl_Double_Window* AlabGui::make_window() {
   { mainWindow = new Fl_Double_Window(1071, 652, "Assembler Lab");
     mainWindow->user_data((void*)(this));
@@ -179,16 +186,16 @@ Fl_Double_Window* AlabGui::make_window() {
       hexView->align(Fl_Align(FL_ALIGN_CENTER));
       hexView->when(FL_WHEN_RELEASE);
     } // HexView* hexView
-    { Fl_Button* o = new Fl_Button(3, 22, 41, 20, "x86");
+    { Fl_Button* o = new Fl_Button(3, 22, 33, 20, "x86");
       o->callback((Fl_Callback*)cb_x86);
     } // Fl_Button* o
-    { Fl_Button* o = new Fl_Button(44, 22, 41, 20, "x86*");
+    { Fl_Button* o = new Fl_Button(36, 22, 33, 20, "x86*");
       o->callback((Fl_Callback*)cb_x861);
     } // Fl_Button* o
-    { Fl_Button* o = new Fl_Button(85, 22, 41, 20, "x64");
+    { Fl_Button* o = new Fl_Button(69, 22, 34, 20, "x64");
       o->callback((Fl_Callback*)cb_x64);
     } // Fl_Button* o
-    { Fl_Button* o = new Fl_Button(126, 22, 41, 20, "x64*");
+    { Fl_Button* o = new Fl_Button(103, 22, 35, 20, "x64*");
       o->callback((Fl_Callback*)cb_x641);
     } // Fl_Button* o
     { Fl_Button* o = new Fl_Button(3, 42, 35, 20, "arm");
@@ -206,7 +213,7 @@ Fl_Double_Window* AlabGui::make_window() {
     { Fl_Button* o = new Fl_Button(167, 42, 56, 20, "ppc64le");
       o->callback((Fl_Callback*)cb_ppc64le);
     } // Fl_Button* o
-    { Fl_Button* o = new Fl_Button(167, 22, 56, 20, "mips");
+    { Fl_Button* o = new Fl_Button(138, 22, 37, 20, "mips");
       o->callback((Fl_Callback*)cb_mips);
     } // Fl_Button* o
     { icCodeModel = new Fl_Input_Choice(558, 21, 83, 20, "code model:");
@@ -215,6 +222,9 @@ Fl_Double_Window* AlabGui::make_window() {
     { icRelocModel = new Fl_Input_Choice(558, 41, 83, 20, "reloc model:");
       icRelocModel->callback((Fl_Callback*)cb_icRelocModel);
     } // Fl_Input_Choice* icRelocModel
+    { Fl_Button* o = new Fl_Button(175, 22, 48, 20, "thumb");
+      o->callback((Fl_Callback*)cb_thumb);
+    } // Fl_Button* o
     mainWindow->end();
   } // Fl_Double_Window* mainWindow
   srcCode->linenumber_width(24);

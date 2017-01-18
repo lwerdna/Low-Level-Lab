@@ -71,6 +71,8 @@ public:
 private:
   inline void cb_icRelocModel_i(Fl_Input_Choice*, void*);
   static void cb_icRelocModel(Fl_Input_Choice*, void*);
+  inline void cb_thumb_i(Fl_Button*, void*);
+  static void cb_thumb(Fl_Button*, void*);
 public:
   Fl_Text_Buffer *srcBuf; 
 };
