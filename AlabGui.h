@@ -57,8 +57,8 @@ private:
   static void cb_ppc(Fl_Button*, void*);
   inline void cb_ppc64_i(Fl_Button*, void*);
   static void cb_ppc64(Fl_Button*, void*);
-  inline void cb_ppc64le_i(Fl_Button*, void*);
-  static void cb_ppc64le(Fl_Button*, void*);
+  inline void cb_ppc641_i(Fl_Button*, void*);
+  static void cb_ppc641(Fl_Button*, void*);
   inline void cb_mips_i(Fl_Button*, void*);
   static void cb_mips(Fl_Button*, void*);
 public:
@@ -73,6 +73,10 @@ private:
   static void cb_icRelocModel(Fl_Input_Choice*, void*);
   inline void cb_thumb_i(Fl_Button*, void*);
   static void cb_thumb(Fl_Button*, void*);
+  inline void cb_arm1_i(Fl_Button*, void*);
+  static void cb_arm1(Fl_Button*, void*);
+  inline void cb_thumb1_i(Fl_Button*, void*);
+  static void cb_thumb1(Fl_Button*, void*);
 public:
   Fl_Text_Buffer *srcBuf; 
 };

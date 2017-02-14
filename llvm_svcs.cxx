@@ -596,6 +596,7 @@ llvm_svcs_disasm_lengths(
 	string result;
 
 	/* see /lib/MC/MCDisassembler/Disassembler.h */
+	//printf("disassembling with triplet: %s\n", triplet);
     LLVMDisasmContextRef context = LLVMCreateDisasm (
 		triplet, /* triple */
         NULL, /* void *DisInfo */
@@ -611,6 +612,8 @@ llvm_svcs_disasm_lengths(
 
 	lengths.clear();
 	for(int i=0; i<src_len; ) {
+		//printf("first few bytes are: %02X %02X %02X %02X\n",
+		//	src[i], src[i+1], src[i+2], src[i+3]);
 		if(disasm_single(triplet, src+i, src_len-i, addr+i, result, length, 
 		  context)) {
 			if(0) {
@@ -623,7 +626,7 @@ llvm_svcs_disasm_lengths(
 			}
 		}
 
-		//printf("%s(): %s has length %d\n", __func__, result.c_str(), length);
+		printf("%s(): %s has length %d\n", __func__, result.c_str(), length);
 
 		lengths.push_back(length);
 		i += length;

@@ -19,14 +19,14 @@ class AlabGui {open
   Function {make_window()} {open
   } {
     Fl_Window mainWindow {
-      label {Assembler Lab} open
+      label {Assembler Lab} open selected
       xywh {246 513 1071 652} type Double visible
     } {
       Fl_Menu_Bar menuBar {
         label menu open
         xywh {0 0 1070 20} color 29
       } {}
-      Fl_Text_Editor srcCode {selected
+      Fl_Text_Editor srcCode {
         xywh {3 64 462 485} align 21 textfont 4
         code0 {srcBuf = new Fl_Text_Buffer();}
         code1 {o->buffer(srcBuf);}
@@ -37,22 +37,22 @@ class AlabGui {open
       Fl_Input iArch {
         label {arch/sub:}
         callback {onInpArch();}
-        xywh {229 38 60 23} align 1 when 1
+        xywh {264 38 60 23} align 1 when 1
       }
       Fl_Input iOs {
         label {os/sys:}
         callback {onInpOs();}
-        xywh {351 38 60 23} align 1 when 1
+        xywh {386 38 60 23} align 1 when 1
       }
       Fl_Input iEnviron {
         label {envir/abi:}
         callback {onInpEnviron();}
-        xywh {412 38 60 23} align 1 when 1
+        xywh {447 38 60 23} align 1 when 1
       }
       Fl_Input iVendor {
         label {vendor:}
         callback {onInpVendor();}
-        xywh {290 38 60 23} align 1 when 1
+        xywh {325 38 60 23} align 1 when 1
       }
       Fl_Text_Display log {
         xywh {3 553 1064 96} color 0
@@ -65,67 +65,77 @@ class AlabGui {open
       Fl_Button {} {
         label x86
         callback {onBtnX86();}
-        xywh {3 22 33 20}
+        xywh {3 22 29 20}
       }
       Fl_Button {} {
         label {x86*}
         callback {onBtnX86_();}
-        xywh {36 22 33 20}
+        xywh {32 22 33 20}
       }
       Fl_Button {} {
         label x64
         callback {onBtnX64();}
-        xywh {69 22 34 20}
+        xywh {65 22 30 20}
       }
       Fl_Button {} {
         label {x64*}
         callback {onBtnX64_();}
-        xywh {103 22 35 20}
+        xywh {95 22 34 20}
       }
       Fl_Button {} {
         label arm
         callback {onBtnArm()}
-        xywh {3 42 35 20}
+        xywh {3 42 30 20}
       }
       Fl_Button {} {
         label arm64
         callback {onBtnArm64();}
-        xywh {38 42 47 20}
+        xywh {164 22 47 20}
       }
       Fl_Button {} {
         label ppc
         callback {onBtnPpc();}
-        xywh {85 42 36 20}
+        xywh {211 22 48 20}
       }
       Fl_Button {} {
         label ppc64
         callback {onBtnPpc64();}
-        xywh {121 42 46 20}
+        xywh {163 42 45 20}
       }
       Fl_Button {} {
-        label ppc64le
+        label {ppc64*}
         callback {onBtnPpc64le();}
-        xywh {167 42 56 20}
+        xywh {208 42 51 20}
       }
       Fl_Button {} {
         label mips
         callback {onBtnMips();}
-        xywh {138 22 37 20}
+        xywh {129 22 35 20}
       }
       Fl_Input_Choice icCodeModel {
         label {code model:}
         callback {onIcCodeModel();} open
-        xywh {558 21 83 20}
+        xywh {594 21 83 20}
       } {}
       Fl_Input_Choice icRelocModel {
         label {reloc model:}
         callback {onIcRelocModel();} open
-        xywh {558 41 83 20}
+        xywh {593 41 83 20}
       } {}
       Fl_Button {} {
         label thumb
         callback {onBtnThumb();}
-        xywh {175 22 48 20}
+        xywh {67 42 45 20}
+      }
+      Fl_Button {} {
+        label {arm*}
+        callback {onBtnArmBE()}
+        xywh {33 42 34 20}
+      }
+      Fl_Button {} {
+        label {thumb*}
+        callback {onBtnThumbBE();}
+        xywh {112 42 51 20}
       }
     }
     code {srcCode->linenumber_width(24);} {}

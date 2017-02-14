@@ -488,9 +488,21 @@ void onBtnThumb()
 		sizeof(rsrc_thumb_s),0);
 }
 
+void onBtnThumbBE()
+{
+	setTripletAndReassemble("thumbv7eb-none-none", (char *)rsrc_thumb_s, 
+		sizeof(rsrc_thumb_s),0);
+}
+
 void onBtnArm()
 {
 	setTripletAndReassemble("armv7-none-none", (char *)rsrc_arm_s, 
+		sizeof(rsrc_arm_s),0);
+}
+
+void onBtnArmBE()
+{
+	setTripletAndReassemble("armv7eb-none-none", (char *)rsrc_arm_s, 
 		sizeof(rsrc_arm_s),0);
 }
 
