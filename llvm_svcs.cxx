@@ -169,6 +169,57 @@ map_reloc_mode(int relocMode)
 }
 
 /*****************************************************************************/
+/* ENDIAN HELPERS */
+/*****************************************************************************/
+
+uint32_t bswap32(uint32_t x)
+{
+	return ((x&0xFF)<<24) |
+		((x&0xFF00)<<8) |
+		((x&0xFF0000)>>8) |
+		((x&0xFF000000)>>24);
+}
+
+uint64_t bswap64(uint64_t x)
+{
+	return ((x&0xFF)<<56) |
+		((x&0xFF00)<<40) |
+		((x&0xFF0000)<<24) |
+		((x&0xFF000000)<<8) |
+		((x&0xFF00000000)>>8) |
+		((x&0xFF0000000000)>>24) |
+		((x&0xFF000000000000)>>40) |
+		((x&0xFF00000000000000)>>56);
+
+}
+
+uint32_t fetch32(char *data, bool swap=false)
+{
+	uint32_t tmp = *(uint32_t *)data;
+	if(swap) tmp = __builtin_bswap32(tmp);
+	return tmp;
+}
+
+uint64_t fetch64(char *data, bool swap=false)
+{
+	uint64_t tmp = *(uint64_t *)data;
+	if(swap) tmp = __builtin_bswap64(tmp);
+	return tmp;
+}
+
+void set32(char *addr, uint32_t val, bool swap=false)
+{
+	if(swap) val = __builtin_bswap32(val);
+	*(uint32_t *)addr = val;
+}
+
+void set64(char *addr, uint64_t val, bool swap=false)
+{
+	if(swap) val = __builtin_bswap64(val);
+	*(uint64_t *)addr = val;
+}
+
+/*****************************************************************************/
 /* ASSEMBLE RELATED FUNCTIONS */
 /*****************************************************************************/
 
@@ -194,23 +245,47 @@ obj_output_to_bytes(const char *data, string &result)
 		codeOffset = scn_offset;
 		codeSize = scn_size;
 	}
-	/* 32-bit ELF */
-	else if(0==memcmp(data, "\x7F" "ELF\x01\x01\x01\x00", 8)) {
-		/* assume four sections: NULL, .strtab, .text, .symtab */
-		uint32_t e_shoff = *(uint32_t *)(data + 0x20);
-		uint32_t sh_offset = *(uint32_t *)(data + e_shoff + 2*0x28 + 0x10); /* second shdr */
-		uint32_t sh_size = *(uint32_t *)(data + e_shoff + 2*0x28 + 0x14); /* second shdr */
-		codeOffset = sh_offset;
-		codeSize = sh_size;
-	}
-	/* 32-bit ELF (big-end) */
-	else if(0==memcmp(data, "\x7F" "ELF\x01\x02\x01\x00", 8)) {
-		/* assume four sections: NULL, .strtab, .text, .symtab */
-		uint32_t e_shoff = __builtin_bswap32(*(uint32_t *)(data + 0x20));
-		uint32_t sh_offset = __builtin_bswap32(*(uint32_t *)(data + e_shoff + 2*0x28 + 0x10)); /* second shdr */
-		uint32_t sh_size = __builtin_bswap32(*(uint32_t *)(data + e_shoff + 2*0x28 + 0x14)); /* second shdr */
-		codeOffset = sh_offset;
-		codeSize = sh_size;
+	/* 32/64 ELF */
+	else if(0==memcmp(data, "\x7F" "ELF\x01\x01\x01\x00", 8) || /* little endian */
+	  0==memcmp(data, "\x7F" "ELF\x01\x02\x01\x00", 8)) { /* big endian */
+
+		bool be = data[5] == 0x02;
+
+		/* possibilities:
+			- four sections: NULL, .strtab, .text, .symtab
+			- five sections: NULL, .strtab, .text, .rel.text, .symtab */
+		uint32_t e_shoff = fetch32(data + 0x20, be);
+		uint16_t e_shnum = *(uint16_t *)(data + 0x30);
+		uint32_t txt_offs = fetch32(data + e_shoff + 2*0x28 + 0x10, be); /* second shdr */
+		uint32_t txt_size = fetch32(data + e_shoff + 2*0x28 + 0x14, be); /* second shdr */
+		codeOffset = txt_offs;
+		codeSize = txt_size;
+
+		if(e_shnum == 5) {
+			/* we have relocations, uh oh */
+			uint32_t rel_offs = fetch32(data + e_shoff + 3*0x28 + 0x10, be);
+			uint32_t rel_size = fetch32(data + e_shoff + 3*0x28 + 0x14, be);
+			uint32_t sym_offs = fetch32(data + e_shoff + 4*0x28 + 0x10, be);
+			uint32_t sym_size = fetch32(data + e_shoff + 4*0x28 + 0x14, be);
+			/* parse relocations */
+			for(uint32_t i=0; i<rel_size; i+=8) {
+				uint32_t d_val = fetch32(data + rel_offs + i, be);
+				uint32_t d_ptr = fetch32(data + rel_offs + i + 4, be);
+				/* if R_ARM_CALL */
+				if((d_ptr & 0xFF) == 0x1C) {
+					uint8_t sym_idx = (d_ptr & 0xFF00) >> 8;
+					if(sym_idx >= (sym_size / 16)) continue;
+					uint32_t st_value = fetch32(data + sym_offs + 16*sym_idx + 4, be);
+					/* at d_val we should find a bl/blx (0xEB/0xFA) */
+					uint32_t instr = fetch32(data + txt_offs + d_val, be);
+					/* remember pc bias of +8 and this is 4-byte instr count */
+					int32_t displ = (st_value - (d_val + 8)) / 4;
+					/* modify the instr operand: 3 byte displacement */
+					instr = (instr & 0xFF000000) | (displ & 0xFFFFFF);
+					set32(data + txt_offs + d_val, instr, be);
+				}
+			}
+		}
 	}
 	/* 64-bit ELF */
 	else if(0==memcmp(data, "\x7F" "ELF\x02\x01\x01\x00", 8)) {
