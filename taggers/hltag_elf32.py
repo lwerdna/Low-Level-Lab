@@ -55,6 +55,7 @@ if __name__ == '__main__':
 	dynamic = None
 	symtab = None
 	strtab = None
+	relText = None
 	fp.seek(e_shoff)
 	for i in range(e_shnum):
 		oHdr = fp.tell()
@@ -83,6 +84,8 @@ if __name__ == '__main__':
 			symtab = [sh_offset, sh_size]
 		if strName == '.strtab':
 			strtab = [sh_offset, sh_size]
+		if strName == '.rel.text':
+			relText = [sh_offset, sh_size]
 
 		print '[0x%X,0x%X) 0x0 elf32_shdr "%s" %s' % \
 			(oHdr, fp.tell(), scnStrTab[sh_name], strType)
@@ -96,6 +99,16 @@ if __name__ == '__main__':
 		[offs,size] = strtab
 		fp.seek(offs)
 		strTab = StringTable(fp, size)
+
+	if relText:
+		[offs,size] = relText
+		fp.seek(offs)
+		remainder = size
+		while remainder:
+			tag(fp, 8, "Elf32_Rel", True)
+			tagUint32(fp, "d_val");
+			tagUint32(fp, "d_ptr");
+			remainder -= 8
 
 	if dynamic:
 		# .dynamic is just an array of Elf32_Dyn entries
