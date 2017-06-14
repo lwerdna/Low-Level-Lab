@@ -193,27 +193,27 @@ uint64_t bswap64(uint64_t x)
 
 }
 
-uint32_t fetch32(char *data, bool swap=false)
+uint32_t fetch32(uint8_t *data, bool swap=false)
 {
 	uint32_t tmp = *(uint32_t *)data;
 	if(swap) tmp = __builtin_bswap32(tmp);
 	return tmp;
 }
 
-uint64_t fetch64(char *data, bool swap=false)
+uint64_t fetch64(uint8_t *data, bool swap=false)
 {
 	uint64_t tmp = *(uint64_t *)data;
 	if(swap) tmp = __builtin_bswap64(tmp);
 	return tmp;
 }
 
-void set32(char *addr, uint32_t val, bool swap=false)
+void set32(uint8_t *addr, uint32_t val, bool swap=false)
 {
 	if(swap) val = __builtin_bswap32(val);
 	*(uint32_t *)addr = val;
 }
 
-void set64(char *addr, uint64_t val, bool swap=false)
+void set64(uint8_t *addr, uint64_t val, bool swap=false)
 {
 	if(swap) val = __builtin_bswap64(val);
 	*(uint64_t *)addr = val;
@@ -224,7 +224,7 @@ void set64(char *addr, uint64_t val, bool swap=false)
 /*****************************************************************************/
 
 int
-obj_output_to_bytes(const char *data, string &result)
+obj_output_to_bytes(uint8_t *data, string &result)
 {
 	int rc = -1;
 
@@ -521,7 +521,7 @@ llvm_svcs_assemble(
 	fwrite(smallString.data(), 1, smallString.size(), fp);
 	fclose(fp);
 
-	if(obj_output_to_bytes(smallString.data(), instrBytes)) {
+	if(obj_output_to_bytes((uint8_t *)smallString.data(), instrBytes)) {
 		strErr = "parsing bytes from LLVM obj\n";
 		goto cleanup;
 	}

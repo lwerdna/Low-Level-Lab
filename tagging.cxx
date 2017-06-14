@@ -62,104 +62,10 @@ tagging_tag(string target, string tagger, IntervalMgr &mgr)
 		goto cleanup;
 	}
 
-    for(int line_num=1; 1; ++line_num) {
-        uint64_t start, end;
-        uint32_t color;
-        int oStart=-1, oEnd=-1, oColor=-1, oComment=-1;
-        size_t line_allocd;
-		int line_len;
-
-        if(line) {
-            free(line);
-            line = NULL;
-        }
-        if(getline(&line, &line_allocd, fp) <= 0) {
-            // error or EOF? don't squawk
-            break;
-        }
-
-		line_len = strlen(line);
-
-		while(1) {
-			char c = line[line_len-1];
-			if(c!='\x0' && c!='\x0d' && c!='\x0a' && c!=' ') break;
-			line[line_len-1] = '\0';
-			line_len -= 1;
-		}
-
-		/* if it was all whitespace, continue to next line */
-		if(line[0] == '\0')
-			continue;
-
-        //printf("got line %d (len:%ld): -%s-\n", line_num, line_len, line);
-
-        if(line[0] != '[') {
-            printf("ERROR: expected '[' on line %d: %s\n", line_num, line);
-            continue;
-        }
-
-        oStart = 1;
-        /* seek comma (ending the start address) */
-        for(int i=oStart; i<line_len; ++i) {
-            if(line[i]==',') {
-                line[i]='\x00';
-                oEnd = i+1;
-                break;
-            }
-        }
-
-        if(oEnd == -1 || oEnd >= (line_len-1)) {
-            printf("ERROR: missing or bad comma on line %d: %s\n", line_num, line);
-            continue;
-        }
-
-        if(0 != parse_uint64_hex(line + oStart, &start)) {
-            printf("ERROR: couldn't parse start address on line %d: %s\n", line_num, line);
-            continue;
-        }
-
-        /* seek ') ' (ending the end address) */
-        for(int i=oEnd; i<line_len; ++i) {
-            if(0 == strncmp(line + i, ") ", 2)) {
-                line[i]='\x00';
-                oColor = i+2;
-                break;
-            }
-        }
-
-        if(oColor == -1 || oColor >= (line_len-1)) {
-            printf("ERROR: missing or bad \") \" on line %d: %s\n", line_num, line);
-            continue;
-        }
-
-        if(0 != parse_uint64_hex(line + oEnd, &end)) {
-            printf("ERROR: couldn't parse end address on line %d: %s\n", line_num, line);
-            continue;
-        }
-       
-        /* seek next space or null (ending the color) */
-        for(int i=oColor; 1; ++i) {
-            if(0 == strncmp(line + i, " ", 1) || line[i]=='\x00') {
-                line[i]='\x00';
-                oComment = i+1;
-                break;
-            }
-        }
-
-        if(oComment >= line_len || strlen(line+oComment) == 0) {
-            // missing comment, run it into null byte
-            oComment = oColor-1;
-        }
-
-        if(0 != parse_uint32_hex(line + oColor, &color)) {
-            printf("ERROR: couldn't parse color address on line %d: %s\n", line_num, line);
-            continue;
-        }
-
-        /* done, add interval */
-        Interval ival = Interval(start, end, string(line + oComment));
-        mgr.add(ival);
-    }
+	if(mgr.readFromFilePointer(fp)) {
+		printf("ERROR! readFromFilePointer()\n");
+		goto cleanup;
+	}
 
     rc = 0;
     cleanup:

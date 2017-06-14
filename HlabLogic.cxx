@@ -171,7 +171,7 @@ int tags_load_file(const char *target)
 	tree->root_label("file");
 	rootItem = tree->root();
 
-	rootsIval = intervMgr.findParentChild();;
+	rootsIval = intervMgr.findParentChild();
 	for(int i=0; i<rootsIval.size(); ++i) {
 		//rootsIval[i]->print();
 		tags_populate_tree(tree, rootItem, rootsIval[i]);

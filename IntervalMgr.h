@@ -33,11 +33,15 @@ class Interval
     uint64_t right;
     uint64_t length;
 
-    void print();
+    void print(bool recur, int depth);
 };
+
+#define INTERVAL_MGR_STATE_EMPTY 0 /* no intervals read in */
+#define INTERVAL_MGR_STATE_RAW 1 /* intervals read in, but no search prep, no sorting */
 
 class IntervalMgr
 {
+	int state;
     vector<Interval> intervals;
     bool searchPrepared=false;
     
@@ -59,10 +63,12 @@ class IntervalMgr
     bool searchFast(uint64_t target, Interval **result);
     bool search(uint64_t target, Interval &result);
 
+	int readFromFilePointer(FILE *fp);
+	int readFromFile(char *fpath);
+
     vector<Interval *> findParentChild(void);
 
     void setDestructorFree(void);
 
     void print();
-    void dump();
 };
