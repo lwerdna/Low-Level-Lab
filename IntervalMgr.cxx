@@ -23,7 +23,7 @@ extern "C" {
 /* local */
 #include "IntervalMgr.h"
 
-#define INTERVAL_MGR_DEBUG 1
+//#define INTERVAL_MGR_DEBUG 1
 
 /*****************************************************************************/
 /* compare functions */

@@ -9,6 +9,7 @@
 
 /* OS */
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <signal.h>
@@ -82,6 +83,8 @@ tagging_tag(string target, string tagger, IntervalMgr &mgr)
 		if(waitpid(pid, &stat, 0) != pid)
 			 printf("ERROR: waitpid()\n");
 
+		printf("waitpid() done\n");
+
 		pid = -1;
 	}
 
@@ -114,13 +117,27 @@ int tagging_findall(vector<string> &result)
 {
 	string cwd;
 	filesys_cwd(cwd);
+	struct stat sb;
 
 	/* collect all files named hltag_* from hardcoded paths */
-	filesys_ls(AUTILS_FILESYS_LS_STARTSWITH, "hltag_", cwd, result, true);
+	vector<string> temp;
+	filesys_ls(AUTILS_FILESYS_LS_STARTSWITH, "hltag_", cwd, temp, true);
 	filesys_ls(AUTILS_FILESYS_LS_STARTSWITH, "hltag_", cwd+"/taggers", 
-		result, true);
+		temp, true);
 	filesys_ls(AUTILS_FILESYS_LS_STARTSWITH, "hltag_", "/usr/local/bin", 
-		result, true);
+		temp, true);
+
+	/* filter executables */
+	result.clear();
+	for(int i=0; i<temp.size(); ++i) {
+		const char *fpath = temp[i].c_str();
+		if(stat(fpath, &sb) == 0 && (sb.st_mode & S_IXUSR)) {
+			result.push_back(fpath);
+		}
+		else {
+			printf("damn, %s is not executable\n", fpath);
+		}
+	}
 
 	return 0;
 }
@@ -129,6 +146,7 @@ int tagging_findall(vector<string> &result)
 int tagging_pollall(string target, vector<string> &results)
 {
 	int rc = -1;
+	printf("%s()\n", __func__);
 
 	/* collect all taggers */
 	vector<string> candidates;
@@ -150,14 +168,15 @@ int tagging_pollall(string target, vector<string> &results)
 		filesys_basename(*i, basename);
 
 		memset(child_stdout, 0, CHILD_STDOUT_SZ);
+		printf("launching %s %s %s\n", argv[0], argv[1], argv[2]);
 		if(0 != launch(arg0, argv, &child_ret, child_stdout, CHILD_STDOUT_SZ, NULL, 0)) {
 			printf("ERROR: launch()\n");
 			continue;
 		}
 
+		printf("tagger(%s) returned %d\n", basename.c_str(), child_ret);
+
 		if(child_ret != 0) {
-			//printf("tagger(%s) returned %d\n", basename.c_str(), 
-			//	child_ret);
 			continue;
 		}
 

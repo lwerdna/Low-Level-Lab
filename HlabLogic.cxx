@@ -114,22 +114,21 @@ int file_load(const char *path)
 /* FILE READ TAGS */
 /*****************************************************************************/
 
-void tags_populate_tree(Fl_Tree *tree, Fl_Tree_Item *parentItem, Interval *parentIval)
+void tags_fill_tree_dfs(Fl_Tree *tree, Fl_Tree_Item *item, Interval *tag)
 {
-	/* add this dude straight away */
-	int pos = parentItem->children();
-	Fl_Tree_Item *childItem = tree->insert(parentItem, parentIval->data_string.c_str(), pos);
+	/* insert current guy */
+	const char *tagName = tag->data_string.c_str();
+	Fl_Tree_Item *itemNew = tree->add(item, tagName);
+	itemNew->close();
 
-	treeItemToInterv[childItem] = parentIval;
-	//printf("Fl_Tree_Item %p ->", childItem);
-	//parentIval->print();
+	/* save the Tree_Item -> Interval Mapping */
+	treeItemToInterv[itemNew] = tag;
 
-	/* recur on each child */
-	vector<Interval *> childrenIval = parentIval->childRetrieve();
-
-	for(int i=0; i<childrenIval.size(); ++i) {
-		Interval *childIval = childrenIval[i];
-		tags_populate_tree(tree, childItem, childIval);
+	/* insert all his children */
+	vector<Interval *> children = tag->childRetrieve();
+	for(auto iter = children.begin(); iter != children.end(); iter++) {
+		Interval *childTag = (*iter);
+		tags_fill_tree_dfs(tree, itemNew, childTag);
 	}
 }
 
@@ -138,14 +137,20 @@ int tags_load_file(const char *target)
 	int rc = -1;
 
 	vector<string> taggers;
-	vector<Interval *> rootsIval;
+	vector<Interval *> tags;
 	Fl_Tree_Item *rootItem;
 
 	if(0 != tagging_pollall(target, taggers)) goto cleanup;
 	// TODO: popup and let user decide if there are >1 taggers
-	printf("going with tagger: %s\n", taggers[0].c_str());
+	if(taggers.size()) {
+		printf("going with tagger: %s\n", taggers[0].c_str());
+	}
+	else {
+		printf("no tagger recognized the file\n");
+		goto cleanup;
+	}
 
-	if(0 != tagging_tag(target, taggers[0], intervMgr)) {
+	if(0 != tagging_tag(target, taggers[0], /* out */ intervMgr)) {
 		printf("ERROR: tagging_tag()\n");
 		goto cleanup;
 	}
@@ -169,20 +174,12 @@ int tags_load_file(const char *target)
 	winTags->end();
 	winTags->resizable(tree);
 
-	tree->root_label("file");
+	//tree->root_label("file");
 	rootItem = tree->root();
 
-	rootsIval = intervMgr.findParentChild();
-	for(int i=0; i<rootsIval.size(); ++i) {
-		//rootsIval[i]->print();
-		tags_populate_tree(tree, rootItem, rootsIval[i]);
-	}
-
-	/* close all tree items except root */
-	for(Fl_Tree_Item *item = tree->first(); item; item = tree->next(item)) {
-		if (!item->is_root() && item->has_children()) {
-		item->close();
-		}
+	tags = intervMgr.findParentChild();
+	for(int i=0; i<tags.size(); ++i) {
+		tags_fill_tree_dfs(tree, rootItem, tags[i]);
 	}
 
 	/* show window */
