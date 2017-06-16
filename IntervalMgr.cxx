@@ -14,6 +14,12 @@ extern "C" {
 	#include <autils/bytes.h>
 }
 
+/* fltk */
+#include <FL/Fl.H>
+#include <FL/Fl_Tree.H>
+#include <FL/Fl_Tree_Item.H>
+#include <FL/Fl_Double_Window.H>
+
 /* local */
 #include "IntervalMgr.h"
 
@@ -46,6 +52,7 @@ bool compareByLengthP(Interval *a, Interval *b)
 /*****************************************************************************/
 /* interval class */
 /*****************************************************************************/
+
 Interval::Interval(uint64_t left_, int right_)
 {
 	left = left_;
@@ -127,6 +134,16 @@ vector<Interval *> Interval::childRetrieve()
 	return children;
 }
 
+bool Interval::childCheck(Interval *orphan)
+{
+	for(auto i=children.begin(); i!=children.end(); ++i) {
+		if(*i == orphan)
+			return true;
+	}
+
+	return false;
+}
+
 void Interval::print(bool recur=false, int depth=0)
 {
 	for(int i=0; i<depth; ++i)
@@ -190,19 +207,19 @@ int IntervalMgr::readFromFilePointer(FILE *fp)
 	char *line = NULL;
 	int len;
 
-    for(int line_num=1; 1; ++line_num) {
-        uint64_t start, end;
-        uint32_t color;
-        size_t line_allocd = 0;
+	for(int line_num=1; 1; ++line_num) {
+		uint64_t start, end;
+		uint32_t color;
+		size_t line_allocd = 0;
 
-        if(line) {
-            free(line);
-            line = NULL;
+		if(line) {
+			free(line);
+			line = NULL;
 			line_allocd = 0;
-        }
-        if(getline(&line, &line_allocd, fp) <= 0) {
-            break; // don't whine, either error or EOF
-        }
+		}
+		if(getline(&line, &line_allocd, fp) <= 0) {
+			break; // don't whine, either error or EOF
+		}
 
 		/* if whitespace */
 		if(RE2::FullMatch(line, "\\s*"))
@@ -225,24 +242,24 @@ int IntervalMgr::readFromFilePointer(FILE *fp)
 
 		string a, b, c, d;
 		if(!RE2::FullMatch(line, regex.c_str(), &a, &b, &c, &d)) {
-            printf("ERROR: malformed input on line %d: -%s-\n", line_num, line);
+			printf("ERROR: malformed input on line %d: -%s-\n", line_num, line);
 			goto cleanup;
 		}
 
-        parse_uint64_hex(a.c_str(), &start);
-        parse_uint64_hex(b.c_str(), &end);
-        parse_uint32_hex(c.c_str(), &color);
+		parse_uint64_hex(a.c_str(), &start);
+		parse_uint64_hex(b.c_str(), &end);
+		parse_uint32_hex(c.c_str(), &color);
 
-        /* done, add interval */
-        Interval ival = Interval(start, end, d);
-        add(ival);
-    }
+		/* done, add interval */
+		Interval ival = Interval(start, end, d);
+		add(ival);
+	}
 
 	rc = 0;
 
 	cleanup:
-    /* this free must occur even if getline() failed */
-    if(line) free(line);
+	/* this free must occur even if getline() failed */
+	if(line) free(line);
 
 	return rc;
 }
@@ -469,31 +486,51 @@ vector<Interval *> IntervalMgr::findParentChild()
 		//intervals[i].print();
 	}
 
-	for(unsigned int i=0; i<intervals.size(); ++i) {
+	/* we search for children backwards in the vector
+
+		this means that priority to being enveloped is given to tags listed later
+
+		priority to enveloping is given to tags listed earlier
+	*/
+	for(int i=intervals.size()-1; i>=0; --i) {
 		/* smallest interval yet */
 		unsigned int parent_i = -1;
 		uint64_t parent_length = 0;
 
-		for(unsigned int j=0; j<intervals.size(); j++) {
+		for(int j=intervals.size()-1; j>=0; --j) {
 			/* can't envelop yourself */
 			if(i==j) continue;
-
 			/* if it envelopes */
-			if(intervals[j].contains(intervals[i])) {
-				/* is it the smallest we've seen so far? */
-				if(!parent_length || (intervals[j].length < parent_length)) {
-					parent_i = j;
-					parent_length = intervals[j].length;
-				}
-			}
+			if(!intervals[j].contains(intervals[i])) continue;
+			/* is it the smallest we've seen so far? */
+			if(parent_length && !(intervals[j].length < parent_length)) continue;
+			/* is there already an enveloping relationship?
+				(happens when taggers specify two tags with same interval) */
+			Interval *candidateChild = &intervals[i];
+			Interval *candidateParent = &intervals[j];
+			if(candidateChild->childCheck(candidateParent)) continue;
+			/* ok, update best (tightest enveloping) parent */
+			parent_i = j;
+			parent_length = candidateParent->length;
 		}
 
 		/* if parent found, add to parent */
 		if(parent_length) {
+			#ifdef INTERVAL_MGR_DEBUG
+			printf("%s enveloped by %s\n",
+			  intervals[i].data_string.c_str(),
+			  intervals[parent_i].data_string.c_str()
+			);
+			#endif
 			intervals[parent_i].childAdd(&(intervals[i]));
 		}
 		/* if not parent found, add to root */
 		else {
+			#ifdef INTERVAL_MGR_DEBUG
+			printf("%s stands alone\n",
+			  intervals[i].data_string.c_str()
+			);
+			#endif
 			listRoot.push_back(&(intervals[i]));
 		}
 	}
@@ -516,26 +553,17 @@ void IntervalMgr::print()
 	}
 }
 
-//#define MAIN_TEST
-#ifdef MAIN_TEST
+/*****************************************************************************/
+/* TESTS */
+/*****************************************************************************/
+
+#ifdef TEST1
+// g++ -std=c++11 -DTEST1 IntervalMgr.cxx -o test -lre2 -lautils
 int main(int ac, char **av)
 {
 	int rc = -1;
 	IntervalMgr mgr;
 	vector<Interval *> roots;
-
-	//im.searchFastPrep();
-	//im.print();
-
-//	for(int i=0; i<200; ++i) {
-//		Interval *ival = NULL;
-//		if(im.searchFast(i, &ival)) {
-//			printf("search(%X) returns: %08X\n", i, ival->data_u32);
-//		}
-//		else {
-//			printf("search(%X) misses\n", i);
-//		}
-//	}
 
 	if(ac > 1) {
 		printf("loading %s as a tags file\n", av[1]);
@@ -555,6 +583,76 @@ int main(int ac, char **av)
 		(*iter)->print(true);
 
 	rc = 0;
+	cleanup:
+	return rc;
+}
+#endif
+
+#ifdef TEST2
+void insert_dfs(Fl_Tree *tree, Fl_Tree_Item *item, Interval *tag)
+{
+	/* insert current guy */
+	const char *tagName = tag->data_string.c_str();
+	Fl_Tree_Item *itemNew = tree->add(item, tagName);
+	itemNew->close();
+
+	/* insert all his children */
+	vector<Interval *> children = tag->childRetrieve();
+	for(auto iter = children.begin(); iter != children.end(); iter++) {
+		Interval *childTag = (*iter);
+		insert_dfs(tree, itemNew, childTag);
+	}
+}
+
+// g++ -std=c++11 -DTEST2 IntervalMgr.cxx -o test -lre2 -lautils -lfltk `fltk-config --use-images --ldstaticflags`
+int main(int ac, char **av)
+{
+	int rc = -1;
+	IntervalMgr mgr;
+	vector<Interval *> roots;
+	Fl_Tree *tree;
+	Fl_Tree_Item *item;
+	Fl_Double_Window *win;
+
+	if(ac > 1) {
+		printf("loading %s as a tags file\n", av[1]);
+		if(mgr.readFromFile(av[1])) {
+			printf("ERROR: readFromFile()\n");
+			goto cleanup;
+		}
+	}
+	else {
+		printf("ERROR: expected arguments\n");
+		goto cleanup;
+	}
+
+	roots = mgr.findParentChild();
+
+	//Fl::scheme("gtk+");
+	win = new Fl_Double_Window(250, 400, "IntervalMgr Test");
+	win->begin();
+	// Create the tree
+	tree = new Fl_Tree(10, 10, win->w()-20, win->h()-20);
+	tree->showroot(0);				// don't show root of tree
+	//tree->callback(TreeCallback);		// setup a callback for the tree
+	tree->end();
+	win->end();
+	win->resizable(win);
+	/* can optionally pass argc, argv here, see Fl::args() */
+	win->show();
+
+	/* print the hierarchy textually */
+	for(auto iter = roots.begin(); iter != roots.end(); iter++)
+		(*iter)->print(true);
+
+	/* just put the roots into the tree */
+	for(auto iter = roots.begin(); iter != roots.end(); iter++) {
+		Interval *tag = *iter;
+		insert_dfs(tree, tree->root(), tag);
+	}
+	
+	rc = Fl::run();
+
 	cleanup:
 	return rc;
 }

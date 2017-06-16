@@ -164,6 +164,7 @@ int tags_load_file(const char *target)
 	);
 	tree = new Fl_Tree(0, 0, winTags->w(), winTags->h());
 	tree->end();
+	tree->showroot(0);
 	tree->callback((Fl_Callback *)tree_cb);
 	winTags->end();
 	winTags->resizable(tree);

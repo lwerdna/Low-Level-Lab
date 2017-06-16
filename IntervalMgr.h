@@ -27,6 +27,7 @@ class Interval
     void childAdd(Interval *);
     void childSortByAddr(void);
     void childSortByLength(void);
+	bool childCheck(Interval *orphan);
     vector<Interval *> childRetrieve(void);
 
     uint64_t left;
