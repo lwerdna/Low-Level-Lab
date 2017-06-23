@@ -143,7 +143,7 @@ def setBigEndian():
 # data accessors
 ###############################################################################
 
-def int8(FP, name, comment, peek=0):
+def int8(FP, peek=0):
 	global fmt8
 	value = unpack(fmt8, FP.read(1))[0]
 	if peek: FP.seek(-1,1)
@@ -246,28 +246,28 @@ def tag(FP, length, comment, rewind=0):
 	if rewind: FP.seek(pos)
 	return val
 
-def tagUint8(FP, comment, peek=0):
+def tagUint8(FP, name, comment='', peek=0):
 	pos = FP.tell()
 	val = uint8(FP, peek)
-	print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+1, comment, val)
+	print '[0x%X,0x%X) 0x0 %s=0x%X %s' % (pos, pos+1, name, val, comment)
 	return val
 
-def tagUint16(FP, comment, peek=0):
+def tagUint16(FP, name, comment='', peek=0):
 	pos = FP.tell()
 	val = uint16(FP, peek)
-	print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+2, comment, val)
+	print '[0x%X,0x%X) 0x0 %s=0x%X %s' % (pos, pos+2, name, val, comment)
 	return val
 
-def tagUint32(FP, comment, peek=0):
+def tagUint32(FP, name, comment='', peek=0):
 	pos = FP.tell()
 	val = uint32(FP, peek)
-	print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+4, comment, val)
+	print '[0x%X,0x%X) 0x0 %s=0x%X %s' % (pos, pos+4, name, val, comment)
 	return val
 
-def tagUint64(FP, comment, peek=0):
+def tagUint64(FP, name, comment='', peek=0):
 	pos = FP.tell()
 	val = uint64(FP, peek)
-	print '[0x%X,0x%X) 0x0 %s=0x%X' % (pos, pos+8, comment, val)
+	print '[0x%X,0x%X) 0x0 %s=0x%X %s' % (pos, pos+8, name, val, comment)
 	return val
 
 def tagUleb128(FP, comment, peek=0):

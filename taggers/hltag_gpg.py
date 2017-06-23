@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import re
 import sys
 import struct
 import binascii
@@ -129,7 +130,7 @@ if __name__ == '__main__':
 		(hdrLen,bodyLen) = (0,0)
 		oPacket = fp.tell()
 
-		packetTag = tagUint8(fp, "packet tag byte")
+		packetTag = tagUint8(fp, "tag")
 		assert(packetTag & 0x80)
 	
 		hdrStyle = 'unknown'
@@ -212,26 +213,26 @@ if __name__ == '__main__':
 		if tagId == TAG_SYMKEY_ENCR_SESS_KEY:
 			tagUint8(fp, "version");
 			algoId = uint8(fp, True)
-			tagUint8(fp, "algorithm (%s)" % symAlgoToStr(algoId))
+			tagUint8(fp, "algorithm", symAlgoToStr(algoId))
 			s2kId = uint8(fp, True)
-			tagUint8(fp, "S2K (%s)" % s2kToStr(s2kId))
+			tagUint8(fp, "S2K", s2kToStr(s2kId))
 		
 			if s2kId == 3: # iterated and salted
 				hashId = uint8(fp, True)
-				tagUint8(fp, "hash (%s)" % hashAlgoToStr(hashId))
+				tagUint8(fp, "hash", hashAlgoToStr(hashId))
 				tag(fp, 8, "salt");
 				countCoded = uint8(fp, True)
 				count = (16 + (countCoded & 0xF)) << ((countCoded >> 4) + 6)
-				tagUint8(fp, "count (decoded: %d)" % count)
+				tagUint8(fp, "count", "decoded: %d" % count)
 		elif tagId == TAG_COMPR_DATA:
 			algoId = uint8(fp, True)
-			tagUint8(fp, "algorithm (%s)" % comprAlgoToStr(algoId))
+			tagUint8(fp, "algorithm", comprAlgoToStr(algoId))
 			tag(fp, oPacketEnd - fp.tell(), "compressed data")
 
 		elif tagId == TAG_LITERAL_DATA:
 			fmt = uint8(fp, True)
-			tagUint8(fp, "format (%s)" % litDataFmtToStr(fmt))
-			lenFile = tagUint8(fp, "filename length")
+			tagUint8(fp, "format", litDataFmtToStr(fmt))
+			lenFile = tagUint8(fp, "fname_len")
 			assert(lenFile < 256)
 			tag(fp, lenFile, "filename")
 			tagUint32(fp, "date")
