@@ -179,29 +179,40 @@ LC_LINKER_OPTIMIZATION_HINT = 0x2E
 # "main"
 ###############################################################################
 
+(is32,is64) = (False, False)
+
 if __name__ == '__main__':
 	assert len(sys.argv) == 2
-
 	fp = open(sys.argv[1], "rb")
 
-	tmp = fp.tell()
-	fp.seek(0)
-	if uint32(fp) != MH_MAGIC_64: # magic
-		sys.exit(-1);
-	if uint32(fp) != CPU_TYPE_X86_64: # cputype
-		sys.exit(-1);
-	if (uint32(fp) & 0xFF) != CPU_SUBTYPE_386:
-		sys.exit(-1);
-	fp.seek(tmp)
+	# sample the header for sane values
+	magic = uint32(fp)
 
-	tag(fp, 4+4+4+4+4+4+4+4, "mach_header_64", 1)
-	# magic
+	if magic in [MH_MAGIC_64, MH_MAGIC]:
+		setLittleEndian()
+	elif magic in [MH_CIGAM_64, MH_CIGAM]:
+		setBigEndian()
+	else:
+		print "ERROR: unknown magic (is 0x%08X)" % magic
+		sys.exit(-1)
+
+	if magic in [MH_MAGIC_64, MH_CIGAM_64]:
+		(is32,is64) = (False, True)
+	else:
+		(is32,is64) = (True, False)
+
+	cputype = uint32(fp)
+	fp.seek(0)
+
+	# actually read the header now
+	if is64:
+		tag(fp, 4+4+4+4+4+4+4+4, "mach_header_64", 1)
+	else:
+		tag(fp, 4+4+4+4+4+4+4, "mach_header", 1)
 	magic = uint32(fp, True)
 	tag(fp, 4, "magic=%08X (%s)" % (magic, lookup_magic[magic]))
-	# cputype
 	cputype = uint32(fp, True)
 	tag(fp, 4, "cputype=%08X (%s)" % (cputype, lookup_cputype[cputype]))
-	# cpu subtype
 	a = uint32(fp, True)
 	subtype = a & 0xFF
 	capabilities = a & CPU_SUBTYPE_MASK
@@ -209,14 +220,14 @@ if __name__ == '__main__':
 	if capabilities:
 		b = '%s|%s' % (lookup_cpusubtype_capabilities[capabilities], b)
 	tag(fp, 4, "cpusubtype=%08X (%s)" % (a, b))
-	# filetype
 	filetype = uint32(fp, True)
 	tag(fp, 4, "filetype=%08X (%s)" % (filetype, lookup_filetype[filetype]))
 	# etc....
 	ncmds = tagUint32(fp, "ncmds")
 	tagUint32(fp, "sizeofcmds") # some of all cmdSize to follow
 	tagUint32(fp, "flags")
-	tagUint32(fp, "reserved")
+	if is64:
+		tagUint32(fp, "reserved")
 	
 	for i in range(ncmds):
 		oCmd = fp.tell()
