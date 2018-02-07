@@ -155,5 +155,5 @@ if __name__ == '__main__':
 			(oHdr, fp.tell(), i, strType)
 	
 	fp.close()
-	sys.exit(-1)
+	sys.exit(0)
 

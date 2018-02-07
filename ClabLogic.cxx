@@ -49,7 +49,7 @@ void outLogScrollToEnd(void)
 void
 compile()
 {
-    printf("%s()\n", __func__);
+    //printf("%s()\n", __func__);
 
     int rc = -1, rc_child, i;
     int n_args;
@@ -163,7 +163,7 @@ compile()
     /* launch it */
     char *compilerExecName;
     if(0 != launch(compilerPath, argv, &rc_child, stdout_buf, STREAM_BUF_SIZE,
-        stderr_buf, STREAM_BUF_SIZE))
+        stderr_buf, STREAM_BUF_SIZE, 1))
     {
         printf("ERROR: launch()");
         goto cleanup;
@@ -208,11 +208,14 @@ compile()
         printf("\n");
     }
     if(0 != launch(ca_otool, argv, &rc_child, stdout_buf, STREAM_BUF_SIZE,
-        stderr_buf, STREAM_BUF_SIZE))
+        stderr_buf, STREAM_BUF_SIZE, 1))
     {
         printf("ERROR: launch()");
         goto cleanup;
     }
+
+	printf("raw stdout_buf:\n%s\n", stdout_buf);
+	printf("raw stderr_buf:\n%s\n", stderr_buf);
 
     /* get rid of indent */
     for(i=0; stdout_buf[i]!='\0'; ++i) {

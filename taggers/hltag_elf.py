@@ -307,4 +307,6 @@ def isElf32(fp):
 ###############################################################################
 
 if __name__ == '__main__':
+	# functions in this file are meant to be "common" functions called from
+	# more specialied taggers like elf32 or elf64
 	sys.exit(-1)

@@ -26,6 +26,11 @@ It is all very simple plaintext. The three parts are the memory range for a tag,
 
 Taggers do not have to worry about providing hierarchical information. Hlab will use the values of the memory addresses to assimilate them in a hierarchy and then a TreeView.
 
+I believe this textual tagging approach is superior to tool specific grammars because:
+* reading tags is easy, by program or human
+
+Since tags are text, you can use your favorite programming language to generate them. You are not limited by a grammer. You do not have to learn a grammar. The tags are human readable. The tags can be parsed by other utilities easily. Nesting taggers is easy, just append the tag text. For example, an ELF tagger may offload work to a DWARF tagger as it parses.
+
 Hlab will search in ".", "./taggers", and "./usr/local/bin" for any file starting with "hltag_" to invoke as a tagger. A tagger that cannot decompose an input binary should print nothing to stdout and return nonzero. A tagger that is able to decompose should print its tags and return zero.
 
 # Dependencies

@@ -1,3 +1,4 @@
+SHELL = /bin/bash
 CFLAGS = -std=c++11
 FLAGS_DEBUG = -g -O0
 FLAGS_LINK = -L/usr/local/lib
@@ -99,3 +100,8 @@ install:
 	install ./hlab /usr/local/bin
 	install ./taggers/* /usr/local/bin
 
+uninstall:
+	if [ -f "/usr/local/bin/clab" ]; then rm /usr/local/bin/clab; fi
+	if [ -f "/usr/local/bin/alab" ]; then rm /usr/local/bin/alab; fi
+	if [ -f "/usr/local/bin/hlab" ]; then rm /usr/local/bin/hlab; fi
+	rm /usr/local/bin/hltag_*
