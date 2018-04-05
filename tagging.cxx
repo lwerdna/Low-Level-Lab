@@ -169,7 +169,7 @@ int tagging_pollall(string target, vector<string> &results)
 
 		memset(child_stdout, 0, CHILD_STDOUT_SZ);
 		printf("launching %s %s %s\n", argv[0], argv[1], argv[2]);
-		if(0 != launch(arg0, argv, &child_ret, child_stdout, CHILD_STDOUT_SZ, NULL, 0)) {
+		if(0 != launch(arg0, argv, &child_ret, child_stdout, CHILD_STDOUT_SZ, NULL, 0, 1)) {
 			printf("ERROR: launch()\n");
 			continue;
 		}

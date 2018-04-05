@@ -216,7 +216,9 @@ if __name__ == '__main__':
 	a = uint32(fp, True)
 	subtype = a & 0xFF
 	capabilities = a & CPU_SUBTYPE_MASK
-	b = lookup_cpusubtype[subtype]
+	b = '%d (unknown)' % subtype
+	if subtype in lookup_cpusubtype:
+		b = lookup_cpusubtype[subtype]
 	if capabilities:
 		b = '%s|%s' % (lookup_cpusubtype_capabilities[capabilities], b)
 	tag(fp, 4, "cpusubtype=%08X (%s)" % (a, b))
