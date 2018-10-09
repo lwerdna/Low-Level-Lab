@@ -1,5 +1,6 @@
 Low Level Laboratory
 
+
 # Compiler LAB (clab)
 * a little GUI to watch your compilers generate code
 
@@ -37,5 +38,6 @@ Hlab will search in ".", "./taggers", and "./usr/local/bin" for any file startin
 * c standard library
 * c++ standard template library (vector, map, string)
 * my autils library
+* re2 (Google's regular expression library)
 * llvm 3.8.1
 * fltk 1.3.3

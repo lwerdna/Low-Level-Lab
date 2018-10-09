@@ -94,6 +94,11 @@ clean: $(TARGET) $(OBJS)
 	rm -f $(TARGET) 2> /dev/null
 	rm alab clab hlab rsrc.c rsrc.h 2> /dev/null
 
+link:
+	ln -s `pwd`/clab /usr/local/bin/clab
+	ln -s `pwd`/alab /usr/local/bin/alab
+	ln -s `pwd`/hlab /usr/local/bin/hlab
+
 install:
 	install ./clab /usr/local/bin
 	install ./alab /usr/local/bin

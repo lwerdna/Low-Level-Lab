@@ -412,10 +412,6 @@ llvm_svcs_assemble(
 	/* source code vars */
 	std::string strSrc(srcText);
 	std::unique_ptr<MemoryBuffer> mbSrc;
-	SourceMgr *srcMgr;
-
-	/* misc */
-	MCContext *context;
 
 	/*************************************************************************/
 	/* the triple and the target */
@@ -442,9 +438,9 @@ llvm_svcs_assemble(
 	std::unique_ptr<MCRegisterInfo> regInfo(target->createMCRegInfo(machSpec));
 	std::unique_ptr<MCAsmInfo> asmInfo(target->createMCAsmInfo(*regInfo, machSpec));
 	std::unique_ptr<MCInstrInfo> instrInfo(target->createMCInstrInfo()); /* describes target instruction set */
-	MCSubtargetInfo *subTargetInfo = target->createMCSubtargetInfo(machSpec, "", ""); /* subtarget instr set */
+	std::unique_ptr<MCSubtargetInfo> subTargetInfo(target->createMCSubtargetInfo(machSpec, "", "")); /* subtarget instr set */
 	/* fixups, relaxations, objs, elfs */
-	MCAsmBackend *asmBackend = target->createMCAsmBackend(*regInfo, machSpec, /* specific CPU */ "");
+	std::unique_ptr<MCAsmBackend> asmBackend(target->createMCAsmBackend(*regInfo, machSpec, /* specific CPU */ ""));
 
 	/*************************************************************************/
 	/* source code manager */
@@ -452,10 +448,10 @@ llvm_svcs_assemble(
 
 	// llvm::SourceMgr (include/llvm/Support/SourceMgr.h) that holds assembler source
 	// has vector of llvm::SrcBuffer encaps (Support/MemoryBuffer.h) and vector of include dirs
-	srcMgr = new SourceMgr();
+	SourceMgr srcMgr;
 	mbSrc = MemoryBuffer::getMemBuffer(strSrc);
-	srcMgr->AddNewSourceBuffer(std::move(mbSrc), SMLoc());
-	if(callback) srcMgr->setDiagHandler(diag_cb, (void *)callback);
+	srcMgr.AddNewSourceBuffer(std::move(mbSrc), SMLoc());
+	if(callback) srcMgr.setDiagHandler(diag_cb, (void *)callback);
 
 	/*************************************************************************/
 	/* MC context, object file, code emitter, target options */
@@ -465,7 +461,7 @@ llvm_svcs_assemble(
 	MCObjectFileInfo objFileInfo;
 
 	/* MC/MCContext.h */ 
-	context = new MCContext(asmInfo.get(), regInfo.get(), &objFileInfo, srcMgr);
+	MCContext context(asmInfo.get(), regInfo.get(), &objFileInfo, &srcMgr);
 
 	/* yes, this is circular (MCContext requiring MCObjectFileInfo and visa
 		versa, and is marked "FIXME" in llvm-mc.cpp */
@@ -477,7 +473,7 @@ llvm_svcs_assemble(
 		TheTriple, 
 		map_reloc_mode(relocMode),
 		map_code_model(codeModel),
-		*context
+		context
 	);
 
 	/* code emitter llvm/MC/MCCodeEmitter.h
@@ -485,7 +481,7 @@ llvm_svcs_assemble(
 
 		target returns with X86MCCodeEmitter, ARMMCCodeEmitter, etc.
 	*/
-	MCCodeEmitter *codeEmitter = target->createMCCodeEmitter(*instrInfo, *regInfo, *context);
+	MCCodeEmitter *codeEmitter = target->createMCCodeEmitter(*instrInfo, *regInfo, context);
 
 	/* target opts */
 	MCTargetOptions targetOpts;
@@ -499,7 +495,7 @@ llvm_svcs_assemble(
 
     MCStreamer *streamer = target->createMCObjectStreamer(
 		TheTriple,
-        *context,
+        context,
         *asmBackend,  /* (fixups, relaxation, objs and elfs) */
         rsvo, /* output stream raw_pwrite_stream */
         codeEmitter,
@@ -509,7 +505,7 @@ llvm_svcs_assemble(
         false /* DWARFMustBeAtTheEnd */
     );
 
-	if(invoke_llvm_parsers(target, srcMgr, *context, *streamer, *asmInfo, 
+	if(invoke_llvm_parsers(target, &srcMgr, context, *streamer, *asmInfo, 
 	  *subTargetInfo, *instrInfo, targetOpts, dialect)) {
 		strErr = "invoking llvm parsers\n";
 		goto cleanup;
@@ -630,9 +626,10 @@ llvm_svcs_disasm_single(
 )
 {
 	int rc = -1;
+	LLVMDisasmContextRef context = NULL;
 
 	/* see /lib/MC/MCDisassembler/Disassembler.h */
-    LLVMDisasmContextRef context = LLVMCreateDisasm (
+    context = LLVMCreateDisasm (
 		triplet, /* triple */
         NULL, /* void *DisInfo */
 		0, /* TagType */
@@ -653,6 +650,10 @@ llvm_svcs_disasm_single(
 
 	rc = 0;
 	cleanup:
+	if(context) {
+		LLVMDisasmDispose(context);
+		context = NULL;
+	}
 	return rc;
 }
 
@@ -669,10 +670,11 @@ llvm_svcs_disasm_lengths(
 	int rc = -1;
 	int length;
 	string result;
+	LLVMDisasmContextRef context = NULL;
 
 	/* see /lib/MC/MCDisassembler/Disassembler.h */
 	//printf("disassembling with triplet: %s\n", triplet);
-    LLVMDisasmContextRef context = LLVMCreateDisasm (
+    context = LLVMCreateDisasm (
 		triplet, /* triple */
         NULL, /* void *DisInfo */
 		0, /* TagType */
@@ -709,5 +711,9 @@ llvm_svcs_disasm_lengths(
 
 	rc = 0;
 	cleanup:
+	if(context) {
+		LLVMDisasmDispose(context);
+		context = NULL;
+	}
 	return rc;
 }
