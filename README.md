@@ -1,13 +1,16 @@
-Low Level Laboratory
+# Low Level Laboratory
 
-
-# Compiler LAB (clab)
+## Compiler LAB (clab)
 * a little GUI to watch your compilers generate code
 
-# Assembler LAB (alab)
+![](./screenshots/clab.png)
+
+## Assembler LAB (alab)
 * a little GUI that assembles for various architectures by calling into llvm libs
 
-# Hex LAB (hlab)
+![](./screenshots/alab.png)
+
+## Hex LAB (hlab)
 Hlab is a hex editor with an extremely rapid way to learn about new binary formats and present that format in a TreeView. 
 
 External programs call "taggers" are invoked by hlab for decomposing input binaries. They take, as input, the path to the input binary. They print, on stdout, regions which should carry a label, called a tag.
@@ -34,7 +37,7 @@ Since tags are text, you can use your favorite programming language to generate 
 
 Hlab will search in ".", "./taggers", and "./usr/local/bin" for any file starting with "hltag_" to invoke as a tagger. A tagger that cannot decompose an input binary should print nothing to stdout and return nonzero. A tagger that is able to decompose should print its tags and return zero.
 
-# Dependencies
+## Dependencies
 * c standard library
 * c++ standard template library (vector, map, string)
 * my autils library
