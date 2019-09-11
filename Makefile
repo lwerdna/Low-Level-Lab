@@ -84,8 +84,8 @@ alab: rsrc.o AlabGui.o AlabLogic.o IntervalMgr.o llvm_svcs.o Fl_Text_Editor_Asm.
 hlab: HlabGui.o HlabLogic.o HexView.o IntervalMgr.o tagging.o Makefile
 	$(LINK)  $(FLAGS_LINK) HlabGui.o HlabLogic.o HexView.o IntervalMgr.o tagging.o -o hlab $(LD_FLTK) -lautils -lre2
 
-test: test.o tagging.o IntervalMgr.o
-	$(LINK) $(FLAGS_LINK) test.o tagging.o IntervalMgr.o -lautils -lre2 -o test
+test: test.o tagging.o IntervalMgr.o llvm_svcs.o
+	$(LINK) $(FLAGS_LINK) test.o tagging.o IntervalMgr.o llvm_svcs.o $(LD_LLVM) -lautils -lre2 -lz -o test
 
 # OTHER targets
 #
