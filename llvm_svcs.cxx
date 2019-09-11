@@ -1,4 +1,4 @@
-/* abstract away LLVM details from the rest of LLL 
+/* abstract away LLVM details from the rest of LLL
 
 	anything starting with "llvm_svcs" is a public API
 	anything else is internal use
@@ -16,6 +16,7 @@ using namespace std;
 #include <llvm/MC/MCAsmInfo.h>
 #include <llvm/MC/MCContext.h>
 #include <llvm/MC/MCDisassembler.h>
+#include <llvm/MC/MCCodeEmitter.h>
 #include <llvm/MC/MCInstPrinter.h>
 #include <llvm/MC/MCInstrInfo.h>
 #include <llvm/MC/MCObjectFileInfo.h>
@@ -82,7 +83,7 @@ llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
 	//std::string machSpec = "x86_64-unknown-linux-gnu";
 	Triple trip(triplet);
 
-	/* FIRST component is <arch><subarch> 
+	/* FIRST component is <arch><subarch>
 		eg: x86,arm,thumb,mips,... */
 	arch = trip.getArchName();
 
@@ -113,15 +114,15 @@ llvm_svcs_triplet_decompose(const char *triplet, string &arch, string &subarch,
 		case llvm::Triple::KalimbaSubArch_v5: subarch="v5"; break;
 	}
 
-	/* SECOND component is <vendor> 
+	/* SECOND component is <vendor>
 		eg: pc,apple,nvidia,ibm,... */
 	vendor = trip.getVendorName();
 
-	/* THIRD component is <sys> or <os> 
+	/* THIRD component is <sys> or <os>
 		eg: none,linux,win32,darwin,cuda,... */
 	os = trip.getOSName();
 
-	/* FOURTH component is <environment> or <abi> 
+	/* FOURTH component is <environment> or <abi>
 		eg: eabi,gnu,android.macho,elf,... */
 	environ = trip.getEnvironmentName();
 
@@ -158,7 +159,7 @@ map_code_model(int codeModel)
 Reloc::Model
 map_reloc_mode(int relocMode)
 {
-	/* SEE: NOT the values in include/llvm-c/TargetMachine.h 
+	/* SEE: NOT the values in include/llvm-c/TargetMachine.h
 		but llvm/Support/CodeGen.h */
 	switch(relocMode) {
 		case LLVM_SVCS_RM_STATIC: return Reloc::Static;
@@ -321,7 +322,7 @@ obj_output_to_bytes(uint8_t *data, string &result)
 	(instead of printing to stderr) */
 /* we set LLVM's callback to this thunk which then calls the user
 	requested callback, hiding LLVM details */
-static 
+static
 void
 diag_cb(const SMDiagnostic &diag, void *param)
 {
@@ -342,12 +343,12 @@ diag_cb(const SMDiagnostic &diag, void *param)
 	// call back back to llvm_svcs user
 	string fileName = diag.getFilename().str();
 	string message = diag.getMessage().str();
-	pfunc(k, fileName.c_str(), diag.getLineNo(), message.c_str()); 
+	pfunc(k, fileName.c_str(), diag.getLineNo(), message.c_str());
 }
 
 int
-invoke_llvm_parsers(const Target *TheTarget, SourceMgr *SrcMgr, MCContext &context, 
-	MCStreamer &Str, MCAsmInfo &MAI, MCSubtargetInfo &STI, MCInstrInfo &MCII, 
+invoke_llvm_parsers(const Target *TheTarget, SourceMgr *SrcMgr, MCContext &context,
+	MCStreamer &Str, MCAsmInfo &MAI, MCSubtargetInfo &STI, MCInstrInfo &MCII,
 	MCTargetOptions &MCOptions, int dialect)
 {
 	int rc = -1;
@@ -386,7 +387,7 @@ invoke_llvm_parsers(const Target *TheTarget, SourceMgr *SrcMgr, MCContext &conte
   	return rc;
 }
 
-int 
+int
 llvm_svcs_assemble(
 	/* in parameters */
 	const char *srcText, 		/* eg: "mov r0, r0" */
@@ -407,8 +408,8 @@ llvm_svcs_assemble(
 
 	/* output for asm->obj */
 	SmallString<1024> smallString;
-    raw_svector_ostream rsvo(smallString);
-	
+	raw_svector_ostream rsvo(smallString);
+
 	/* source code vars */
 	std::string strSrc(srcText);
 	std::unique_ptr<MemoryBuffer> mbSrc;
@@ -418,6 +419,7 @@ llvm_svcs_assemble(
 	/*************************************************************************/
 
 	// see /lib/Support/Triple.cpp for the details
+	printf("triplet: %s\n", triplet);
 	std::string machSpec(triplet);
 	machSpec = Triple::normalize(machSpec);
 	Triple TheTriple(machSpec);
@@ -430,17 +432,44 @@ llvm_svcs_assemble(
 		return -1;
 	}
 
-	//printf("machine spec: %s\n", machSpec.c_str());
-	//printf("Target.getName(): %s\n", target->getName());
-	//printf("Target.getShortDescription(): %s\n", target->getShortDescription());
+	printf("machine spec: %s\n", machSpec.c_str());
+	printf("Target.getName(): %s\n", target->getName());
+	printf("Target.getShortDescription(): %s\n", target->getShortDescription());
+	printf("Target.hasJIT(): %d\n", target->hasJIT());
+	printf("Target.hasTargetMachine(): %d (Check if this target supports code generation)\n", target->hasTargetMachine());
+	printf("Target.hasMCAsmBackend(): %d (Check if this target supports .o generation)\n", target->hasMCAsmBackend());
 
 	/* from the target we get almost everything */
 	std::unique_ptr<MCRegisterInfo> regInfo(target->createMCRegInfo(machSpec));
+	if(!regInfo) {
+		strErr = "creating mc register info\n";
+		return -1;
+	}
+
 	std::unique_ptr<MCAsmInfo> asmInfo(target->createMCAsmInfo(*regInfo, machSpec));
+	if(!asmInfo) {
+		strErr = "creating MCAsmInfo\n";
+		return -1;
+	}
+
 	std::unique_ptr<MCInstrInfo> instrInfo(target->createMCInstrInfo()); /* describes target instruction set */
+	if(!instrInfo) {
+		strErr = "creating MCInstrInfo\n";
+		return -1;
+	}
+
 	std::unique_ptr<MCSubtargetInfo> subTargetInfo(target->createMCSubtargetInfo(machSpec, "", "")); /* subtarget instr set */
+	if(!subTargetInfo) {
+		strErr = "creating MCSubtargetInfo\n";
+		return -1;
+	}
+
 	/* fixups, relaxations, objs, elfs */
-	std::unique_ptr<MCAsmBackend> asmBackend(target->createMCAsmBackend(*regInfo, machSpec, /* specific CPU */ ""));
+	MCAsmBackend *asmBackend = target->createMCAsmBackend(*regInfo, machSpec, /* specific CPU */ "");
+	if(!asmBackend) {
+		strErr = "creating MCAsmBackend\n";
+		return -1;
+	}
 
 	/*************************************************************************/
 	/* source code manager */
@@ -460,28 +489,33 @@ llvm_svcs_assemble(
 	// MC/MCObjectFileInfo.h describes common object file formats
 	MCObjectFileInfo objFileInfo;
 
-	/* MC/MCContext.h */ 
+	/* MC/MCContext.h */
 	MCContext context(asmInfo.get(), regInfo.get(), &objFileInfo, &srcMgr);
 
 	/* yes, this is circular (MCContext requiring MCObjectFileInfo and visa
 		versa, and is marked "FIXME" in llvm-mc.cpp */
-	
+
 	/* also see initMachOMCObjectFileInfo(), initELFMCObjectFileInfo(),
 		initCOFFMCObjectFileInfo() ... will ask TT.getObjectFormat() if not
 		specified */
 	objFileInfo.InitMCObjectFileInfo(
-		TheTriple, 
+		TheTriple,
 		map_reloc_mode(relocMode),
 		map_code_model(codeModel),
 		context
 	);
 
 	/* code emitter llvm/MC/MCCodeEmitter.h
-		has encodeInstruction() which maps MCInstr -> bytes 
+		has encodeInstruction() which maps MCInstr -> bytes
 
 		target returns with X86MCCodeEmitter, ARMMCCodeEmitter, etc.
 	*/
+	//std::unique_ptr<MCCodeEmitter> codeEmitter(target->createMCCodeEmitter(*instrInfo, *regInfo, context));
 	MCCodeEmitter *codeEmitter = target->createMCCodeEmitter(*instrInfo, *regInfo, context);
+	if(!codeEmitter) {
+		strErr = "creating code emitter\n";
+		return -1;
+	}
 
 	/* target opts */
 	MCTargetOptions targetOpts;
@@ -493,35 +527,40 @@ llvm_svcs_assemble(
 	/* assemble to object */
 	/*************************************************************************/
 
-    MCStreamer *streamer = target->createMCObjectStreamer(
+	std::unique_ptr<MCStreamer> streamer(target->createMCObjectStreamer(
+	//streamer = target->createMCObjectStreamer(
 		TheTriple,
-        context,
-        *asmBackend,  /* (fixups, relaxation, objs and elfs) */
-        rsvo, /* output stream raw_pwrite_stream */
-        codeEmitter,
+		context,
+		*asmBackend,  /* (fixups, relaxation, objs and elfs) */
+		rsvo, /* output stream raw_pwrite_stream */
+		//codeEmitter.get(),
+		codeEmitter,
 		*subTargetInfo,
 		true, /* relax all fixups */
-		true, /* incremental linker compatible */ 
-        false /* DWARFMustBeAtTheEnd */
-    );
+		true, /* incremental linker compatible */
+		false /* DWARFMustBeAtTheEnd */
+	));
+	//);
 
-	if(invoke_llvm_parsers(target, &srcMgr, context, *streamer, *asmInfo, 
+	if(invoke_llvm_parsers(target, &srcMgr, context, *streamer, *asmInfo,
 	  *subTargetInfo, *instrInfo, targetOpts, dialect)) {
 		strErr = "invoking llvm parsers\n";
 		goto cleanup;
 	}
 
 	/* dump to file for debugging */
-	FILE *fp;
-	fp = fopen("out.bin", "wb");
-	fwrite(smallString.data(), 1, smallString.size(), fp);
-	fclose(fp);
+	if(0) {
+		FILE *fp;
+		fp = fopen("out.bin", "wb");
+		fwrite(smallString.data(), 1, smallString.size(), fp);
+		fclose(fp);
+	}
 
 	if(obj_output_to_bytes((uint8_t *)smallString.data(), instrBytes)) {
 		strErr = "parsing bytes from LLVM obj\n";
 		goto cleanup;
 	}
-	
+
 	rc = 0;
 	cleanup:
 	return rc;
@@ -532,7 +571,7 @@ llvm_svcs_assemble(
 /*****************************************************************************/
 
 /* a dummy function for the disasm context, else aarch64 crashes on
-	FF 43 00 D1 
+	FF 43 00 D1
 
 	see llvm-c/Disassembler.h
 */
@@ -569,8 +608,8 @@ symbol_lookup_cb(void *DisInfo, uint64_t ReferenceValue, uint64_t *ReferenceType
 		case LLVMDisassembler_ReferenceType_In_ARM64_ADR:
 			strRefType = "arm64_adr"; break;
 	}
-	
-	//printf("%s(refval:%llx reftype:%s)\n", __func__, ReferenceValue, 
+
+	//printf("%s(refval:%llx reftype:%s)\n", __func__, ReferenceValue,
 	//	strRefType);
 
 	*ReferenceType = LLVMDisassembler_ReferenceType_InOut_None;
@@ -580,9 +619,9 @@ symbol_lookup_cb(void *DisInfo, uint64_t ReferenceValue, uint64_t *ReferenceType
 int
 disasm_single(
 	/* in parameters */
-	const char *triplet, 
+	const char *triplet,
 	uint8_t *src, int src_len,
-	uint64_t addr, 
+	uint64_t addr,
 	/* out parameters */
 	string &result, int &instrLen,
 	/* internal */
@@ -595,9 +634,9 @@ disasm_single(
 
 	instrLen = LLVMDisasmInstruction(
 		context, /* disasm context */
-		src, /* source data */ 
-		src_len, /* length of source data */ 
-		addr, /* address */ 
+		src, /* source data */
+		src_len, /* length of source data */
+		addr, /* address */
 		buf, /* output buf */
 		sizeof(buf) /* size of output buf */
 	);
@@ -615,12 +654,12 @@ disasm_single(
 }
 
 /* disassemble a single instruction from the start of an input buffer */
-int 
+int
 llvm_svcs_disasm_single(
 	/* in parameters */
-	const char *triplet, 
+	const char *triplet,
 	uint8_t *src, int src_len,
-	uint64_t addr, 
+	uint64_t addr,
 	/* out parameters */
 	string &result, int &instrLen
 )
@@ -629,9 +668,9 @@ llvm_svcs_disasm_single(
 	LLVMDisasmContextRef context = NULL;
 
 	/* see /lib/MC/MCDisassembler/Disassembler.h */
-    context = LLVMCreateDisasm (
+	context = LLVMCreateDisasm (
 		triplet, /* triple */
-        NULL, /* void *DisInfo */
+		NULL, /* void *DisInfo */
 		0, /* TagType */
 		NULL, /* LLVMOpInfoCallback GetOpInfo */
 		symbol_lookup_cb /* LLVMSymbolLookupCallback SymbolLookUp */
@@ -642,7 +681,7 @@ llvm_svcs_disasm_single(
 		goto cleanup;
 	}
 
-	if(0 != disasm_single(triplet, src, src_len, addr, result, 
+	if(0 != disasm_single(triplet, src, src_len, addr, result,
 	  instrLen, context)) {
 		//printf("ERROR: disasm_single()\n");
 		goto cleanup;
@@ -657,12 +696,12 @@ llvm_svcs_disasm_single(
 	return rc;
 }
 
-int 
+int
 llvm_svcs_disasm_lengths(
 	/* in parameters */
-	const char *triplet, 
+	const char *triplet,
 	uint8_t *src, int src_len,
-	uint64_t addr, 
+	uint64_t addr,
 	/* out parameters */
 	vector<int> &lengths
 )
@@ -674,9 +713,9 @@ llvm_svcs_disasm_lengths(
 
 	/* see /lib/MC/MCDisassembler/Disassembler.h */
 	//printf("disassembling with triplet: %s\n", triplet);
-    context = LLVMCreateDisasm (
+	context = LLVMCreateDisasm (
 		triplet, /* triple */
-        NULL, /* void *DisInfo */
+		NULL, /* void *DisInfo */
 		0, /* TagType */
 		NULL, /* LLVMOpInfoCallback GetOpInfo */
 		symbol_lookup_cb /* LLVMSymbolLookupCallback SymbolLookUp */
@@ -691,7 +730,7 @@ llvm_svcs_disasm_lengths(
 	for(int i=0; i<src_len; ) {
 		//printf("first few bytes are: %02X %02X %02X %02X\n",
 		//	src[i], src[i+1], src[i+2], src[i+3]);
-		if(disasm_single(triplet, src+i, src_len-i, addr+i, result, length, 
+		if(disasm_single(triplet, src+i, src_len-i, addr+i, result, length,
 		  context)) {
 			if(0) {
 				printf("ERROR: disasm_single()\n");
